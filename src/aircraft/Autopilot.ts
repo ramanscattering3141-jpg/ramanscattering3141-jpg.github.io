@@ -49,6 +49,8 @@ export class Autopilot {
   private bankHold = 0;
   private prevIas = 0;
   private accelF = 0;
+  private flareH0 = 15;
+  private flareVs0 = 4;
   private lastVertical: VerticalMode = 'PITCH';
 
   constructor(private fd_: FlightDynamics) {}
@@ -120,7 +122,13 @@ export class Autopilot {
       this.vertical = 'GS';
       this.gsArmed = false;
     }
-    if (this.vertical === 'GS' && t.agl < 50 * FT * (def.cockpit === 'ga' ? 0.6 : 1) + 5) this.vertical = 'FLARE';
+    // Flare: start at a height proportional to the sink rate (≈5 s to go), at least 25/40 ft.
+    const hW = t.agl - def.gear.heightM;
+    if (this.vertical === 'GS' && hW < Math.max((def.cockpit === 'ga' ? 20 : 40) * FT, -t.vs * 5)) {
+      this.vertical = 'FLARE';
+      this.flareH0 = Math.max(hW, 1);
+      this.flareVs0 = Math.max(-t.vs, 1);
+    }
     if (this.engaged && t.onGround && this.vertical === 'FLARE') {
       this.engage(false);
       this.message = 'AUTOLAND: touchdown — AP off';
@@ -151,7 +159,7 @@ export class Autopilot {
     } else if (this.lateral === 'NAV') {
       bankCmd = 0;
     }
-    if (this.vertical === 'FLARE') bankCmd = clamp(bankCmd, -3, 3);
+    if (this.vertical === 'FLARE') bankCmd = clamp(bankCmd, -2, 2);
 
     // ---------------- vertical: pitch command ----------------
     const altFt = t.alt / FT;
@@ -190,9 +198,12 @@ export class Autopilot {
       vsCmd = gsRate - devM * 0.15;
     }
     if (this.vertical === 'FLARE') {
-      // Exponential flare: sink rate proportional to height, then idle.
-      vsCmd = -Math.max(0.4, (t.agl - def.gear.heightM) * 0.25);
-      if (t.agl < 30 * FT + def.gear.heightM) c.throttle = Math.max(0, c.throttle - dt * 0.5);
+      // Exponential flare: sink rate proportional to wheel height (τ ≈ 2.5 s), then idle.
+      // Sink rate commanded proportional to wheel height, continuous with the glideslope
+      // sink at flare entry, down to ~100 fpm at touchdown.
+      const hWheels = Math.max(0, t.agl - def.gear.heightM);
+      vsCmd = -Math.max(0.5, this.flareVs0 * (hWheels / this.flareH0) * 0.9);
+      if (hWheels < 25 * FT) c.throttle = Math.max(0, c.throttle - dt * 0.5);
     }
     if (vsCmd !== null) {
       // Envelope protection: never command a climb the aircraft can't sustain at this speed.
@@ -203,6 +214,8 @@ export class Autopilot {
       const gammaCmd = Math.asin(clamp(vsCmd / tas, -0.5, 0.5)) * RAD;
       pitchCmd = t.alpha + gammaCmd + clamp((vsCmd - vsNow) / tas * RAD * 0.5, -3, 3);
     }
+    // Never touch down nose-wheel first.
+    if (this.vertical === 'FLARE') pitchCmd = clamp(pitchCmd, def.cockpit === 'ga' ? 2 : 0, def.geometry.tailStrikeDeg - 2);
     pitchCmd = clamp(pitchCmd, -12, 20);
     this.fdPitch = pitchCmd;
     this.fdBank = bankCmd;

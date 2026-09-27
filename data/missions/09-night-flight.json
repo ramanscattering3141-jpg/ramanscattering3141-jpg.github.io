@@ -1,0 +1,17 @@
+{
+ "id": "09-night-flight",
+ "title": "Night flight: Las Vegas \u2192 Los Angeles",
+ "difficulty": "Intermediate",
+ "description": "Citation CJ4 from Las Vegas 26R to Los Angeles 25L after dark. City lights, runway lights and your instruments are your references.",
+ "aircraft": "cj4",
+ "departure": "KLAS",
+ "depRunway": "26R",
+ "destination": "KLAX",
+ "arrRunway": "25L",
+ "start": "ready",
+ "weatherPreset": "Clear",
+ "localTime": "21:30",
+ "objective": {
+  "type": "land"
+ }
+}

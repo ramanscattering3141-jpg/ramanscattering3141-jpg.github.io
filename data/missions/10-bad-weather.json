@@ -1,0 +1,24 @@
+{
+ "id": "10-bad-weather",
+ "title": "Bad weather into Schiphol",
+ "difficulty": "Advanced",
+ "description": "Boeing 737-800 on final for Amsterdam 18R in rain, 1,500 m visibility and a 400 ft overcast. Fly the approach on instruments (APP mode helps) and look for the approach lights.",
+ "aircraft": "b738",
+ "departure": "EHAM",
+ "depRunway": "18R",
+ "destination": "EHAM",
+ "arrRunway": "18R",
+ "start": "final",
+ "weatherPreset": "Rain",
+ "weather": {
+  "visibilityKm": 1.5,
+  "cloudBaseFt": 400,
+  "cloudTopsFt": 6000,
+  "windFromDeg": 220,
+  "windKt": 15
+ },
+ "localTime": "17:30",
+ "objective": {
+  "type": "land"
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "id": "05-long-haul",
+ "title": "Transatlantic: JFK \u2192 Heathrow",
+ "difficulty": "Advanced",
+ "description": "Boeing 747-400 from New York JFK 31L to London Heathrow 27L (\u22483,000 NM). Use LNAV and simulation rate (=/\u2212) for the crossing. Weather varies along the route.",
+ "aircraft": "b744",
+ "departure": "KJFK",
+ "depRunway": "31L",
+ "destination": "EGLL",
+ "arrRunway": "27L",
+ "start": "ready",
+ "weatherPreset": "Dynamic worldwide",
+ "localTime": "19:00",
+ "objective": {
+  "type": "land"
+ }
+}

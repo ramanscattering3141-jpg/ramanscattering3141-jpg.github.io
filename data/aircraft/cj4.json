@@ -53,7 +53,7 @@
   "clAlpha": 5.6,
   "clMaxClean": 1.35,
   "dClMaxFlaps": 0.75,
-  "dCl0Flaps": 0.6,
+  "dCl0Flaps": 0.55,
   "cd0": 0.021,
   "dCd0Flaps": 0.075,
   "dCdGear": 0.018,

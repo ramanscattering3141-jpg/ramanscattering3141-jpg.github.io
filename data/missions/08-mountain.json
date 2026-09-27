@@ -1,0 +1,17 @@
+{
+ "id": "08-mountain",
+ "title": "Mountain approach: Innsbruck",
+ "difficulty": "Advanced",
+ "description": "Pilatus PC-12 on a straight-in approach to Innsbruck runway 26 through the Inn valley, surrounded by 2,500 m peaks. Stay on the glidepath and watch the terrain.",
+ "aircraft": "pc12",
+ "departure": "LOWI",
+ "depRunway": "26",
+ "destination": "LOWI",
+ "arrRunway": "26",
+ "start": "final",
+ "weatherPreset": "Few clouds",
+ "localTime": "15:30",
+ "objective": {
+  "type": "land"
+ }
+}

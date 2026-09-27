@@ -134,6 +134,8 @@ export class FlightDynamics {
 
   // --- outputs / events ---
   crashed: CrashReason | null = null;
+  /** Which part of the airframe hit the ground (for the crash report) */
+  crashPart = '';
   telemetry!: FlightTelemetry;
   onTouchdown: ((e: TouchdownEvent) => void) | null = null;
 
@@ -153,7 +155,6 @@ export class FlightDynamics {
   private autoTrimIntegrator = 0;
   private lastGeo: Geodetic = { lat: 0, lon: 0, h: 0 };
   private lastGround = 0;
-  private lastGroundNormal: Vec3 = [0, 0, 1];
 
   constructor(readonly def: AircraftDefinition, public realism: RealismProfile, opts: { engineRunning: boolean; fuelKg?: number; payloadKg?: number }) {
     this.S = def.spec.wingAreaM2;
@@ -233,6 +234,7 @@ export class FlightDynamics {
     this.vel = scale(ax.fwd, speedMs);
     this.omega = [0, 0, 0];
     this.crashed = null;
+    this.crashPart = '';
     this.wasOnGround = speedMs < 1;
     this.airborneTime = 0;
     this.time = 0;
@@ -288,6 +290,17 @@ export class FlightDynamics {
       if (mach > mcr) cd += 20 * (mach - mcr) ** 4;
     }
     return cd;
+  }
+
+  /**
+   * Reference landing speed (kt, calibrated) for the current weight and a flap detent:
+   * Vref = 1.23 × 1-g stall speed, the standard margin used for transport aircraft.
+   */
+  vrefKt(flapFrac = 1) {
+    const a = this.def.aero;
+    const clMax = a.clMaxClean + a.dClMaxFlaps * flapFrac;
+    const vs = Math.sqrt((2 * this.mass * 9.81) / (1.225 * this.S * clMax));
+    return (1.23 * vs) / KT;
   }
 
   /** Current flap/stall limits used by warnings and the autopilot. */
@@ -472,7 +485,6 @@ export class FlightDynamics {
     const hn = env.groundHeight(geo.lat + dLat, geo.lon) ?? h0;
     const nEnu = norm([-(he - h0) / 10, -(hn - h0) / 10, 1]);
     const n = enuToEcefVec(enu, nEnu[0], nEnu[1], nEnu[2]);
-    this.lastGroundNormal = n;
     // Height of a world-space offset above the ground plane under the aircraft.
     const heightAbove = (off: Vec3) => agl * nEnu[2] + dot(off, n);
 
@@ -485,6 +497,7 @@ export class FlightDynamics {
       const off = mulMV(R, pt.body);
       if (heightAbove(off) < 0) {
         const sink = -dot(this.vel, n);
+        this.crashPart = pt.name;
         if (pt.name === 'belly' && this.gearPos < 0.5) this.crashed = 'belly-landing';
         else if (pt.name === 'tail' && sink < 2 && len(this.vel) < 120) this.crashed = 'tail-strike';
         else this.crashed = water ? 'water' : 'terrain';

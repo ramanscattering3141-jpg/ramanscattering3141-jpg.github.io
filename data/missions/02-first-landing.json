@@ -1,0 +1,17 @@
+{
+ "id": "02-first-landing",
+ "title": "Landing practice",
+ "difficulty": "Beginner",
+ "description": "Cessna 172 on a 10 NM final for San Francisco 28L. Flaps are already set. Follow the glidepath (PFD/GPS), reduce power over the threshold and flare gently.",
+ "aircraft": "c172",
+ "departure": "KSFO",
+ "depRunway": "28L",
+ "destination": "KSFO",
+ "arrRunway": "28L",
+ "start": "final",
+ "weatherPreset": "Few clouds",
+ "localTime": "16:00",
+ "objective": {
+  "type": "land"
+ }
+}

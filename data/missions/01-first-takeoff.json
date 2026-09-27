@@ -1,0 +1,18 @@
+{
+ "id": "01-first-takeoff",
+ "title": "First take-off",
+ "difficulty": "Beginner",
+ "description": "Cessna 172 at San Francisco, runway 28L. Release the parking brake, apply full power, keep the centreline with the rudder (Z/X), rotate at 55 kt and climb to 1,500 ft above the ground.",
+ "aircraft": "c172",
+ "departure": "KSFO",
+ "depRunway": "28L",
+ "destination": "KSFO",
+ "arrRunway": "28L",
+ "start": "ready",
+ "weatherPreset": "Clear",
+ "localTime": "10:30",
+ "objective": {
+  "type": "climb",
+  "altitudeAglFt": 1500
+ }
+}

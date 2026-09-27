@@ -18,6 +18,8 @@ function airborne(id: string, altFt: number, kt: number, hdg = 0) {
   return fd;
 }
 
+const fd0vref = (def: ReturnType<typeof loadDef>) => new FlightDynamics(def, REALISM.realistic, { engineRunning: true, fuelKg: def.spec.fuelCapacityL * def.fuelDensity * 0.12 }).vrefKt();
+
 describe('autopilot', () => {
   for (const id of allIds()) {
     it(`${id}: HDG + VS/ALT capture + A/THR`, () => {
@@ -52,8 +54,9 @@ describe('autopilot', () => {
       [rw.endLat, rw.endLon] = destination(45, 0, 90, 3000);
       const [lat, lon] = destination(45, 0, 270, 12 * NM);
       const alt = 100 + 12 * NM * Math.tan(3 * DEG) - 150;
-      const kt = def.perf.approachKt;
-      const fd = new FlightDynamics(def, REALISM.realistic, { engineRunning: true });
+      const kt = fd0vref(def) + 10;
+      // Realistic landing weight: ~12% fuel remaining.
+      const fd = new FlightDynamics(def, REALISM.realistic, { engineRunning: true, fuelKg: def.spec.fuelCapacityL * def.fuelDensity * 0.12 });
       fd.controls.flapsIndex = def.flaps.length - 1;
       fd.controls.gearDown = true;
       // Start offset 1 km right of the centreline, heading to intercept.
@@ -68,7 +71,7 @@ describe('autopilot', () => {
       ap.targets.heading = 60;
       ap.setVertical('ALT');
       ap.targets.altitudeFt = alt / FT;
-      ap.targets.speedKt = def.perf.vrefKt + 5;
+      ap.targets.speedKt = Math.round(fd.vrefKt() + (id === 'b738' ? 12 : 5));
       ap.setAthr(true);
       ap.armApproach();
       let touchdown: { sink: number; xtk: number; dist: number } | null = null;

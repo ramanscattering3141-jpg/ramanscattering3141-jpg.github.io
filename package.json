@@ -1,16 +1,19 @@
 {
-  "name": "ramanscattering3141-jpg.github.io",
+  "name": "world-flight-sim",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Worldwide 3D flight simulator in the browser (CesiumJS)",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "data:airports": "node tools/build-airports.mjs",
+    "data:geo": "node tools/build-geodata.mjs"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ramanscattering3141-jpg/ramanscattering3141-jpg.github.io.git"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -26,5 +29,7 @@
     "vite": "^8.3.1",
     "vite-plugin-static-copy": "^4.1.1",
     "vitest": "^5.0.2"
-  }
+  },
+  "private": true,
+  "type": "module"
 }

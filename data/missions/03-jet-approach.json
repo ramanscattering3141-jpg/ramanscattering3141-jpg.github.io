@@ -1,0 +1,17 @@
+{
+ "id": "03-jet-approach",
+ "title": "Airliner approach into JFK",
+ "difficulty": "Intermediate",
+ "description": "Boeing 737-800 on final for New York JFK 22R. Try the autopilot: engage A/P, A/THR, then press APP to capture the localizer and glideslope \u2014 or hand-fly it.",
+ "aircraft": "b738",
+ "departure": "KJFK",
+ "depRunway": "22R",
+ "destination": "KJFK",
+ "arrRunway": "22R",
+ "start": "final",
+ "weatherPreset": "Scattered",
+ "localTime": "14:00",
+ "objective": {
+  "type": "land"
+ }
+}

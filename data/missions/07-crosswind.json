@@ -1,0 +1,23 @@
+{
+ "id": "07-crosswind",
+ "title": "Crosswind landing at Heathrow",
+ "difficulty": "Advanced",
+ "description": "Airbus A320 on final for London Heathrow 27L with a gusty southerly crosswind (190\u00b0 / 25 kt, gusting 35). Crab into the wind, then de-crab with rudder just before touchdown.",
+ "aircraft": "a320",
+ "departure": "EGLL",
+ "depRunway": "27L",
+ "destination": "EGLL",
+ "arrRunway": "27L",
+ "start": "final",
+ "weatherPreset": "Strong wind",
+ "weather": {
+  "windFromDeg": 190,
+  "windKt": 25,
+  "gustKt": 10,
+  "turbulence": 0.55
+ },
+ "localTime": "11:00",
+ "objective": {
+  "type": "land"
+ }
+}

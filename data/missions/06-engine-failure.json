@@ -1,0 +1,27 @@
+{
+ "id": "06-engine-failure",
+ "title": "Emergency: engine failure",
+ "difficulty": "Intermediate",
+ "description": "Cessna 172 at 4,500 ft over the San Francisco peninsula. The engine will fail shortly. Establish best glide (~68 kt) and land at Half Moon Bay (KHAF) runway 30 \u2014 or the best field you can reach.",
+ "aircraft": "c172",
+ "departure": "KSQL",
+ "depRunway": "30",
+ "destination": "KHAF",
+ "arrRunway": "30",
+ "start": "airborne",
+ "airborneAltFt": 4500,
+ "airborneDistNm": 3,
+ "headingDeg": 235,
+ "weatherPreset": "Clear",
+ "localTime": "13:00",
+ "objective": {
+  "type": "land"
+ },
+ "events": [
+  {
+   "type": "engineFailure",
+   "engine": 0,
+   "atSeconds": 20
+  }
+ ]
+}

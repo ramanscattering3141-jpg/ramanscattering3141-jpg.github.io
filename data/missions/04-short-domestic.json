@@ -1,0 +1,17 @@
+{
+ "id": "04-short-domestic",
+ "title": "Short hop: Toronto \u2192 New York",
+ "difficulty": "Intermediate",
+ "description": "Airbus A320 from Toronto Pearson runway 23 to New York JFK 22R (\u2248300 NM). Take off, engage LNAV and climb to cruise, then descend at T/D and land.",
+ "aircraft": "a320",
+ "departure": "CYYZ",
+ "depRunway": "23",
+ "destination": "KJFK",
+ "arrRunway": "22R",
+ "start": "ready",
+ "weatherPreset": "Few clouds",
+ "localTime": "09:00",
+ "objective": {
+  "type": "land"
+ }
+}
