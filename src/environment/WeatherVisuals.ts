@@ -170,13 +170,14 @@ export class WeatherVisuals {
           for (let c = 0; c < n; c++) {
             const r1 = hash2(i * 7 + c, j * 13), r2 = hash2(i * 3, j * 5 + c);
             const clat = (i + r1) * cs, clon = (j + r2) * cs;
+            // Cumulus proportions: wider than tall (Cesium renders each as a billboard).
             const thick = Math.min(w.cloudTopsFt - w.cloudBaseFt, 6000) * FT;
-            const sx = 600 + r1 * 1600 + (w.cloudCover >= 3 ? 1200 : 0);
-            const sy = Math.max(250, thick * (0.4 + r2 * 0.6));
+            const sx = 700 + r1 * 1500 + (w.cloudCover >= 3 ? 1000 : 0);
+            const sy = clamp(thick * (0.35 + r2 * 0.4), 180, sx * 0.42);
             clouds.push(this.clouds.add({
               position: Cartesian3.fromDegrees(clon, clat, w.cloudBaseFt * FT + sy * 0.45),
               scale: new Cartesian2(sx, sy),
-              maximumSize: new Cartesian3(50, 16 + r2 * 10, 12),
+              maximumSize: new Cartesian3(50, 15 + r2 * 6, 13),
               slice: 0.36 + r1 * 0.2,
               brightness: clamp(day * (w.thunderstorms ? 0.55 : w.cloudCover >= 4 ? 0.8 : 1), 0.05, 1),
               color: w.thunderstorms ? Color.fromCssColorString('#8a8f99') : Color.WHITE,

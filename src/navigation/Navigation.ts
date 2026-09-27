@@ -189,10 +189,12 @@ export class Gps {
       const a = p.waypoints[i - 1], b = p.waypoints[i];
       remaining += distance(a.lat, a.lon, b.lat, b.lon);
     }
-    // Top of descent: 3 NM per 1,000 ft to lose (the classic 3:1 rule).
+    // Top of descent: the pilots' 3:1 rule (3 NM per 1,000 ft) assumes a ~3.2° idle
+    // descent; our aircraft glide a little shallower at idle, so plan 3.5 NM per
+    // 1,000 ft down to 1,500 ft above the field, plus 8 NM to slow down and configure.
     const destElev = p.arrRunway?.elev ?? p.destination.elevM ?? 0;
-    const descentNeeded = Math.max(0, altM - destElev);
-    const todDist = (descentNeeded / (1000 * FT)) * 3 * NM;
+    const descentNeeded = Math.max(0, altM - destElev - 1500 * FT);
+    const todDist = (descentNeeded / (1000 * FT)) * 3.5 * NM + (descentNeeded > 0 ? 8 * NM : 0);
     const dest = p.waypoints[p.waypoints.length - 1];
     // Desired track = the great-circle leg's course at the point abeam the aircraft
     // (a great circle's course changes along its length).

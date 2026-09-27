@@ -118,9 +118,21 @@ export class Autopilot {
       this.lateral = 'LOC';
       this.locArmed = false;
     }
-    if (this.gsArmed && this.lateral === 'LOC' && app && app.gsDots < 0.8 && app.gsDots > -2.2 && app.distThresholdM > 0) {
+    // Glideslope capture from below or above, only within 15 NM of the threshold.
+    if (this.gsArmed && this.lateral === 'LOC' && app?.inRange && Math.abs(app.gsDots) < 0.8 && app.distThresholdM > 0 && app.distThresholdM < 15 * 1852) {
       this.vertical = 'GS';
       this.gsArmed = false;
+    }
+    // Signal lost (out of range / passed the station): hold heading and altitude.
+    if (this.lateral === 'LOC' && (!app || !app.inRange) && !t.onGround) {
+      this.lateral = 'HDG';
+      this.targets.heading = Math.round(t.heading);
+      this.message = 'LOC signal lost — HDG hold';
+    }
+    if (this.vertical === 'GS' && (!app || !app.inRange || app.distThresholdM < -1000) && !t.onGround) {
+      this.vertical = 'ALT';
+      this.targets.altitudeFt = Math.round(t.alt / FT / 100) * 100;
+      this.message = 'G/S signal lost — ALT hold';
     }
     // Flare: start at a height proportional to the sink rate (≈5 s to go), at least 25/40 ft.
     const hW = t.agl - def.gear.heightM;
