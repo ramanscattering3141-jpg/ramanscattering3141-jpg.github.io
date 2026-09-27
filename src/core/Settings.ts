@@ -3,6 +3,7 @@
 
 import type { ImageryChoice } from '../world/Globe';
 import type { Action } from '../input/Input';
+import { isMobile } from './device';
 
 export interface Settings {
   realism: 'arcade' | 'realistic' | 'simulation';
@@ -74,6 +75,7 @@ export const GRAPHICS_PRESETS: Record<Exclude<Settings['graphicsPreset'], 'custo
 
 /** A quick GPU-capability guess used to pick defaults on first run. */
 export function autoDetectQuality(s: Settings): Settings {
+  if (isMobile) return { ...s, ...GRAPHICS_PRESETS.low, graphicsPreset: 'low', photoreal3d: false };
   try {
     const gl = document.createElement('canvas').getContext('webgl2');
     const dbg = gl?.getExtension('WEBGL_debug_renderer_info');

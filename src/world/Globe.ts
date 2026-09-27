@@ -14,6 +14,7 @@ import {
   type ImageryProvider, SceneMode, Tonemapper,
 } from 'cesium';
 import type { TerrariumTerrainProvider } from './TerrainProvider';
+import { isMobile, lowMemory } from '../core/device';
 
 export type ImageryChoice = 'auto' | 'ion' | 'sentinel2' | 'bluemarble' | 'offline';
 
@@ -98,7 +99,7 @@ export class Globe {
       terrainShadows: ShadowMode.RECEIVE_ONLY,
       sceneMode: SceneMode.SCENE3D,
       requestRenderMode: false,
-      msaaSamples: 4,
+      msaaSamples: isMobile ? 1 : 4,
     });
     const scene = this.viewer.scene;
     const globe = scene.globe;
@@ -195,16 +196,16 @@ export class Globe {
     this.viewer.shadows = q.shadows > 0;
     s.shadowMap.size = [1024, 1024, 2048, 4096][q.shadows] ?? 2048;
     s.shadowMap.softShadows = q.shadows >= 2;
-    s.globe.tileCacheSize = [150, 300, 600, 1000][q.textures] ?? 600;
+    s.globe.tileCacheSize = lowMemory ? 150 : [150, 300, 600, 1000][q.textures] ?? 600;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    this.viewer.resolutionScale = [0.75, 1, Math.min(dpr, 1.5), dpr][q.textures] ?? 1;
+    this.viewer.resolutionScale = isMobile ? Math.min(1, [0.75, 1, 1, 1][q.textures] ?? 1) : [0.75, 1, Math.min(dpr, 1.5), dpr][q.textures] ?? 1;
     this.viewer.useBrowserRecommendedResolution = q.textures < 2;
     const hdr = q.textures >= 2;
     s.highDynamicRange = hdr;
     if (hdr) s.postProcessStages.tonemapper = Tonemapper.PBR_NEUTRAL;
     s.postProcessStages.fxaa.enabled = true;
     const ao = s.postProcessStages.ambientOcclusion;
-    ao.enabled = q.textures >= 3;
+    ao.enabled = q.textures >= 3 && !isMobile;
     if (ao.enabled) {
       ao.uniforms.intensity = 2.2;
       ao.uniforms.bias = 0.1;
@@ -212,7 +213,7 @@ export class Globe {
       ao.uniforms.stepSize = 1;
       ao.uniforms.blurStepSize = 0.86;
     }
-    s.msaaSamples = q.textures >= 2 ? 4 : 1;
+    s.msaaSamples = q.textures >= 2 && !isMobile ? 4 : 1;
   }
 
   /** Hides the elevation-model globe surface (used when photoreal 3D tiles provide the ground). */

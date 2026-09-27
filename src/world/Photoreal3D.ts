@@ -17,6 +17,7 @@ import {
   Cesium3DTileset, createGooglePhotorealistic3DTileset, Cartesian3, Cartographic, Matrix4, Ellipsoid, type Scene,
 } from 'cesium';
 import { geoidUndulation, geoidReady } from '../core/Geoid';
+import { lowMemory } from '../core/device';
 import { distance } from '../core/geodesy';
 import { clamp } from '../core/math';
 
@@ -64,8 +65,9 @@ export class Photoreal3D {
       this.loading = createGooglePhotorealistic3DTileset(undefined, {
         maximumScreenSpaceError: maxSse,
         // Keep memory in check on a long flight and load what the camera needs first.
-        cacheBytes: 768 * 1024 * 1024,
-        maximumCacheOverflowBytes: 512 * 1024 * 1024,
+        // Browsers kill tabs that use too much memory (mobile Safari especially), so keep the cache modest.
+        cacheBytes: (lowMemory ? 96 : 384) * 1024 * 1024,
+        maximumCacheOverflowBytes: (lowMemory ? 32 : 192) * 1024 * 1024,
         foveatedScreenSpaceError: true,
         dynamicScreenSpaceError: true,
         skipLevelOfDetail: false,

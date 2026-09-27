@@ -17,13 +17,14 @@ import { FlightSession } from './sim/FlightSession';
 import { SimAudio } from './sim/Audio';
 import { Photoreal3D } from './world/Photoreal3D';
 import { loadGeoid } from './core/Geoid';
+import { isMobile, recoveredFromCrash } from './core/device';
 import { ionToken } from './config';
 import { Ion } from 'cesium';
 import { Planner, type PlannerResult } from './ui/Planner';
 import { FlightUI } from './ui/FlightUI';
 import { SettingsUI } from './ui/SettingsUI';
 import { h, toast } from './ui/dom';
-import { loadSettings, autoDetectQuality, GRAPHICS_PRESETS, type Settings } from './core/Settings';
+import { loadSettings, saveSettings, autoDetectQuality, GRAPHICS_PRESETS, type Settings } from './core/Settings';
 import { REALISM } from './aircraft/FlightDynamics';
 import type { Airport } from './world/AirportTypes';
 import type { FlightPlan } from './navigation/Navigation';
@@ -58,10 +59,17 @@ export class App {
   private status: HTMLElement;
   audio = new SimAudio();
   photoreal!: Photoreal3D;
+  private safeModeNotice = false;
 
   constructor(private cesiumEl: HTMLElement, private uiEl: HTMLElement) {
     let s = loadSettings();
     try { if (!localStorage.getItem('world-flight-sim.settings.v1')) s = autoDetectQuality(s); } catch { /* ignore */ }
+    // Phones/tablets always start at safe settings; after a crash, everyone does.
+    if (recoveredFromCrash || isMobile) {
+      if (recoveredFromCrash || s.graphicsPreset !== 'low') s = { ...s, ...GRAPHICS_PRESETS.low, graphicsPreset: 'low', photoreal3d: recoveredFromCrash ? false : s.photoreal3d && !isMobile };
+      this.safeModeNotice = recoveredFromCrash;
+      if (recoveredFromCrash) saveSettings(s);
+    }
     this.settings = s;
     this.db = new AirportDatabase(`${BASE}data/airports`, this.elevation.flatten);
     this.terrain = new TerrariumTerrainProvider(this.elevation);
@@ -85,6 +93,7 @@ export class App {
     this.applyAllSettings();
     this.globe.setImagery(this.settings.imagery, ionToken(this.settings.ionToken)).then(name => this.setStatus(`Imagery: ${name}`));
     this.setPhotoreal(this.settings.photoreal3d);
+    if (this.safeModeNotice) toast('The page closed unexpectedly last time (likely out of memory), so graphics were set to Low and 3D scenery off. You can raise them in Settings.', 10000);
     this.overlays.loadCities();
 
     this.settingsUI = new SettingsUI(this.uiEl, this.settings, this.input, (s, k) => this.applySetting(s, k));
