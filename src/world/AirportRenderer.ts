@@ -89,6 +89,8 @@ export class AirportRenderer {
   private labelled = new Set<string>();
   private lastUpdate = { lat: 999, lon: 999 };
   lightsOn = false;
+  /** Painted runway surfaces (hidden when photoreal scenery already shows the real ones) */
+  surfacesVisible = true;
   radiusM = 35000;
 
   constructor(private scene: Scene, private db: AirportDatabase) {
@@ -175,6 +177,7 @@ export class AirportRenderer {
       }),
       asynchronous: true,
     });
+    prim.show = this.surfacesVisible;
     this.scene.groundPrimitives.add(prim);
     return prim;
   }
@@ -217,6 +220,11 @@ export class AirportRenderer {
         }
       }
     }
+  }
+
+  setSurfacesVisible(on: boolean) {
+    this.surfacesVisible = on;
+    for (const v of this.visuals.values()) for (const p of v.runways) p.show = on;
   }
 
   setLights(on: boolean) {

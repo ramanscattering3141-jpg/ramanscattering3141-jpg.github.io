@@ -43,18 +43,23 @@ export class SettingsUI {
     const tabs = h('div', { class: 'tabs' }, ...(['graphics', 'imagery', 'controls', 'general'] as const).map(t =>
       h('button', { class: `tab ${t === this.tab ? 'on' : ''}`, onclick: () => { this.tab = t; this.render(); } }, t[0].toUpperCase() + t.slice(1))));
     const body = h('div', { class: 'settings-body' });
+    // Changing any individual quality control switches the preset to "Custom".
     const level = (label: string, key: keyof Settings, names: string[], hint = '') => h('label', { class: 'field' }, h('span', {}, label),
-      h('select', { onchange: e => this.set(key, +(e.target as HTMLSelectElement).value as never) }, ...names.map((n, i) => h('option', { value: i, selected: s[key] === i }, n))),
+      h('select', { onchange: e => { this.set(key, +(e.target as HTMLSelectElement).value as never); if (this.settings.graphicsPreset !== 'custom') { this.set('graphicsPreset', 'custom'); this.render(); } } }, ...names.map((n, i) => h('option', { value: i, selected: s[key] === i }, n))),
       hint ? h('small', { class: 'muted' }, hint) : '');
     const toggle = (label: string, key: keyof Settings) => h('label', { class: 'check' },
       h('input', { type: 'checkbox', checked: !!s[key], onchange: e => this.set(key, (e.target as HTMLInputElement).checked as never) }), ` ${label}`);
 
     if (this.tab === 'graphics') {
       body.append(
+        h('label', { class: 'field' }, h('span', {}, 'Graphics preset'),
+          h('select', { onchange: e => { this.set('graphicsPreset', (e.target as HTMLSelectElement).value as Settings['graphicsPreset']); this.render(); } },
+            ...([['low', 'Low — laptops / integrated graphics'], ['medium', 'Medium'], ['high', 'High — recommended for gaming PCs'], ['ultra', 'Ultra — full resolution, ambient occlusion (powerful GPU)'], ['custom', 'Custom']] as const)
+              .map(([v, n]) => h('option', { value: v, selected: s.graphicsPreset === v }, n)))),
         h('div', { class: 'row2' },
-          level('Terrain quality', 'terrainQuality', ['Low', 'Medium', 'High'], 'Terrain detail vs. distance (level of detail).'),
-          level('Texture quality', 'textureQuality', ['Low', 'Medium', 'High'], 'Tile cache size and render resolution.'),
-          level('Draw distance', 'drawDistance', ['Short', 'Medium', 'Far'], 'Distance fog density.'),
+          level('Terrain & 3D scenery detail', 'terrainQuality', ['Low', 'Medium', 'High', 'Ultra'], 'Level of detail for terrain and photoreal 3D tiles.'),
+          level('Resolution & textures', 'textureQuality', ['Low', 'Medium', 'High (HDR)', 'Ultra (native, AO)'], 'Render resolution, HDR lighting, ambient occlusion.'),
+          level('Draw distance', 'drawDistance', ['Short', 'Medium', 'Far', 'Maximum'], 'Distance haze in clear weather.'),
           level('Shadow quality', 'shadowQuality', ['Off', 'Low', 'Medium', 'High']),
           level('Cloud quality', 'cloudQuality', ['Off', 'Low', 'Medium', 'High'], 'Number and radius of 3D clouds.'),
           level('Object density (cities)', 'objectDensity', ['Off', 'Low', 'Medium', 'High'], 'Procedural city buildings.'),
@@ -69,7 +74,9 @@ export class SettingsUI {
             ...([['auto', 'Automatic (best available)'], ['ion', 'Bing Maps aerial via Cesium ion (needs token)'], ['sentinel2', 'Sentinel-2 cloudless 2016 (EOX, 10 m)'], ['bluemarble', 'NASA Blue Marble (low resolution)'], ['offline', 'Offline Natural Earth (lowest)']] as const)
               .map(([v, n]) => h('option', { value: v, selected: s.imagery === v }, n)))),
         h('label', { class: 'field' }, h('span', {}, 'Cesium ion token'), tokenInput,
-          h('small', { class: 'muted' }, 'Optional. A free account at cesium.com/ion gives sharper Bing Maps aerial imagery. The token is stored only in this browser.')),
+          h('small', { class: 'muted' }, 'Optional — the site already includes a token. Enter your own to use your Cesium ion quota instead; it is stored only in this browser.')),
+        toggle('Photorealistic 3D scenery — Google 3D Tiles (real buildings, airports, mountains)', 'photoreal3d'),
+        h('small', { class: 'muted' }, 'Streams detailed 3D scans through Cesium ion (uses the token\'s monthly quota). Turn off on slow connections.'),
         toggle('City lights at night (NASA Black Marble)', 'nightLights'),
       );
     } else if (this.tab === 'controls') {

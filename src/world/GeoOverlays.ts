@@ -26,6 +26,8 @@ export class GeoOverlays {
   private lastCityCheck = { lat: 999, lon: 999 };
   objectDensity = 2; // 0..3
   private busy = false;
+  /** Procedural skylines are skipped when real 3D buildings are shown */
+  proceduralEnabled = true;
 
   constructor(private scene: Scene, private base: string, private elevation: ElevationService) {
     this.labels = scene.primitives.add(new LabelCollection({ scene }));
@@ -83,8 +85,9 @@ export class GeoOverlays {
 
   /** Builds/removes procedural skylines for large cities near (lat, lon). */
   async updateCities(lat: number, lon: number, night: boolean) {
-    for (const v of this.builtCities.values()) v.lights.show = night;
-    if (this.busy || this.objectDensity === 0) return;
+    for (const v of this.builtCities.values()) v.lights.show = night && this.proceduralEnabled;
+    for (const v of this.builtCities.values()) v.prim.show = this.proceduralEnabled;
+    if (this.busy || this.objectDensity === 0 || !this.proceduralEnabled) return;
     if (distance(lat, lon, this.lastCityCheck.lat, this.lastCityCheck.lon) < 5000) return;
     this.lastCityCheck = { lat, lon };
     const minPop = [Infinity, 2e6, 7e5, 3e5][this.objectDensity];

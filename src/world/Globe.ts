@@ -11,7 +11,7 @@
 import {
   Viewer, ImageryLayer, UrlTemplateImageryProvider, TileMapServiceImageryProvider, WebMercatorTilingScheme,
   Credit, Ion, IonImageryProvider, buildModuleUrl, Color, JulianDate, ShadowMode, Cartesian3,
-  type ImageryProvider, SceneMode,
+  type ImageryProvider, SceneMode, Tonemapper,
 } from 'cesium';
 import type { TerrariumTerrainProvider } from './TerrainProvider';
 
@@ -179,16 +179,45 @@ export class Globe {
     return JulianDate.toDate(this.viewer.clock.currentTime);
   }
 
+  /**
+   * Graphics quality. Levels 0–3 = low, medium, high, ultra.
+   *   terrain  – allowed screen-space error of terrain tiles (lower = sharper)
+   *   textures – render resolution (ultra renders at the full device pixel ratio,
+   *              which is what makes high-DPI/retina screens look crisp) and tile cache
+   *   shadows  – shadow map size and softness
+   * High and ultra also turn on HDR lighting with filmic tone mapping; ultra adds
+   * screen-space ambient occlusion.
+   */
   setQuality(q: { terrain: number; shadows: number; drawDistance: number; textures: number }) {
     const s = this.viewer.scene;
-    // Terrain quality = allowed screen-space error (lower is sharper, heavier).
-    s.globe.maximumScreenSpaceError = [4, 2.5, 1.6][q.terrain] ?? 2;
+    s.globe.maximumScreenSpaceError = [4, 2.5, 1.6, 1.15][q.terrain] ?? 1.6;
     s.shadowMap.enabled = q.shadows > 0;
     this.viewer.shadows = q.shadows > 0;
     s.shadowMap.size = [1024, 1024, 2048, 4096][q.shadows] ?? 2048;
     s.shadowMap.softShadows = q.shadows >= 2;
-    s.globe.tileCacheSize = [150, 300, 600][q.textures] ?? 300;
-    this.viewer.resolutionScale = [0.7, 1, window.devicePixelRatio > 1 ? 1.25 : 1][q.textures] ?? 1;
+    s.globe.tileCacheSize = [150, 300, 600, 1000][q.textures] ?? 600;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.viewer.resolutionScale = [0.75, 1, Math.min(dpr, 1.5), dpr][q.textures] ?? 1;
+    this.viewer.useBrowserRecommendedResolution = q.textures < 2;
+    const hdr = q.textures >= 2;
+    s.highDynamicRange = hdr;
+    if (hdr) s.postProcessStages.tonemapper = Tonemapper.PBR_NEUTRAL;
+    s.postProcessStages.fxaa.enabled = true;
+    const ao = s.postProcessStages.ambientOcclusion;
+    ao.enabled = q.textures >= 3;
+    if (ao.enabled) {
+      ao.uniforms.intensity = 2.2;
+      ao.uniforms.bias = 0.1;
+      ao.uniforms.lengthCap = 0.03;
+      ao.uniforms.stepSize = 1;
+      ao.uniforms.blurStepSize = 0.86;
+    }
+    s.msaaSamples = q.textures >= 2 ? 4 : 1;
+  }
+
+  /** Hides the elevation-model globe surface (used when photoreal 3D tiles provide the ground). */
+  setGlobeVisible(on: boolean) {
+    this.viewer.scene.globe.show = on;
   }
 
   flyOverview(lat: number, lon: number, heightM: number) {

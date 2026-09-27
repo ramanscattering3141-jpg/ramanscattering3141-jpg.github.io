@@ -126,6 +126,11 @@ export class AircraftView {
     this.strobeL.show = this.strobeR.show = on && strobeOn;
   }
 
+  /** Objects that must not be hit when sampling the ground under the aircraft. */
+  get pickExclusions(): object[] {
+    return [this.model, this.lights].filter(Boolean) as object[];
+  }
+
   destroy() {
     if (this.model) this.scene.primitives.remove(this.model);
     this.scene.primitives.remove(this.lights);

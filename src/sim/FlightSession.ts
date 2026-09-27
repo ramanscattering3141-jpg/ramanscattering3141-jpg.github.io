@@ -70,6 +70,8 @@ export class FlightSession {
   private flightTime = 0;
   private firedEvents = new Set<number>();
   env: Environment;
+  /** Correction (m) from the elevation model to the visible 3D scenery under the aircraft */
+  groundOffset = 0;
   onStatus: ((s: SessionStatus) => void) | null = null;
 
   constructor(readonly config: FlightConfig, scene: Scene, private elevation: ElevationService, readonly weather: Weather) {
@@ -95,7 +97,7 @@ export class FlightSession {
         return this.weather.wind(lat, lon, alt, alt - g, this.dt, this.fdm.telemetry?.tas ?? 0, realism.turbulenceScale);
       },
       deltaT: (lat, lon) => this.weather.deltaT(lat, lon),
-      groundHeight: (lat, lon) => this.elevation.height(lat, lon),
+      groundHeight: (lat, lon) => { const h = this.elevation.height(lat, lon); return h === null ? null : h + this.groundOffset; },
       isWater: (lat, lon) => this.elevation.isWater(lat, lon),
     };
     this.fdm.onTouchdown = e => {

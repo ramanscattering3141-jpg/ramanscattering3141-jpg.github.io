@@ -15,11 +15,15 @@ import { Input, type TriggerAction } from './input/Input';
 import { CameraSystem, CAMERA_MODES, type CameraMode } from './camera/CameraSystem';
 import { FlightSession } from './sim/FlightSession';
 import { SimAudio } from './sim/Audio';
+import { Photoreal3D } from './world/Photoreal3D';
+import { loadGeoid } from './core/Geoid';
+import { ionToken } from './config';
+import { Ion } from 'cesium';
 import { Planner, type PlannerResult } from './ui/Planner';
 import { FlightUI } from './ui/FlightUI';
 import { SettingsUI } from './ui/SettingsUI';
 import { h, toast } from './ui/dom';
-import { loadSettings, autoDetectQuality, type Settings } from './core/Settings';
+import { loadSettings, autoDetectQuality, GRAPHICS_PRESETS, type Settings } from './core/Settings';
 import { REALISM } from './aircraft/FlightDynamics';
 import type { Airport } from './world/AirportTypes';
 import type { FlightPlan } from './navigation/Navigation';
@@ -28,6 +32,8 @@ import { clamp } from './core/math';
 
 const BASE = import.meta.env.BASE_URL;
 const SIM_RATES = [1, 2, 4, 8, 16];
+/** 3D-tiles screen-space error per terrain-quality level (lower = sharper) */
+const PHOTOREAL_SSE = [24, 16, 10, 6];
 
 export class App {
   settings: Settings;
@@ -51,6 +57,7 @@ export class App {
   private routeEntities: Entity[] = [];
   private status: HTMLElement;
   audio = new SimAudio();
+  photoreal!: Photoreal3D;
 
   constructor(private cesiumEl: HTMLElement, private uiEl: HTMLElement) {
     let s = loadSettings();
@@ -72,8 +79,12 @@ export class App {
     this.airports = new AirportRenderer(viewer.scene, this.db);
     this.overlays = new GeoOverlays(viewer.scene, `${BASE}data/geo`, this.elevation);
     this.weatherVisuals = new WeatherVisuals(viewer.scene, this.weather);
+    Ion.defaultAccessToken = ionToken(this.settings.ionToken);
+    this.photoreal = new Photoreal3D(viewer.scene);
+    loadGeoid(`${BASE}data/geo/egm96-1deg.bin`);
     this.applyAllSettings();
-    this.globe.setImagery(this.settings.imagery, this.settings.ionToken).then(name => this.setStatus(`Imagery: ${name}`));
+    this.globe.setImagery(this.settings.imagery, ionToken(this.settings.ionToken)).then(name => this.setStatus(`Imagery: ${name}`));
+    this.setPhotoreal(this.settings.photoreal3d);
     this.overlays.loadCities();
 
     this.settingsUI = new SettingsUI(this.uiEl, this.settings, this.input, (s, k) => this.applySetting(s, k));
@@ -113,14 +124,28 @@ export class App {
 
   private applySetting(s: Settings, k: keyof Settings) {
     switch (k) {
+      case 'graphicsPreset':
+        if (s.graphicsPreset !== 'custom') {
+          Object.assign(s, GRAPHICS_PRESETS[s.graphicsPreset]);
+          for (const key of ['terrainQuality', 'cloudQuality', 'objectDensity'] as (keyof Settings)[]) this.applySetting(s, key);
+        }
+        break;
+      case 'photoreal3d': this.setPhotoreal(s.photoreal3d); break;
       case 'terrainQuality': case 'shadowQuality': case 'textureQuality': case 'drawDistance':
+        this.photoreal?.setQuality(PHOTOREAL_SSE[s.terrainQuality] ?? 16);
         this.globe.setQuality({ terrain: s.terrainQuality, shadows: s.shadowQuality, drawDistance: s.drawDistance, textures: s.textureQuality });
-        this.weatherVisuals.baseFogDensity = [6e-5, 3e-5, 1.2e-5][s.drawDistance] ?? 3e-5;
+        this.weatherVisuals.baseFogDensity = [6e-5, 3e-5, 1.2e-5, 5e-6][s.drawDistance] ?? 1.2e-5;
         break;
       case 'cloudQuality': this.weatherVisuals.quality = s.cloudQuality; this.weatherVisuals.clear(); break;
       case 'objectDensity': this.overlays.objectDensity = s.objectDensity; break;
       case 'imagery': case 'ionToken':
-        this.globe.setImagery(s.imagery, s.ionToken).then(name => { this.setStatus(`Imagery: ${name}`); toast(`Imagery: ${name}`); });
+        Ion.defaultAccessToken = ionToken(s.ionToken);
+        this.globe.setImagery(s.imagery, ionToken(s.ionToken)).then(name => { this.setStatus(`Imagery: ${name}`); toast(`Imagery: ${name}`); });
+        if (k === 'ionToken' && this.photoreal.failed) {
+          this.globe.viewer.scene.primitives.remove(this.photoreal.tileset);
+          this.photoreal = new Photoreal3D(this.globe.viewer.scene);
+          this.setPhotoreal(s.photoreal3d);
+        }
         break;
       case 'nightLights': this.globe.enableNightLights(s.nightLights); break;
       case 'showBorders': this.overlays.setBorders(s.showBorders); break;
@@ -131,6 +156,28 @@ export class App {
       case 'sound': this.audio.setMuted(!s.sound); break;
     }
     if (k === 'terrainQuality' || k === 'shadowQuality' || k === 'textureQuality' || k === 'drawDistance') return;
+  }
+
+  /**
+   * Switches Google Photorealistic 3D scenery on/off. With it on, the scans provide the
+   * visible ground, buildings and real runway markings, so the elevation-model globe,
+   * painted runway overlays and procedural skylines are hidden.
+   */
+  private async setPhotoreal(on: boolean) {
+    const apply = (active: boolean) => {
+      this.photoreal.setShow(active);
+      this.globe.setGlobeVisible(!active);
+      this.airports.setSurfacesVisible(!active);
+      this.overlays.proceduralEnabled = !active;
+    };
+    if (!on) { apply(false); return; }
+    const ok = await this.photoreal.load(PHOTOREAL_SSE[this.settings.terrainQuality] ?? 16);
+    if (!this.settings.photoreal3d) return;
+    if (ok) { apply(true); this.setStatus(`Scenery: Google Photorealistic 3D · ${this.globe.imageryName}`); }
+    else {
+      apply(false);
+      toast('Photorealistic 3D scenery unavailable (check the Cesium ion token and its Google 3D Tiles asset). Using standard scenery.', 9000);
+    }
   }
 
   // ---------------- planner preview ----------------
@@ -358,6 +405,16 @@ export class App {
     const camGeo = ecefToGeodetic([v.camera.positionWC.x, v.camera.positionWC.y, v.camera.positionWC.z]);
     const focus = s && s.status !== 'loading' ? s.fdm.telemetry : { lat: camGeo.lat, lon: camGeo.lon, alt: camGeo.h };
     this.weatherVisuals.update(dt, v.clock.currentTime ?? JulianDate.now(), camGeo.lat, camGeo.lon, camGeo.h, !!s);
+    // Photoreal scenery: keep it aligned (geoid), lit for the time of day, and under the wheels.
+    this.photoreal.updateShift(camGeo.lat, camGeo.lon);
+    this.photoreal.setSunElevation(this.weatherVisuals.lastSunElevation);
+    if (s && s.status !== 'loading') {
+      if (this.photoreal.active) {
+        const t = s.fdm.telemetry;
+        this.photoreal.updateGround(dt, t.lat, t.lon, this.elevation.height(t.lat, t.lon), t.agl, s.view.pickExclusions);
+        s.groundOffset = this.photoreal.groundCorrection;
+      } else s.groundOffset = 0;
+    }
     this.slowTimer += dt;
     if (this.slowTimer > 1) {
       this.slowTimer = 0;
