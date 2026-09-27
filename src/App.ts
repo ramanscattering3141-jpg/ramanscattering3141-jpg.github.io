@@ -34,7 +34,7 @@ import { clamp } from './core/math';
 const BASE = import.meta.env.BASE_URL;
 const SIM_RATES = [1, 2, 4, 8, 16];
 /** 3D-tiles screen-space error per terrain-quality level (lower = sharper) */
-const PHOTOREAL_SSE = [24, 16, 10, 6];
+const PHOTOREAL_SSE = [24, 16, 8, 4];
 
 export class App {
   settings: Settings;
@@ -60,6 +60,7 @@ export class App {
   audio = new SimAudio();
   photoreal!: Photoreal3D;
   private safeModeNotice = false;
+  private fpsAvg = 60;
 
   constructor(private cesiumEl: HTMLElement, private uiEl: HTMLElement) {
     let s = loadSettings();
@@ -395,6 +396,8 @@ export class App {
     const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
     const v = this.globe.viewer;
+    if (dt > 0) this.fpsAvg += (1 / Math.max(dt, 1e-3) - this.fpsAvg) * Math.min(1, dt * 2);
+    this.globe.governResolution(this.fpsAvg, dt);
     const s = this.session;
     this.input.update(dt, 1);
     if (s && s.status !== 'loading') {
@@ -417,6 +420,7 @@ export class App {
     // Photoreal scenery: keep it aligned (geoid), lit for the time of day, and under the wheels.
     this.photoreal.updateShift(camGeo.lat, camGeo.lon);
     this.photoreal.setSunElevation(this.weatherVisuals.lastSunElevation);
+    this.airports.setDaylight(Math.min(1, Math.max(0.06, (this.weatherVisuals.lastSunElevation + 6) / 16)));
     if (s && s.status !== 'loading') {
       if (this.photoreal.active) {
         const t = s.fdm.telemetry;

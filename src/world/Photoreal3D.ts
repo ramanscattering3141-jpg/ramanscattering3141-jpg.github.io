@@ -14,7 +14,7 @@
 
 import {
   CustomShader, UniformType, LightingModel,
-  Cesium3DTileset, createGooglePhotorealistic3DTileset, Cartesian3, Cartographic, Matrix4, Ellipsoid, type Scene,
+  Cesium3DTileset, createGooglePhotorealistic3DTileset, ShadowMode, Cartesian3, Cartographic, Matrix4, Ellipsoid, type Scene,
 } from 'cesium';
 import { geoidUndulation, geoidReady } from '../core/Geoid';
 import { lowMemory } from '../core/device';
@@ -66,8 +66,10 @@ export class Photoreal3D {
         maximumScreenSpaceError: maxSse,
         // Keep memory in check on a long flight and load what the camera needs first.
         // Browsers kill tabs that use too much memory (mobile Safari especially), so keep the cache modest.
-        cacheBytes: (lowMemory ? 96 : 384) * 1024 * 1024,
-        maximumCacheOverflowBytes: (lowMemory ? 32 : 192) * 1024 * 1024,
+        cacheBytes: (lowMemory ? 96 : 512) * 1024 * 1024,
+        maximumCacheOverflowBytes: (lowMemory ? 32 : 256) * 1024 * 1024,
+        // The aircraft's shadow falls on the scanned runways and ground.
+        shadows: ShadowMode.RECEIVE_ONLY,
         foveatedScreenSpaceError: true,
         dynamicScreenSpaceError: true,
         skipLevelOfDetail: false,

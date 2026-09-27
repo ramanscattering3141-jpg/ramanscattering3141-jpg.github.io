@@ -191,14 +191,18 @@ export class Globe {
    */
   setQuality(q: { terrain: number; shadows: number; drawDistance: number; textures: number }) {
     const s = this.viewer.scene;
-    s.globe.maximumScreenSpaceError = [4, 2.5, 1.6, 1.15][q.terrain] ?? 1.6;
+    s.globe.maximumScreenSpaceError = [4, 2.5, 1.6, 1.0][q.terrain] ?? 1.6;
     s.shadowMap.enabled = q.shadows > 0;
     this.viewer.shadows = q.shadows > 0;
     s.shadowMap.size = [1024, 1024, 2048, 4096][q.shadows] ?? 2048;
     s.shadowMap.softShadows = q.shadows >= 2;
     s.globe.tileCacheSize = lowMemory ? 150 : [150, 300, 600, 1000][q.textures] ?? 600;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    this.viewer.resolutionScale = isMobile ? Math.min(1, [0.75, 1, 1, 1][q.textures] ?? 1) : [0.75, 1, Math.min(dpr, 1.5), dpr][q.textures] ?? 1;
+    // Ultra renders at native resolution on high-DPI screens and supersamples 1.5× on
+    // standard screens (sharper edges and textures); the governor may trim it back.
+    this.targetResolution = isMobile ? Math.min(1, [0.75, 1, 1, 1][q.textures] ?? 1) : [0.75, 1, Math.min(dpr, 1.5), Math.min(2, Math.max(dpr, 1.5))][q.textures] ?? 1;
+    this.viewer.resolutionScale = this.targetResolution;
+    this.governed = q.textures >= 2 && !isMobile;
     this.viewer.useBrowserRecommendedResolution = q.textures < 2;
     const hdr = q.textures >= 2;
     s.highDynamicRange = hdr;
@@ -214,6 +218,30 @@ export class Globe {
       ao.uniforms.blurStepSize = 0.86;
     }
     s.msaaSamples = q.textures >= 2 && !isMobile ? 4 : 1;
+  }
+
+  targetResolution = 1;
+  private governed = false;
+  private slowFor = 0;
+  private fastFor = 0;
+
+  /**
+   * Frame-rate governor for High/Ultra: if the average frame rate stays below ~40 fps
+   * the render resolution steps down (never below 1× CSS pixels, or 0.8× on high-DPI),
+   * and steps back up toward the target when there is headroom.
+   */
+  governResolution(fps: number, dt: number) {
+    if (!this.governed) return;
+    const v = this.viewer;
+    const floor = Math.min(1, this.targetResolution) * (window.devicePixelRatio > 1.2 ? 0.8 : 1);
+    if (fps < 40) { this.slowFor += dt; this.fastFor = 0; } else if (fps > 57) { this.fastFor += dt; this.slowFor = 0; } else { this.slowFor = 0; this.fastFor = 0; }
+    if (this.slowFor > 3 && v.resolutionScale > floor + 0.01) {
+      v.resolutionScale = Math.max(floor, v.resolutionScale - 0.15);
+      this.slowFor = 0;
+    } else if (this.fastFor > 8 && v.resolutionScale < this.targetResolution - 0.01) {
+      v.resolutionScale = Math.min(this.targetResolution, v.resolutionScale + 0.1);
+      this.fastFor = 0;
+    }
   }
 
   /** Hides the elevation-model globe surface (used when photoreal 3D tiles provide the ground). */

@@ -2,12 +2,15 @@
 // (threshold "piano keys", designators, touchdown zone, aiming point, centreline,
 // edge lines), runway edge/threshold/approach lights at night, and name labels.
 //
-// Runways are GroundPrimitives draped on the terrain. The terrain under every
-// runway is flattened (see ElevationService), so the drape is flat and the
-// flight model's wheels sit exactly on the painted surface.
+// Runways are textured surfaces at their published threshold elevations.
+// The terrain under every runway is flattened to exactly those heights (see
+// ElevationService), so the paint sits on the ground and the flight model's
+// wheels touch the painted surface. Runways without a published elevation get
+// lights and labels but no painted surface.
 
 import {
-  GroundPrimitive, GeometryInstance, PolygonGeometry, PolygonHierarchy, Cartesian3, Material, MaterialAppearance,
+  Primitive, GeometryInstance, Geometry, GeometryAttribute, type GeometryAttributes, ComponentDatatype, PrimitiveType, BoundingSphere, Ellipsoid,
+  Cartesian3, Material, MaterialAppearance,
   PointPrimitiveCollection, LabelCollection, Color, NearFarScalar, DistanceDisplayCondition, LabelStyle,
   VerticalOrigin, type Scene, Cartesian2, HeightReference,
 } from 'cesium';
@@ -17,14 +20,14 @@ import { destination, bearing, distance } from '../core/geodesy';
 
 interface AirportVisual {
   ident: string;
-  runways: GroundPrimitive[];
+  runways: Primitive[];
   lights: PointPrimitiveCollection;
 }
 
 function runwayTexture(rw: Runway, lengthM: number, widthM: number): HTMLCanvasElement {
   const paved = rw.surface === 'P';
-  const W = 64;
-  const H = Math.min(2048, Math.max(256, Math.round(lengthM / 2)));
+  const W = 128; // ≈0.35–0.5 m per pixel across the runway
+  const H = Math.min(4096, Math.max(512, Math.round(lengthM * 1.1)));
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d')!;
@@ -58,7 +61,10 @@ function runwayTexture(rw: Runway, lengthM: number, widthM: number): HTMLCanvasE
     ctx.save();
     const cy = fromTop ? py(48) : H - py(48);
     ctx.translate(W / 2, cy);
-    if (!fromTop) ctx.rotate(Math.PI);
+    // Numbers are read by a pilot approaching that threshold: the top of each digit
+    // points down the runway. Canvas rows run from the "le" end (top) to "he" (bottom),
+    // and x runs left→right as seen from the "le" end.
+    if (fromTop) ctx.scale(1, -1); else ctx.scale(-1, 1);
     ctx.scale(1, py(12) / 28);
     ctx.font = 'bold 30px sans-serif';
     ctx.textAlign = 'center';
@@ -135,7 +141,8 @@ export class AirportRenderer {
     for (const rw of a.runways ?? []) {
       if (rw.surface === 'W') continue;
       try {
-        vis.runways.push(this.runwayPrimitive(rw));
+        const prim = this.runwayPrimitive(rw, a.elevM);
+        if (prim) vis.runways.push(prim);
         this.runwayLights(vis.lights, a, rw);
       } catch (e) {
         console.warn('runway render failed', a.ident, e);
@@ -146,39 +153,71 @@ export class AirportRenderer {
   }
 
   private remove(id: string, v: AirportVisual) {
-    for (const p of v.runways) this.scene.groundPrimitives.remove(p);
+    for (const p of v.runways) this.scene.primitives.remove(p);
     this.scene.primitives.remove(v.lights);
     this.visuals.delete(id);
   }
 
-  private runwayPrimitive(rw: Runway): GroundPrimitive {
+  /**
+   * Runway surface as an explicit triangle strip: s runs across the runway (0 = left
+   * edge seen from the "le" threshold), t runs along it (1 at "le", 0 at "he", since
+   * Cesium flips image rows on upload). Segments every ~150 m follow the slope
+   * between the two threshold elevations.
+   */
+  private runwayPrimitive(rw: Runway, airportElev: number | null): Primitive | null {
+    const h0 = rw.leElevM ?? airportElev, h1 = rw.heElevM ?? airportElev;
+    if (h0 === null || h1 === null) return null; // no elevation: skip the paint (lights still shown)
     const hdg = bearing(rw.leLat, rw.leLon, rw.heLat, rw.heLon);
     const len = distance(rw.leLat, rw.leLon, rw.heLat, rw.heLon);
     const hw = rw.widthM / 2;
-    const c = (lat: number, lon: number, brg: number, d: number) => destination(lat, lon, brg, d);
-    const p1 = c(rw.leLat, rw.leLon, hdg - 90, hw);
-    const p2 = c(rw.leLat, rw.leLon, hdg + 90, hw);
-    const p3 = c(rw.heLat, rw.heLon, hdg + 90, hw);
-    const p4 = c(rw.heLat, rw.heLon, hdg - 90, hw);
-    const positions = [p1, p2, p3, p4].map(([la, lo]) => Cartesian3.fromDegrees(lo, la));
-    const tex = runwayTexture(rw, len, rw.widthM);
-    const prim = new GroundPrimitive({
-      geometryInstances: new GeometryInstance({
-        geometry: new PolygonGeometry({
-          polygonHierarchy: new PolygonHierarchy(positions),
-          // Align texture coordinates with the runway: t runs along the runway.
-          stRotation: ((-hdg + 180) * Math.PI) / 180,
-          vertexFormat: MaterialAppearance.MaterialSupport.TEXTURED.vertexFormat,
-        }),
-      }),
+    // Same heights (clamped at sea level) as the terrain flattening, lifted 0.25 m against z-fighting.
+    const a = Math.max(0, h0) + 0.25, b = Math.max(0, h1) + 0.25;
+    const n = Math.max(2, Math.ceil(len / 150));
+    const pos = new Float64Array((n + 1) * 2 * 3), nrm = new Float32Array((n + 1) * 2 * 3), st = new Float32Array((n + 1) * 2 * 2);
+    const tmp = new Cartesian3();
+    for (let i = 0; i <= n; i++) {
+      const f = i / n;
+      const [cl, co] = destination(rw.leLat, rw.leLon, hdg, f * len);
+      const h = a + (b - a) * f;
+      [[hdg - 90, 0], [hdg + 90, 1]].forEach(([brg, sCoord], k) => {
+        const [la, lo] = destination(cl, co, brg, hw);
+        const p = Cartesian3.fromDegrees(lo, la, h);
+        const nn = Ellipsoid.WGS84.geodeticSurfaceNormal(p, tmp);
+        const v = i * 2 + k;
+        pos.set([p.x, p.y, p.z], v * 3);
+        nrm.set([nn.x, nn.y, nn.z], v * 3);
+        st.set([sCoord, 1 - f], v * 2);
+      });
+    }
+    const idx = new Uint16Array(n * 6);
+    for (let i = 0; i < n; i++) {
+      const l0 = i * 2, r0 = l0 + 1, l1 = l0 + 2, r1 = l0 + 3;
+      idx.set([l0, r0, r1, l0, r1, l1], i * 6);
+    }
+    const geometry = new Geometry({
+      attributes: {
+        position: new GeometryAttribute({ componentDatatype: ComponentDatatype.DOUBLE, componentsPerAttribute: 3, values: pos }),
+        normal: new GeometryAttribute({ componentDatatype: ComponentDatatype.FLOAT, componentsPerAttribute: 3, values: nrm }),
+        st: new GeometryAttribute({ componentDatatype: ComponentDatatype.FLOAT, componentsPerAttribute: 2, values: st }),
+      } as unknown as GeometryAttributes,
+      indices: idx,
+      primitiveType: PrimitiveType.TRIANGLES,
+      boundingSphere: BoundingSphere.fromVertices(Array.from(pos)),
+    });
+    const prim = new Primitive({
+      geometryInstances: new GeometryInstance({ geometry }),
       appearance: new MaterialAppearance({
-        material: Material.fromType('Image', { image: tex, repeat: new Cartesian2(1, 1) }),
+        material: this.runwayMaterial(runwayTexture(rw, len, rw.widthM)),
         materialSupport: MaterialAppearance.MaterialSupport.TEXTURED,
+        translucent: false,
+        // Unlit; brightness follows the sun via setDaylight().
+        flat: true,
+        faceForward: true,
       }),
-      asynchronous: true,
+      asynchronous: false, // custom geometry can't be built in a web worker
     });
     prim.show = this.surfacesVisible;
-    this.scene.groundPrimitives.add(prim);
+    this.scene.primitives.add(prim);
     return prim;
   }
 
@@ -220,6 +259,23 @@ export class AirportRenderer {
         }
       }
     }
+  }
+
+  private daylight = 1;
+  private materials: Material[] = [];
+
+  private runwayMaterial(tex: HTMLCanvasElement) {
+    const m = Material.fromType('Image', { image: tex, repeat: new Cartesian2(1, 1), color: Color.WHITE.clone() });
+    m.uniforms.color = new Color(this.daylight, this.daylight, this.daylight, 1);
+    this.materials.push(m);
+    return m;
+  }
+
+  /** Scales runway brightness with the sun (1 = full daylight). */
+  setDaylight(f: number) {
+    if (Math.abs(f - this.daylight) < 0.01) return;
+    this.daylight = f;
+    for (const m of this.materials) m.uniforms.color = new Color(f, f, f, 1);
   }
 
   setSurfacesVisible(on: boolean) {

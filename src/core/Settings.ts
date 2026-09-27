@@ -82,8 +82,8 @@ export function autoDetectQuality(s: Settings): Settings {
     const renderer = dbg ? String(gl!.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
     const weak = /swiftshader|llvmpipe|software|intel\(r\) (hd|uhd) graphics [2-6]/i.test(renderer) || (navigator.hardwareConcurrency ?? 8) <= 4;
     if (weak) return { ...s, ...GRAPHICS_PRESETS.low, graphicsPreset: 'low' };
-    const strong = /rtx|radeon rx|apple m[1-9] (pro|max|ultra)/i.test(renderer);
-    if (strong) return { ...s, ...GRAPHICS_PRESETS.ultra, graphicsPreset: 'ultra' };
+    // Computers default to Ultra; the frame-rate governor lowers resolution if needed.
+    return { ...s, ...GRAPHICS_PRESETS.ultra, graphicsPreset: 'ultra' };
   } catch { /* ignore */ }
   return s;
 }

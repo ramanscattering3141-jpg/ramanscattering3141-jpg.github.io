@@ -16,10 +16,12 @@ import { DEG, type Vec3, cross, norm, sub } from '../core/math';
 class Mesh {
   pos: number[] = [];
   col: number[] = [];
+  uv: number[] = [];
   idx: number[] = [];
-  vert(p: Vec3, c: Vec3) {
+  vert(p: Vec3, c: Vec3, uv: [number, number] = [0, 0]) {
     this.pos.push(p[0], p[1], p[2]);
     this.col.push(c[0], c[1], c[2]);
+    this.uv.push(uv[0], uv[1]);
     return this.pos.length / 3 - 1;
   }
   tri(a: number, b: number, c: number) {
@@ -94,7 +96,7 @@ const hex = (h: string): Vec3 => {
 
 /** NACA 4-digit symmetric thickness distribution (fraction of chord). */
 const naca = (x: number, t: number) => 5 * t * (0.2969 * Math.sqrt(x) - 0.126 * x - 0.3516 * x * x + 0.2843 * x ** 3 - 0.1036 * x ** 4);
-const CHORD = [0, 0.02, 0.06, 0.12, 0.2, 0.3, 0.42, 0.55, 0.68, 0.8, 0.9, 1];
+const CHORD = [0, 0.005, 0.015, 0.03, 0.05, 0.08, 0.12, 0.17, 0.23, 0.3, 0.38, 0.46, 0.55, 0.64, 0.72, 0.8, 0.87, 0.93, 0.97, 1];
 
 interface SurfaceSpec {
   rootLE: Vec3; // model coords of root leading edge
@@ -124,7 +126,7 @@ function addSurface(mesh: Mesh, sp: SurfaceSpec, s0: number, s1: number, x0: num
   const chordPts = CHORD.filter(c => c >= x0 && c <= x1);
   if (chordPts[0] !== x0) chordPts.unshift(x0);
   if (chordPts[chordPts.length - 1] !== x1) chordPts.push(x1);
-  const spans = [s0, (s0 + s1) / 2, s1];
+  const spans = [0, 0.2, 0.4, 0.6, 0.8, 1].map(f => s0 + (s1 - s0) * f);
   const rel = (p: Vec3): Vec3 => [p[0] - pivot[0], p[1] - pivot[1], p[2] - pivot[2]];
   // One closed ring per spanwise station: upper surface LE→TE then lower TE→LE.
   const rings = spans.map(s => {
@@ -161,6 +163,133 @@ function loft(mesh: Mesh, stations: { x: number; ry: number; rz: number; zc: num
     mesh.cap(g[g.length - 1], [l.x + offset[0], offset[1], offset[2] + l.zc], color([l.x, 0, l.zc], Math.PI / 2, l.x), false);
   }
   return g;
+}
+
+/** Body of revolution with texture coordinates (a seam column is duplicated so UVs wrap cleanly). */
+function loftUV(mesh: Mesh, stations: { x: number; ry: number; rz: number; zc: number; zTop?: number }[], seg: number,
+  uvAt: (x: number, ang: number) => [number, number], color: (p: Vec3, ang: number, x: number) => Vec3) {
+  const idx: number[][] = stations.map(st => {
+    const row: number[] = [];
+    for (let i = 0; i <= seg; i++) {
+      const a = (i / seg) * Math.PI * 2;
+      const sn = Math.sin(a), cs = Math.cos(a);
+      const rz = sn > 0 && st.zTop !== undefined ? st.zTop : st.rz;
+      const p: Vec3 = [st.x, cs * st.ry, st.zc + sn * rz];
+      row.push(mesh.vert(p, color(p, a, st.x), uvAt(st.x, a)));
+    }
+    return row;
+  });
+  for (let r = 0; r < idx.length - 1; r++) for (let c = 0; c < seg; c++) mesh.quad(idx[r][c], idx[r][c + 1], idx[r + 1][c + 1], idx[r + 1][c]);
+  const capAt = (row: number[], st: (typeof stations)[number], flip: boolean) => {
+    const m = mesh.vert([st.x, 0, st.zc], color([st.x, 0, st.zc], Math.PI / 2, st.x), uvAt(st.x, Math.PI / 2));
+    for (let c = 0; c < seg; c++) flip ? mesh.tri(m, row[c + 1], row[c]) : mesh.tri(m, row[c], row[c + 1]);
+  };
+  capAt(idx[0], stations[0], true);
+  capAt(idx[idx.length - 1], stations[stations.length - 1], false);
+}
+
+/**
+ * Paints a livery texture for the fuselage (fictional "World Flight" scheme):
+ * cheatline, belly, tail colour, passenger windows, doors, cockpit windows,
+ * titles and registration. Returns a PNG data URI.
+ */
+function liveryTexture(def: AircraftDefinition, d: { L: number; R: number; isGA: boolean; noseLen: number; tailLen: number; xNose: number; cockpitX0: number; cockpitX1: number }): string | null {
+  const W = d.isGA ? 2048 : 4096, H = d.isGA ? 512 : 1024;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  if (!ctx) return null;
+  const g = def.geometry;
+  const X = (xm: number) => ((d.xNose - xm) / d.L) * W; // model x (m) → px
+  const U = (metresFromNose: number) => (metresFromNose / d.L) * W;
+  const Y = (deg: number) => (deg / 360) * H; // circumference angle → px
+  const degPerM = 360 / (2 * Math.PI * d.R);
+  // base paint + subtle vertical shading
+  ctx.fillStyle = g.colors.body; ctx.fillRect(0, 0, W, H);
+  // belly (bottom quarter, 225°–315°)
+  ctx.fillStyle = '#c3c7cd'; ctx.fillRect(0, Y(222), W, Y(96));
+  // tail colour sweeping up the rear upper fuselage
+  const tailStart = d.L - d.tailLen * (d.isGA ? 0.45 : 0.55);
+  ctx.fillStyle = g.colors.tail;
+  ctx.beginPath(); ctx.moveTo(U(tailStart), Y(55)); ctx.lineTo(W, Y(20)); ctx.lineTo(W, Y(160)); ctx.lineTo(U(tailStart), Y(125)); ctx.closePath(); ctx.fill();
+  // cheatlines both sides (just below the window line)
+  const stripe = (a0: number, a1: number) => { ctx.fillStyle = g.colors.accent; ctx.fillRect(U(d.noseLen * 0.6), Y(a0), U(d.L - d.noseLen * 0.6 - d.tailLen * 0.35), Y(a1 - a0)); };
+  stripe(333, 346); stripe(194, 207);
+  ctx.fillStyle = '#e8b04a'; ctx.fillRect(U(d.noseLen * 0.6), Y(347), U(d.L * 0.6), Y(1.5)); ctx.fillRect(U(d.noseLen * 0.6), Y(191.5), U(d.L * 0.6), Y(1.5));
+  const glassGrad = (x0: number, y0: number, x1: number, y1: number) => { const gr = ctx.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, '#26313f'); gr.addColorStop(0.5, '#0f151d'); gr.addColorStop(1, '#3a4656'); return gr; };
+  // cockpit windows: side panes on both sides + windscreen over the top-front
+  const cx0 = X(d.cockpitX1), cx1 = X(d.cockpitX0);
+  ctx.fillStyle = glassGrad(cx0, 0, cx1, 0);
+  for (const [a0, a1] of d.isGA ? [[18, 70], [110, 162]] : [[22, 48], [132, 158]]) {
+    ctx.beginPath(); ctx.moveTo(cx0, Y(a0 + (a1 - a0) * 0.35)); ctx.lineTo(cx1 * 0.97 + cx0 * 0.03, Y(a0)); ctx.lineTo(cx1, Y(a1)); ctx.lineTo(cx0 + (cx1 - cx0) * 0.25, Y(a1)); ctx.closePath(); ctx.fill();
+    // window frames
+    ctx.strokeStyle = g.colors.body; ctx.lineWidth = Math.max(2, W / 900);
+    for (let k = 1; k < 3; k++) { const xx = cx0 + (cx1 - cx0) * k / 3; ctx.beginPath(); ctx.moveTo(xx, Y(a0)); ctx.lineTo(xx, Y(a1)); ctx.stroke(); }
+  }
+  ctx.fillStyle = glassGrad(cx0, 0, cx1, 0);
+  ctx.fillRect(cx0 - (cx1 - cx0) * 0.15, Y(d.isGA ? 70 : 52), (cx1 - cx0) * 0.55, Y(d.isGA ? 40 : 76));
+  if (d.isGA) {
+    // large cabin side windows
+    for (const [a0, a1] of [[14, 62], [118, 166]]) {
+      ctx.fillStyle = glassGrad(cx1, 0, cx1 + U(1.6), 0);
+      ctx.beginPath(); ctx.roundRect(cx1 + U(0.1), Y(a0), U(1.5), Y(a1 - a0), U(0.2)); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(cx1 + U(1.75), Y(a0 + 6), U(0.9), Y(a1 - a0 - 12), U(0.2)); ctx.fill();
+    }
+  } else {
+    // passenger windows (≈0.53 m pitch) with front/rear doors and overwing exits skipped
+    const winW = U(0.24), winH = Y(0.36 * degPerM);
+    const first = d.xNose - d.cockpitX0 + 2.6, last = d.L - d.tailLen * 0.78;
+    const doors = [first - 1.6, last + 1.4];
+    const exits = [d.L * 0.47, d.L * 0.5];
+    for (const [side, aMid] of [[0, 17], [1, 163]] as const) {
+      // doors
+      for (const dm of doors) {
+        ctx.strokeStyle = '#8c939c'; ctx.lineWidth = Math.max(2, W / 1200);
+        // A door reaches ~0.4 m above the window line and ~1.45 m below it. On the left side
+        // "down" is a smaller angle; on the right side it is a larger one.
+        const aTop = side ? aMid - 0.4 * degPerM : aMid + 0.4 * degPerM;
+        const aBot = side ? aMid + 1.45 * degPerM : aMid - 1.45 * degPerM;
+        ctx.beginPath(); ctx.roundRect(U(dm - 0.45), Y(Math.min(aTop, aBot)), U(0.9), Y(Math.abs(aBot - aTop)), U(0.12)); ctx.stroke();
+      }
+      for (let m = first; m < last; m += 0.53) {
+        if (doors.some(dm => Math.abs(m - dm) < 0.8)) continue;
+        const exit = exits.some(e => Math.abs(m - e) < 0.35);
+        ctx.fillStyle = exit ? '#48525e' : glassGrad(0, Y(aMid) - winH, 0, Y(aMid) + winH);
+        ctx.beginPath(); ctx.roundRect(U(m) - winW / 2, Y(aMid) - winH / 2, winW, winH, winW * 0.45); ctx.fill();
+      }
+      if (g.hump) {
+        // 747 upper-deck windows
+        for (let m = d.xNose - d.cockpitX0 + 1.5; m < d.L * 0.34; m += 0.53) {
+          ctx.fillStyle = '#1a222d';
+          ctx.beginPath(); ctx.roundRect(U(m) - winW / 2, Y(side ? 128 : 52) - winH / 2, winW, winH, winW * 0.45); ctx.fill();
+        }
+      }
+    }
+  }
+  // titles and registration (fictional)
+  const text = (str: string, um: number, aDeg: number, sizeM: number, side: 0 | 1, color: string, weight = 800) => {
+    ctx.save();
+    ctx.translate(U(um), Y(aDeg));
+    // Left side is seen with the nose to the viewer's left but v runs upward → flip vertically;
+    // right side reads tail→nose → flip horizontally.
+    ctx.scale(side ? -1 : 1, side ? 1 : -1);
+    ctx.fillStyle = color;
+    ctx.font = `${weight} ${Math.max(10, Y(sizeM * degPerM))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Horizontal pixels are stretched differently from vertical ones; compensate.
+    const sx = (W / d.L) / (H / (2 * Math.PI * d.R));
+    ctx.scale(sx, 1);
+    ctx.fillText(str, 0, 0);
+    ctx.restore();
+  };
+  if (!d.isGA) {
+    text('WORLD FLIGHT', d.L * 0.3, 35, 0.75, 0, g.colors.accent);
+    text('WORLD FLIGHT', d.L * 0.3, 145, 0.75, 1, g.colors.accent);
+  }
+  const reg = `WF-${def.id.toUpperCase()}`;
+  text(reg, d.L * (d.isGA ? 0.62 : 0.8), d.isGA ? 20 : 8, d.isGA ? 0.35 : 0.45, 0, '#20242b', 700);
+  text(reg, d.L * (d.isGA ? 0.62 : 0.8), d.isGA ? 160 : 172, d.isGA ? 0.35 : 0.45, 1, '#20242b', 700);
+  return cv.toDataURL('image/png');
 }
 
 function cylinder(mesh: Mesh, a: Vec3, b: Vec3, r: number, color: Vec3, seg = 12) {
@@ -211,7 +340,7 @@ export function buildAircraftModel(def: AircraftDefinition): BuiltModel {
   const noseLen = isGA ? 0.2 * L : 0.13 * L;
   const tailLen = isGA ? 0.5 * L : 0.3 * L;
   const stations: { x: number; ry: number; rz: number; zc: number; zTop?: number }[] = [];
-  const N = 34;
+  const N = isGA ? 48 : 80;
   for (let i = 0; i <= N; i++) {
     const x = xNose - (i / N) * L;
     const fromNose = xNose - x, fromTail = x - xTail;
@@ -233,15 +362,16 @@ export function buildAircraftModel(def: AircraftDefinition): BuiltModel {
     stations.push({ x, ry: r * (isGA ? 0.92 : 1), rz: r * (isGA ? 1.1 : 1.02), zc, zTop });
   }
   const cockpitX0 = xNose - (isGA ? 0.3 : 0.1) * L, cockpitX1 = xNose - (isGA ? 0.17 : 0.055) * L;
-  loft(main, stations, 28, (p, ang, x) => {
-    const s = Math.sin(ang);
-    const zRel = (p[2] - 0) / R;
-    if (x > cockpitX0 && x < cockpitX1 && s > (isGA ? 0.1 : 0.25) && s < 0.85) return glass;
-    if (!isGA && x < cockpitX0 - 0.02 * L && x > xTail + tailLen * 0.8 && zRel > 0.28 && zRel < 0.4) return glass; // window line
-    if (isGA && x < cockpitX0 && x > cockpitX0 - 0.12 * L && s > 0.15 && s < 0.75) return glass; // side windows
-    if (zRel < -0.25 && zRel > -0.42) return accent; // cheatline
-    if (s < -0.55) return belly;
-    if (x < xTail + tailLen * 0.6 && s > 0.2) return tailC;
+  // The fuselage is its own UV-mapped mesh painted with a generated livery texture:
+  // u runs nose → tail, v runs around the circumference (0 = left side, ¼ = top).
+  const fuselage = new Mesh();
+  const livery = typeof document !== 'undefined' ? liveryTexture(def, { L, R, isGA, noseLen, tailLen, xNose, cockpitX0, cockpitX1 }) : null;
+  loftUV(fuselage, stations, isGA ? 40 : 56, (x, ang) => [(xNose - x) / L, ang / (Math.PI * 2)], livery ? () => [1, 1, 1] : (p, ang, x) => {
+    const sn = Math.sin(ang), zRel = p[2] / R;
+    if (x > cockpitX0 && x < cockpitX1 && sn > 0.25 && sn < 0.85) return glass;
+    if (zRel < -0.25 && zRel > -0.42) return accent;
+    if (sn < -0.55) return belly;
+    if (x < xTail + tailLen * 0.6 && sn > 0.2) return tailC;
     return body;
   });
 
@@ -393,7 +523,7 @@ export function buildAircraftModel(def: AircraftDefinition): BuiltModel {
 
   const tipL = surfacePoint(wingLeft, 1, 0.3, 0), tipR = surfacePoint(wingRight, 1, 0.3, 0);
   return {
-    gltf: toGltf(main, parts),
+    gltf: toGltf(main, parts, fuselage, livery),
     parts: parts.map(p => ({ name: p.name, pivot: p.pivot, axis: p.axis })),
     lights: {
       navLeft: tipL, navRight: tipR, tail: [xTail + 0.01 * L, 0, stations[stations.length - 1].zc],
@@ -405,8 +535,12 @@ export function buildAircraftModel(def: AircraftDefinition): BuiltModel {
 
 // ---------------- glTF serialisation ----------------
 
-function toGltf(main: Mesh, parts: PartNode[]) {
-  const meshes = [{ name: 'airframe', mesh: main, pivot: [0, 0, 0] as Vec3 }, ...parts.map(p => ({ name: p.name, mesh: p.mesh, pivot: p.pivot }))];
+function toGltf(main: Mesh, parts: PartNode[], fuselage: Mesh, livery: string | null) {
+  const meshes = [
+    { name: 'airframe', mesh: main, pivot: [0, 0, 0] as Vec3, textured: false },
+    { name: 'fuselage', mesh: fuselage, pivot: [0, 0, 0] as Vec3, textured: !!livery },
+    ...parts.map(p => ({ name: p.name, mesh: p.mesh, pivot: p.pivot, textured: false })),
+  ];
   const chunks: ArrayBuffer[] = [];
   let offset = 0;
   const bufferViews: object[] = [], accessors: object[] = [], gltfMeshes: object[] = [], nodes: object[] = [];
@@ -422,18 +556,17 @@ function toGltf(main: Mesh, parts: PartNode[]) {
   meshes.forEach((m, i) => {
     const pos = new Float32Array(m.mesh.pos);
     const nrm = m.mesh.normals();
-    const col = new Float32Array(m.mesh.col);
     const idx = new Uint32Array(m.mesh.idx);
     const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
     for (let k = 0; k < pos.length; k += 3) for (let a = 0; a < 3; a++) { min[a] = Math.min(min[a], pos[k + a]); max[a] = Math.max(max[a], pos[k + a]); }
-    const vp = addView(pos, 34962), vn = addView(nrm, 34962), vc = addView(col, 34962), vi = addView(idx, 34963);
     const count = pos.length / 3;
-    accessors.push({ bufferView: vp, componentType: 5126, count, type: 'VEC3', min, max });
-    accessors.push({ bufferView: vn, componentType: 5126, count, type: 'VEC3' });
-    accessors.push({ bufferView: vc, componentType: 5126, count, type: 'VEC3' });
-    accessors.push({ bufferView: vi, componentType: 5125, count: idx.length, type: 'SCALAR' });
-    const a0 = i * 4;
-    gltfMeshes.push({ name: m.name, primitives: [{ attributes: { POSITION: a0, NORMAL: a0 + 1, COLOR_0: a0 + 2 }, indices: a0 + 3, material: 0 }] });
+    const aPos = accessors.push({ bufferView: addView(pos, 34962), componentType: 5126, count, type: 'VEC3', min, max }) - 1;
+    const aNrm = accessors.push({ bufferView: addView(nrm, 34962), componentType: 5126, count, type: 'VEC3' }) - 1;
+    const attributes: Record<string, number> = { POSITION: aPos, NORMAL: aNrm };
+    if (m.textured) attributes.TEXCOORD_0 = accessors.push({ bufferView: addView(new Float32Array(m.mesh.uv), 34962), componentType: 5126, count, type: 'VEC2' }) - 1;
+    else attributes.COLOR_0 = accessors.push({ bufferView: addView(new Float32Array(m.mesh.col), 34962), componentType: 5126, count, type: 'VEC3' }) - 1;
+    const aIdx = accessors.push({ bufferView: addView(idx, 34963), componentType: 5125, count: idx.length, type: 'SCALAR' }) - 1;
+    gltfMeshes.push({ name: m.name, primitives: [{ attributes, indices: aIdx, material: m.textured ? 1 : 0 }] });
     nodes.push({ name: m.name, mesh: i, translation: m.pivot });
   });
   const total = new Uint8Array(offset);
@@ -441,13 +574,18 @@ function toGltf(main: Mesh, parts: PartNode[]) {
   for (const c of chunks) { total.set(new Uint8Array(c), o); o += c.byteLength; }
   let bin = '';
   for (let k = 0; k < total.length; k += 0x8000) bin += String.fromCharCode(...total.subarray(k, k + 0x8000));
+  const materials: object[] = [
+    { name: 'paint', pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0.25, roughnessFactor: 0.42 }, doubleSided: true },
+    { name: 'livery', pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0.18, roughnessFactor: 0.32 }, doubleSided: true },
+  ];
   return {
     asset: { version: '2.0', generator: 'world-flight-sim procedural aircraft' },
     scene: 0,
     scenes: [{ nodes: [nodes.length] }],
     nodes: [...nodes, { name: 'root', children: nodes.map((_, i) => i) }],
     meshes: gltfMeshes,
-    materials: [{ name: 'paint', pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0.25, roughnessFactor: 0.42 }, doubleSided: true }],
+    materials,
+    ...(livery ? { textures: [{ source: 0, sampler: 0 }], images: [{ uri: livery }], samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 10497, wrapT: 33071 }] } : {}),
     accessors,
     bufferViews,
     buffers: [{ byteLength: offset, uri: `data:application/octet-stream;base64,${btoa(bin)}` }],
