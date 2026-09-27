@@ -1,0 +1,155 @@
+{
+ "id": "a320",
+ "name": "Airbus A320ceo",
+ "manufacturer": "Airbus",
+ "category": "narrowbody",
+ "cockpit": "glass",
+ "spec": {
+  "source": "Airbus A320 Aircraft Characteristics - Airport and Maintenance Planning",
+  "mtowKg": 78000,
+  "emptyKg": 42600,
+  "wingspanM": 35.8,
+  "lengthM": 37.57,
+  "wingAreaM2": 122.6,
+  "fuelCapacityL": 24210,
+  "engineCount": 2,
+  "engineModel": "CFM International CFM56-5B4 (27,000 lbf)",
+  "thrustKN": 120.1,
+  "vmoKt": 350,
+  "mmo": 0.82,
+  "cruiseKtas": 447,
+  "ceilingFt": 39100,
+  "rangeNm": 3300,
+  "approximate": [
+   "emptyKg (operating empty, varies by operator)"
+  ]
+ },
+ "flaps": [
+  {
+   "label": "0",
+   "frac": 0,
+   "maxKt": 0
+  },
+  {
+   "label": "1",
+   "frac": 0.2,
+   "maxKt": 230
+  },
+  {
+   "label": "1+F",
+   "frac": 0.35,
+   "maxKt": 215
+  },
+  {
+   "label": "2",
+   "frac": 0.55,
+   "maxKt": 200
+  },
+  {
+   "label": "3",
+   "frac": 0.75,
+   "maxKt": 185
+  },
+  {
+   "label": "FULL",
+   "frac": 1.0,
+   "maxKt": 177
+  }
+ ],
+ "gyration": [
+  0.25,
+  0.38,
+  0.44
+ ],
+ "aero": {
+  "cl0": 0.25,
+  "clAlpha": 5.6,
+  "clMaxClean": 1.4,
+  "dClMaxFlaps": 1.3,
+  "dCl0Flaps": 0.95,
+  "cd0": 0.019,
+  "dCd0Flaps": 0.075,
+  "dCdGear": 0.018,
+  "dCdSpoilers": 0.06,
+  "oswald": 0.8,
+  "mdd": 0.84,
+  "cyBeta": -0.9,
+  "clBeta": -0.18,
+  "clP": -0.4,
+  "clR": 0.18,
+  "clDa": 0.085,
+  "clDr": 0.008,
+  "cm0": 0.045,
+  "cmAlpha": -1.2,
+  "cmQ": -20.0,
+  "cmDe": -1.35,
+  "cmFlaps": -0.08,
+  "cnBeta": 0.16,
+  "cnR": -0.28,
+  "cnP": -0.08,
+  "cnDa": 0.002,
+  "cnDr": -0.1,
+  "cyDr": 0.12,
+  "elevatorMaxDeg": 25,
+  "aileronMaxDeg": 20,
+  "rudderMaxDeg": 25
+ },
+ "engine": {
+  "kind": "turbofan",
+  "positionsY": [
+   -5.75,
+   5.75
+  ],
+  "idleFraction": 0.05,
+  "spoolTime": 3.5,
+  "sfc": 0.0367,
+  "reverseFraction": 0.4,
+  "startTime": 40
+ },
+ "gear": {
+  "retractable": true,
+  "noseX": 12.6,
+  "mainX": -1.0,
+  "mainHalfTrack": 3.8,
+  "heightM": 3.1,
+  "compressionM": 0.25,
+  "maxSteerDeg": 75,
+  "limitSinkMs": 3.05,
+  "transitTime": 8
+ },
+ "geometry": {
+  "wingPosition": "low",
+  "sweepDeg": 25,
+  "taper": 0.24,
+  "dihedralDeg": 5.1,
+  "fuselageDiameterM": 3.95,
+  "tail": "conventional",
+  "engineMount": "wing",
+  "tailStrikeDeg": 11.7,
+  "eye": [
+   15.5,
+   -0.55,
+   -1.5
+  ],
+  "colors": {
+   "body": "#f7f7f7",
+   "accent": "#0c2a6b",
+   "tail": "#c4122f"
+  },
+  "winglets": true
+ },
+ "perf": {
+  "maxBankDeg": 25,
+  "maxVsFpm": 4000,
+  "vrKt": 145,
+  "v2Kt": 155,
+  "vrefKt": 137,
+  "climbKt": 290,
+  "cruiseMach": 0.78,
+  "cruiseAltFt": 35000,
+  "approachKt": 145,
+  "rotatePitchDeg": 8
+ },
+ "fuelDensity": 0.8,
+ "defaultPayloadKg": 15000
+}

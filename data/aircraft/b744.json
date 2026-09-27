@@ -1,0 +1,163 @@
+{
+ "id": "b744",
+ "name": "Boeing 747-400",
+ "manufacturer": "Boeing",
+ "category": "widebody",
+ "cockpit": "glass",
+ "spec": {
+  "source": "Boeing 747-400 Airplane Characteristics for Airport Planning (D6-58326-1)",
+  "mtowKg": 396890,
+  "emptyKg": 178756,
+  "wingspanM": 64.44,
+  "lengthM": 70.66,
+  "wingAreaM2": 525,
+  "fuelCapacityL": 216840,
+  "engineCount": 4,
+  "engineModel": "Pratt & Whitney PW4056 (56,750 lbf)",
+  "thrustKN": 252.4,
+  "vmoKt": 365,
+  "mmo": 0.92,
+  "cruiseKtas": 493,
+  "ceilingFt": 45100,
+  "rangeNm": 7260,
+  "approximate": [
+   "emptyKg (operating empty, varies by configuration)"
+  ]
+ },
+ "flaps": [
+  {
+   "label": "UP",
+   "frac": 0,
+   "maxKt": 0
+  },
+  {
+   "label": "1",
+   "frac": 0.12,
+   "maxKt": 280
+  },
+  {
+   "label": "5",
+   "frac": 0.3,
+   "maxKt": 260
+  },
+  {
+   "label": "10",
+   "frac": 0.45,
+   "maxKt": 240
+  },
+  {
+   "label": "20",
+   "frac": 0.65,
+   "maxKt": 230
+  },
+  {
+   "label": "25",
+   "frac": 0.85,
+   "maxKt": 205
+  },
+  {
+   "label": "30",
+   "frac": 1.0,
+   "maxKt": 180
+  }
+ ],
+ "gyration": [
+  0.28,
+  0.38,
+  0.46
+ ],
+ "aero": {
+  "cl0": 0.25,
+  "clAlpha": 5.7,
+  "clMaxClean": 1.4,
+  "dClMaxFlaps": 1.25,
+  "dCl0Flaps": 0.95,
+  "cd0": 0.018,
+  "dCd0Flaps": 0.075,
+  "dCdGear": 0.018,
+  "dCdSpoilers": 0.06,
+  "oswald": 0.8,
+  "mdd": 0.88,
+  "cyBeta": -0.9,
+  "clBeta": -0.18,
+  "clP": -0.4,
+  "clR": 0.18,
+  "clDa": 0.075,
+  "clDr": 0.008,
+  "cm0": 0.045,
+  "cmAlpha": -1.3,
+  "cmQ": -20.0,
+  "cmDe": -1.4,
+  "cmFlaps": -0.08,
+  "cnBeta": 0.16,
+  "cnR": -0.28,
+  "cnP": -0.08,
+  "cnDa": 0.002,
+  "cnDr": -0.1,
+  "cyDr": 0.12,
+  "elevatorMaxDeg": 25,
+  "aileronMaxDeg": 20,
+  "rudderMaxDeg": 25
+ },
+ "engine": {
+  "kind": "turbofan",
+  "positionsY": [
+   -21.2,
+   -11.9,
+   11.9,
+   21.2
+  ],
+  "idleFraction": 0.05,
+  "spoolTime": 4.0,
+  "sfc": 0.0345,
+  "reverseFraction": 0.35,
+  "startTime": 45
+ },
+ "gear": {
+  "retractable": true,
+  "noseX": 25.0,
+  "mainX": -1.8,
+  "mainHalfTrack": 5.5,
+  "heightM": 5.2,
+  "compressionM": 0.3,
+  "maxSteerDeg": 70,
+  "limitSinkMs": 3.05,
+  "transitTime": 10
+ },
+ "geometry": {
+  "wingPosition": "low",
+  "sweepDeg": 37.5,
+  "taper": 0.28,
+  "dihedralDeg": 7,
+  "fuselageDiameterM": 6.5,
+  "tail": "conventional",
+  "engineMount": "wing",
+  "tailStrikeDeg": 11,
+  "eye": [
+   30.0,
+   -0.6,
+   -3.5
+  ],
+  "colors": {
+   "body": "#f6f6f6",
+   "accent": "#1b3e7a",
+   "tail": "#1b3e7a"
+  },
+  "hump": true,
+  "winglets": true
+ },
+ "perf": {
+  "maxBankDeg": 25,
+  "maxVsFpm": 3500,
+  "vrKt": 160,
+  "v2Kt": 170,
+  "vrefKt": 150,
+  "climbKt": 300,
+  "cruiseMach": 0.85,
+  "cruiseAltFt": 35000,
+  "approachKt": 160,
+  "rotatePitchDeg": 9
+ },
+ "fuelDensity": 0.8,
+ "defaultPayloadKg": 45000
+}

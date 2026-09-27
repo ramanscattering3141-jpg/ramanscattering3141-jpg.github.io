@@ -1,0 +1,146 @@
+{
+ "id": "pc12",
+ "name": "Pilatus PC-12 NGX",
+ "manufacturer": "Pilatus Aircraft",
+ "category": "turboprop",
+ "cockpit": "glass",
+ "spec": {
+  "source": "Pilatus PC-12 NGX published specifications (pilatus-aircraft.com)",
+  "mtowKg": 4740,
+  "emptyKg": 3050,
+  "wingspanM": 16.28,
+  "lengthM": 14.4,
+  "wingAreaM2": 25.81,
+  "fuelCapacityL": 1522,
+  "engineCount": 1,
+  "engineModel": "Pratt & Whitney Canada PT6E-67XP (1,200 shp)",
+  "powerKW": 895,
+  "vmoKt": 240,
+  "stallKt": 67,
+  "cruiseKtas": 290,
+  "ceilingFt": 30000,
+  "climbFpm": 1920,
+  "rangeNm": 1803,
+  "approximate": [
+   "emptyKg",
+   "vmoKt",
+   "climbFpm"
+  ]
+ },
+ "flaps": [
+  {
+   "label": "0\u00b0",
+   "frac": 0,
+   "maxKt": 0
+  },
+  {
+   "label": "15\u00b0",
+   "frac": 0.45,
+   "maxKt": 163
+  },
+  {
+   "label": "30\u00b0",
+   "frac": 0.8,
+   "maxKt": 130
+  },
+  {
+   "label": "40\u00b0",
+   "frac": 1.0,
+   "maxKt": 119
+  }
+ ],
+ "gyration": [
+  0.25,
+  0.34,
+  0.4
+ ],
+ "aero": {
+  "cl0": 0.28,
+  "clAlpha": 5.0,
+  "clMaxClean": 1.55,
+  "dClMaxFlaps": 0.95,
+  "dCl0Flaps": 0.7,
+  "cd0": 0.024,
+  "dCd0Flaps": 0.05,
+  "dCdGear": 0.012,
+  "dCdSpoilers": 0.0,
+  "oswald": 0.8,
+  "cyBeta": -0.393,
+  "clBeta": -0.0923,
+  "clP": -0.484,
+  "clR": 0.0798,
+  "clDa": 0.17,
+  "clDr": 0.0147,
+  "cm0": 0.04,
+  "cmAlpha": -0.9,
+  "cmQ": -15,
+  "cmDe": -1.2,
+  "cmFlaps": -0.06,
+  "cnBeta": 0.0587,
+  "cnR": -0.0937,
+  "cnP": -0.0278,
+  "cnDa": -0.0216,
+  "cnDr": -0.0645,
+  "cyDr": 0.187,
+  "elevatorMaxDeg": 25,
+  "aileronMaxDeg": 18,
+  "rudderMaxDeg": 17
+ },
+ "engine": {
+  "kind": "turboprop",
+  "positionsY": [
+   0
+  ],
+  "propEfficiency": 0.82,
+  "staticThrustKN": 12.5,
+  "idleFraction": 0.05,
+  "spoolTime": 1.8,
+  "sfc": 0.36,
+  "reverseFraction": 0.35,
+  "startTime": 20
+ },
+ "gear": {
+  "retractable": true,
+  "noseX": 2.9,
+  "mainX": -0.45,
+  "mainHalfTrack": 2.3,
+  "heightM": 1.7,
+  "compressionM": 0.15,
+  "maxSteerDeg": 30,
+  "limitSinkMs": 3.0,
+  "transitTime": 6
+ },
+ "geometry": {
+  "wingPosition": "low",
+  "sweepDeg": 2,
+  "taper": 0.55,
+  "dihedralDeg": 4,
+  "fuselageDiameterM": 1.6,
+  "tail": "t-tail",
+  "engineMount": "nose",
+  "tailStrikeDeg": 13,
+  "eye": [
+   3.6,
+   -0.35,
+   -0.7
+  ],
+  "colors": {
+   "body": "#f5f5f5",
+   "accent": "#b01e2e",
+   "tail": "#b01e2e"
+  }
+ },
+ "perf": {
+  "maxBankDeg": 25,
+  "maxVsFpm": 1500,
+  "vrKt": 85,
+  "v2Kt": 100,
+  "vrefKt": 90,
+  "climbKt": 130,
+  "cruiseAltFt": 24000,
+  "approachKt": 100,
+  "rotatePitchDeg": 9
+ },
+ "fuelDensity": 0.8,
+ "defaultPayloadKg": 600
+}

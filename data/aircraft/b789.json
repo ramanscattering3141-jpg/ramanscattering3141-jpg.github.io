@@ -1,0 +1,161 @@
+{
+ "id": "b789",
+ "name": "Boeing 787-9 Dreamliner",
+ "manufacturer": "Boeing",
+ "category": "widebody",
+ "cockpit": "glass",
+ "spec": {
+  "source": "Boeing 787 Airplane Characteristics for Airport Planning (D6-58333)",
+  "mtowKg": 254011,
+  "emptyKg": 128850,
+  "wingspanM": 60.12,
+  "lengthM": 62.81,
+  "wingAreaM2": 377,
+  "fuelCapacityL": 126372,
+  "engineCount": 2,
+  "engineModel": "GE Aerospace GEnx-1B74/75 (74,100 lbf)",
+  "thrustKN": 330.0,
+  "vmoKt": 340,
+  "mmo": 0.9,
+  "cruiseKtas": 488,
+  "ceilingFt": 43100,
+  "rangeNm": 7530,
+  "approximate": [
+   "emptyKg",
+   "wingAreaM2"
+  ]
+ },
+ "flaps": [
+  {
+   "label": "UP",
+   "frac": 0,
+   "maxKt": 0
+  },
+  {
+   "label": "1",
+   "frac": 0.12,
+   "maxKt": 250
+  },
+  {
+   "label": "5",
+   "frac": 0.3,
+   "maxKt": 230
+  },
+  {
+   "label": "15",
+   "frac": 0.55,
+   "maxKt": 200
+  },
+  {
+   "label": "20",
+   "frac": 0.7,
+   "maxKt": 190
+  },
+  {
+   "label": "25",
+   "frac": 0.85,
+   "maxKt": 175
+  },
+  {
+   "label": "30",
+   "frac": 1.0,
+   "maxKt": 170
+  }
+ ],
+ "gyration": [
+  0.27,
+  0.38,
+  0.45
+ ],
+ "aero": {
+  "cl0": 0.25,
+  "clAlpha": 5.9,
+  "clMaxClean": 1.4,
+  "dClMaxFlaps": 1.25,
+  "dCl0Flaps": 0.95,
+  "cd0": 0.0165,
+  "dCd0Flaps": 0.075,
+  "dCdGear": 0.018,
+  "dCdSpoilers": 0.06,
+  "oswald": 0.8,
+  "mdd": 0.88,
+  "cyBeta": -0.9,
+  "clBeta": -0.18,
+  "clP": -0.4,
+  "clR": 0.18,
+  "clDa": 0.085,
+  "clDr": 0.008,
+  "cm0": 0.045,
+  "cmAlpha": -1.2,
+  "cmQ": -20.0,
+  "cmDe": -1.35,
+  "cmFlaps": -0.08,
+  "cnBeta": 0.16,
+  "cnR": -0.28,
+  "cnP": -0.08,
+  "cnDa": 0.002,
+  "cnDr": -0.1,
+  "cyDr": 0.12,
+  "elevatorMaxDeg": 25,
+  "aileronMaxDeg": 20,
+  "rudderMaxDeg": 25
+ },
+ "engine": {
+  "kind": "turbofan",
+  "positionsY": [
+   -9.7,
+   9.7
+  ],
+  "idleFraction": 0.045,
+  "spoolTime": 4.0,
+  "sfc": 0.0285,
+  "reverseFraction": 0.35,
+  "startTime": 45
+ },
+ "gear": {
+  "retractable": true,
+  "noseX": 24.0,
+  "mainX": -1.6,
+  "mainHalfTrack": 4.9,
+  "heightM": 4.1,
+  "compressionM": 0.3,
+  "maxSteerDeg": 70,
+  "limitSinkMs": 3.05,
+  "transitTime": 10
+ },
+ "geometry": {
+  "wingPosition": "low",
+  "sweepDeg": 32,
+  "taper": 0.24,
+  "dihedralDeg": 6,
+  "fuselageDiameterM": 5.77,
+  "tail": "conventional",
+  "engineMount": "wing",
+  "tailStrikeDeg": 9.5,
+  "eye": [
+   27.5,
+   -0.6,
+   -2.6
+  ],
+  "colors": {
+   "body": "#f7f7f7",
+   "accent": "#113a74",
+   "tail": "#113a74"
+  },
+  "winglets": false
+ },
+ "perf": {
+  "maxBankDeg": 25,
+  "maxVsFpm": 3500,
+  "vrKt": 160,
+  "v2Kt": 170,
+  "vrefKt": 145,
+  "climbKt": 300,
+  "cruiseMach": 0.85,
+  "cruiseAltFt": 37000,
+  "approachKt": 155,
+  "rotatePitchDeg": 8
+ },
+ "fuelDensity": 0.8,
+ "defaultPayloadKg": 30000
+}

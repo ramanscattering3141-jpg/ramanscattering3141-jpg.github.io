@@ -1,0 +1,156 @@
+{
+ "id": "a359",
+ "name": "Airbus A350-900",
+ "manufacturer": "Airbus",
+ "category": "widebody",
+ "cockpit": "glass",
+ "spec": {
+  "source": "Airbus A350 Aircraft Characteristics - Airport and Maintenance Planning",
+  "mtowKg": 283000,
+  "emptyKg": 142400,
+  "wingspanM": 64.75,
+  "lengthM": 66.8,
+  "wingAreaM2": 442,
+  "fuelCapacityL": 141000,
+  "engineCount": 2,
+  "engineModel": "Rolls-Royce Trent XWB-84 (84,200 lbf)",
+  "thrustKN": 374.5,
+  "vmoKt": 340,
+  "mmo": 0.89,
+  "cruiseKtas": 488,
+  "ceilingFt": 43100,
+  "rangeNm": 8100,
+  "approximate": [
+   "emptyKg",
+   "vmoKt"
+  ]
+ },
+ "flaps": [
+  {
+   "label": "0",
+   "frac": 0,
+   "maxKt": 0
+  },
+  {
+   "label": "1",
+   "frac": 0.2,
+   "maxKt": 255
+  },
+  {
+   "label": "1+F",
+   "frac": 0.35,
+   "maxKt": 222
+  },
+  {
+   "label": "2",
+   "frac": 0.55,
+   "maxKt": 212
+  },
+  {
+   "label": "3",
+   "frac": 0.75,
+   "maxKt": 195
+  },
+  {
+   "label": "FULL",
+   "frac": 1.0,
+   "maxKt": 186
+  }
+ ],
+ "gyration": [
+  0.27,
+  0.38,
+  0.45
+ ],
+ "aero": {
+  "cl0": 0.25,
+  "clAlpha": 5.9,
+  "clMaxClean": 1.4,
+  "dClMaxFlaps": 1.25,
+  "dCl0Flaps": 0.95,
+  "cd0": 0.0165,
+  "dCd0Flaps": 0.075,
+  "dCdGear": 0.018,
+  "dCdSpoilers": 0.06,
+  "oswald": 0.8,
+  "mdd": 0.88,
+  "cyBeta": -0.9,
+  "clBeta": -0.18,
+  "clP": -0.4,
+  "clR": 0.18,
+  "clDa": 0.085,
+  "clDr": 0.008,
+  "cm0": 0.045,
+  "cmAlpha": -1.2,
+  "cmQ": -20.0,
+  "cmDe": -1.35,
+  "cmFlaps": -0.08,
+  "cnBeta": 0.16,
+  "cnR": -0.28,
+  "cnP": -0.08,
+  "cnDa": 0.002,
+  "cnDr": -0.1,
+  "cyDr": 0.12,
+  "elevatorMaxDeg": 25,
+  "aileronMaxDeg": 20,
+  "rudderMaxDeg": 25
+ },
+ "engine": {
+  "kind": "turbofan",
+  "positionsY": [
+   -10.5,
+   10.5
+  ],
+  "idleFraction": 0.045,
+  "spoolTime": 4.0,
+  "sfc": 0.028,
+  "reverseFraction": 0.35,
+  "startTime": 45
+ },
+ "gear": {
+  "retractable": true,
+  "noseX": 26.0,
+  "mainX": -1.7,
+  "mainHalfTrack": 5.4,
+  "heightM": 4.3,
+  "compressionM": 0.3,
+  "maxSteerDeg": 70,
+  "limitSinkMs": 3.05,
+  "transitTime": 10
+ },
+ "geometry": {
+  "wingPosition": "low",
+  "sweepDeg": 31.9,
+  "taper": 0.22,
+  "dihedralDeg": 6,
+  "fuselageDiameterM": 5.96,
+  "tail": "conventional",
+  "engineMount": "wing",
+  "tailStrikeDeg": 10,
+  "eye": [
+   29.0,
+   -0.6,
+   -2.7
+  ],
+  "colors": {
+   "body": "#f7f7f7",
+   "accent": "#1c1c1c",
+   "tail": "#0d5c91"
+  },
+  "winglets": true
+ },
+ "perf": {
+  "maxBankDeg": 25,
+  "maxVsFpm": 3500,
+  "vrKt": 155,
+  "v2Kt": 165,
+  "vrefKt": 140,
+  "climbKt": 300,
+  "cruiseMach": 0.85,
+  "cruiseAltFt": 37000,
+  "approachKt": 150,
+  "rotatePitchDeg": 8
+ },
+ "fuelDensity": 0.8,
+ "defaultPayloadKg": 32000
+}

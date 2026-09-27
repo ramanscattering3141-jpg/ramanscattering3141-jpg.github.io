@@ -1,0 +1,152 @@
+{
+ "id": "b738",
+ "name": "Boeing 737-800",
+ "manufacturer": "Boeing",
+ "category": "narrowbody",
+ "cockpit": "glass",
+ "spec": {
+  "source": "Boeing 737 Airplane Characteristics for Airport Planning (D6-58325-6)",
+  "mtowKg": 79016,
+  "emptyKg": 41413,
+  "wingspanM": 35.79,
+  "lengthM": 39.47,
+  "wingAreaM2": 124.58,
+  "fuelCapacityL": 26020,
+  "engineCount": 2,
+  "engineModel": "CFM International CFM56-7B26 (26,300 lbf)",
+  "thrustKN": 117.0,
+  "vmoKt": 340,
+  "mmo": 0.82,
+  "cruiseKtas": 453,
+  "ceilingFt": 41000,
+  "rangeNm": 2935
+ },
+ "flaps": [
+  {
+   "label": "UP",
+   "frac": 0,
+   "maxKt": 0
+  },
+  {
+   "label": "1",
+   "frac": 0.12,
+   "maxKt": 250
+  },
+  {
+   "label": "5",
+   "frac": 0.35,
+   "maxKt": 250
+  },
+  {
+   "label": "15",
+   "frac": 0.55,
+   "maxKt": 200
+  },
+  {
+   "label": "30",
+   "frac": 0.85,
+   "maxKt": 175
+  },
+  {
+   "label": "40",
+   "frac": 1.0,
+   "maxKt": 162
+  }
+ ],
+ "gyration": [
+  0.25,
+  0.38,
+  0.44
+ ],
+ "aero": {
+  "cl0": 0.25,
+  "clAlpha": 5.6,
+  "clMaxClean": 1.4,
+  "dClMaxFlaps": 1.25,
+  "dCl0Flaps": 0.95,
+  "cd0": 0.019,
+  "dCd0Flaps": 0.075,
+  "dCdGear": 0.018,
+  "dCdSpoilers": 0.06,
+  "oswald": 0.8,
+  "mdd": 0.84,
+  "cyBeta": -0.9,
+  "clBeta": -0.18,
+  "clP": -0.4,
+  "clR": 0.18,
+  "clDa": 0.085,
+  "clDr": 0.008,
+  "cm0": 0.045,
+  "cmAlpha": -1.2,
+  "cmQ": -20.0,
+  "cmDe": -1.35,
+  "cmFlaps": -0.08,
+  "cnBeta": 0.16,
+  "cnR": -0.28,
+  "cnP": -0.08,
+  "cnDa": 0.002,
+  "cnDr": -0.1,
+  "cyDr": 0.12,
+  "elevatorMaxDeg": 25,
+  "aileronMaxDeg": 20,
+  "rudderMaxDeg": 25
+ },
+ "engine": {
+  "kind": "turbofan",
+  "positionsY": [
+   -4.9,
+   4.9
+  ],
+  "idleFraction": 0.05,
+  "spoolTime": 3.5,
+  "sfc": 0.0367,
+  "reverseFraction": 0.4,
+  "startTime": 40
+ },
+ "gear": {
+  "retractable": true,
+  "noseX": 14.2,
+  "mainX": -1.0,
+  "mainHalfTrack": 2.86,
+  "heightM": 2.9,
+  "compressionM": 0.25,
+  "maxSteerDeg": 70,
+  "limitSinkMs": 3.05,
+  "transitTime": 8
+ },
+ "geometry": {
+  "wingPosition": "low",
+  "sweepDeg": 25,
+  "taper": 0.28,
+  "dihedralDeg": 6,
+  "fuselageDiameterM": 3.76,
+  "tail": "conventional",
+  "engineMount": "wing",
+  "tailStrikeDeg": 11,
+  "eye": [
+   16.8,
+   -0.55,
+   -1.5
+  ],
+  "colors": {
+   "body": "#f5f6f8",
+   "accent": "#1d3f8a",
+   "tail": "#1d3f8a"
+  },
+  "winglets": true
+ },
+ "perf": {
+  "maxBankDeg": 25,
+  "maxVsFpm": 4000,
+  "vrKt": 145,
+  "v2Kt": 155,
+  "vrefKt": 142,
+  "climbKt": 280,
+  "cruiseMach": 0.785,
+  "cruiseAltFt": 35000,
+  "approachKt": 150,
+  "rotatePitchDeg": 8
+ },
+ "fuelDensity": 0.8,
+ "defaultPayloadKg": 15000
+}

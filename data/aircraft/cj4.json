@@ -1,0 +1,142 @@
+{
+ "id": "cj4",
+ "name": "Cessna Citation CJ4",
+ "manufacturer": "Cessna (Textron Aviation)",
+ "category": "business jet",
+ "cockpit": "glass",
+ "spec": {
+  "source": "Textron Aviation Citation CJ4 specifications",
+  "mtowKg": 7761,
+  "emptyKg": 4663,
+  "wingspanM": 15.49,
+  "lengthM": 16.26,
+  "wingAreaM2": 30.66,
+  "fuelCapacityL": 3300,
+  "engineCount": 2,
+  "engineModel": "Williams International FJ44-4A (3,621 lbf)",
+  "thrustKN": 16.1,
+  "vmoKt": 305,
+  "mmo": 0.77,
+  "cruiseKtas": 451,
+  "ceilingFt": 45000,
+  "climbFpm": 3854,
+  "rangeNm": 2165,
+  "approximate": [
+   "emptyKg",
+   "fuelCapacityL (converted from 5,828 lb usable)"
+  ]
+ },
+ "flaps": [
+  {
+   "label": "UP",
+   "frac": 0,
+   "maxKt": 0
+  },
+  {
+   "label": "15\u00b0",
+   "frac": 0.45,
+   "maxKt": 200
+  },
+  {
+   "label": "35\u00b0",
+   "frac": 1.0,
+   "maxKt": 161
+  }
+ ],
+ "gyration": [
+  0.26,
+  0.35,
+  0.42
+ ],
+ "aero": {
+  "cl0": 0.25,
+  "clAlpha": 5.6,
+  "clMaxClean": 1.35,
+  "dClMaxFlaps": 0.75,
+  "dCl0Flaps": 0.6,
+  "cd0": 0.021,
+  "dCd0Flaps": 0.075,
+  "dCdGear": 0.018,
+  "dCdSpoilers": 0.06,
+  "oswald": 0.8,
+  "mdd": 0.8,
+  "cyBeta": -0.9,
+  "clBeta": -0.18,
+  "clP": -0.4,
+  "clR": 0.18,
+  "clDa": 0.1,
+  "clDr": 0.008,
+  "cm0": 0.045,
+  "cmAlpha": -1.2,
+  "cmQ": -20.0,
+  "cmDe": -1.35,
+  "cmFlaps": -0.08,
+  "cnBeta": 0.13,
+  "cnR": -0.28,
+  "cnP": -0.08,
+  "cnDa": 0.002,
+  "cnDr": -0.1,
+  "cyDr": 0.12,
+  "elevatorMaxDeg": 25,
+  "aileronMaxDeg": 20,
+  "rudderMaxDeg": 25
+ },
+ "engine": {
+  "kind": "turbofan",
+  "positionsY": [
+   -1.4,
+   1.4
+  ],
+  "idleFraction": 0.06,
+  "spoolTime": 3.0,
+  "sfc": 0.045,
+  "reverseFraction": 0.0,
+  "startTime": 25
+ },
+ "gear": {
+  "retractable": true,
+  "noseX": 5.8,
+  "mainX": -0.5,
+  "mainHalfTrack": 1.8,
+  "heightM": 1.6,
+  "compressionM": 0.15,
+  "maxSteerDeg": 40,
+  "limitSinkMs": 3.05,
+  "transitTime": 6
+ },
+ "geometry": {
+  "wingPosition": "low",
+  "sweepDeg": 12.5,
+  "taper": 0.4,
+  "dihedralDeg": 4,
+  "fuselageDiameterM": 1.7,
+  "tail": "t-tail",
+  "engineMount": "tail",
+  "tailStrikeDeg": 12,
+  "eye": [
+   5.7,
+   -0.35,
+   -0.75
+  ],
+  "colors": {
+   "body": "#f2f2f2",
+   "accent": "#20242b",
+   "tail": "#6e7580"
+  },
+  "winglets": false
+ },
+ "perf": {
+  "maxBankDeg": 25,
+  "maxVsFpm": 3000,
+  "vrKt": 105,
+  "v2Kt": 120,
+  "vrefKt": 112,
+  "climbKt": 240,
+  "cruiseMach": 0.72,
+  "cruiseAltFt": 41000,
+  "approachKt": 125,
+  "rotatePitchDeg": 10
+ },
+ "fuelDensity": 0.8,
+ "defaultPayloadKg": 500
+}
