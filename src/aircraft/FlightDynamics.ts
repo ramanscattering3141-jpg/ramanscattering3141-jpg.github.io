@@ -155,6 +155,8 @@ export class FlightDynamics {
   private autoTrimIntegrator = 0;
   private lastGeo: Geodetic = { lat: 0, lon: 0, h: 0 };
   private lastGround = 0;
+  /** After spawning on the ground, a short settling period in which touching the ground is not a crash. */
+  private graceUntil = 0;
 
   constructor(readonly def: AircraftDefinition, public realism: RealismProfile, opts: { engineRunning: boolean; fuelKg?: number; payloadKg?: number }) {
     this.S = def.spec.wingAreaM2;
@@ -235,6 +237,7 @@ export class FlightDynamics {
     this.omega = [0, 0, 0];
     this.crashed = null;
     this.crashPart = '';
+    this.graceUntil = speedMs < 1 ? 3 : 0;
     this.wasOnGround = speedMs < 1;
     this.airborneTime = 0;
     this.time = 0;
@@ -493,9 +496,10 @@ export class FlightDynamics {
     let touchdownSink = 0;
 
     // Structure: any contact is a crash.
+    const settling = this.time < this.graceUntil && len(this.vel) < 15;
     for (const pt of this.structPts) {
       const off = mulMV(R, pt.body);
-      if (heightAbove(off) < 0) {
+      if (heightAbove(off) < 0 && !settling) {
         const sink = -dot(this.vel, n);
         this.crashPart = pt.name;
         if (pt.name === 'belly' && this.gearPos < 0.5) this.crashed = 'belly-landing';

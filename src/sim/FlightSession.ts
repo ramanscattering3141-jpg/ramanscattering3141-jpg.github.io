@@ -135,7 +135,11 @@ export class FlightSession {
   }
 
   /** Loads terrain around the spawn point and places the aircraft. */
-  async spawn() {
+  /**
+   * @param groundProbe optional: height of the visible (photoreal) surface at a point,
+   *   so the aircraft is placed on the scenery you see rather than the elevation model.
+   */
+  async spawn(groundProbe?: (lat: number, lon: number) => Promise<number | undefined>) {
     this.status = 'loading';
     const sp = this.spawnPoint();
     const zoom = sp.airborne ? 12 : 15;
@@ -147,7 +151,13 @@ export class FlightSession {
     c.parkingBrake = false;
     c.throttle = 0;
     c.trim = 0;
-    const ground = this.elevation.height(sp.lat, sp.lon) ?? sp.alt;
+    const dem = this.elevation.height(sp.lat, sp.lon) ?? sp.alt;
+    let ground = dem;
+    this.groundOffset = 0;
+    if (!sp.airborne && groundProbe) {
+      const h = await groundProbe(sp.lat, sp.lon);
+      if (h !== undefined && Math.abs(h - dem) < 40) { this.groundOffset = h - dem; ground = h; }
+    }
     if (sp.airborne) {
       if (this.config.start === 'final') { c.flapsIndex = def.flaps.length - 1; c.gearDown = true; }
       else c.gearDown = !def.gear.retractable;

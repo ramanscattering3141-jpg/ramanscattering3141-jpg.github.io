@@ -110,3 +110,17 @@ describe('performance', () => {
     expect(kt).toBeLessThan(145);
   });
 });
+
+describe('spawn robustness', () => {
+  for (const id of ['c172', 'b738', 'b744']) {
+    it(`${id} settles without crashing if the ground is 1.5 m higher than where it was placed`, () => {
+      const fd = onRunway(id);
+      fd.controls.parkingBrake = true;
+      // Ground suddenly higher than expected (e.g. photoreal scenery above the elevation model).
+      run(fd, flatEnv(1.5), 8);
+      expect(fd.crashed, `${id} crashed: ${fd.crashed} ${fd.crashPart}`).toBeNull();
+      expect(fd.telemetry.onGround).toBe(true);
+      expect(Math.abs(fd.telemetry.agl - fd.restingHeight())).toBeLessThan(0.3);
+    });
+  }
+});

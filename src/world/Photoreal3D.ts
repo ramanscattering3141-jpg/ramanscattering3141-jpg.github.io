@@ -121,7 +121,31 @@ export class Photoreal3D {
    * Samples the rendered scanned surface under the aircraft and updates the
    * smoothed correction relative to the elevation model. Call once per frame.
    */
-  updateGround(dt: number, lat: number, lon: number, demHeight: number | null, aglM: number, exclude: object[]) {
+  /** Starts a new flight's ground matching from a known value (0 = none). */
+  resetGround(value = 0) {
+    this.groundCorrection = value;
+    this.correctionAge = value ? 0 : Infinity;
+  }
+
+  /**
+   * Height of the scanned surface at a point, loading the most detailed tiles there
+   * first (used before spawning on a runway). Undefined if unavailable within the timeout.
+   */
+  async probe(lat: number, lon: number, exclude: object[], timeoutMs = 12000): Promise<number | undefined> {
+    if (!this.active || !this.scene.sampleHeightSupported) return undefined;
+    try {
+      const res = await Promise.race([
+        this.scene.sampleHeightMostDetailed([Cartographic.fromDegrees(lon, lat)], exclude, 0.5),
+        new Promise<undefined>(r => setTimeout(() => r(undefined), timeoutMs)),
+      ]);
+      const h = res?.[0]?.height;
+      return h !== undefined && isFinite(h) ? h : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  updateGround(dt: number, lat: number, lon: number, demHeight: number | null, aglM: number, exclude: object[], onGround = false) {
     if (!this.active || demHeight === null || aglM > 600 || !this.scene.sampleHeightSupported) {
       this.correctionAge += dt;
       if (this.correctionAge > 3) this.groundCorrection *= Math.max(0, 1 - dt);
@@ -137,8 +161,11 @@ export class Photoreal3D {
     // Ignore implausible hits (a building roof, a bridge above us, a cloud).
     const target = clamp(h - demHeight, -30, 30);
     if (Math.abs(h - demHeight) > 40) { this.correctionAge += dt; return; }
+    // Move gradually and rate-limited so tile detail changes can never "hit" the aircraft:
+    // at most 0.5 m/s with weight on wheels, 3 m/s in the air.
     const k = Math.min(1, dt * (this.correctionAge > 2 ? 0.8 : 2.5));
-    this.groundCorrection += (target - this.groundCorrection) * k;
+    const maxStep = (onGround ? 0.5 : 3) * dt;
+    this.groundCorrection += clamp((target - this.groundCorrection) * k, -maxStep, maxStep);
     this.correctionAge = 0;
   }
 }

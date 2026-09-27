@@ -246,7 +246,12 @@ export class App {
     };
     const sp = r.config.start === 'final' ? r.config.destination : r.config.departure;
     v.camera.setView({ destination: Cartesian3.fromDegrees(sp.lon, sp.lat - 0.02, (sp.elevM ?? 0) + 800), orientation: { heading: 0, pitch: -0.5, roll: 0 } });
-    await s.spawn();
+    // Ground matching must start fresh for every flight; if photoreal scenery is on, place
+    // the aircraft on the scanned surface itself (after its tiles have loaded).
+    this.photoreal.resetGround(0);
+    this.flightUI.showLoading(this.photoreal.active ? `Loading 3D scenery at ${r.config.departure.name}…` : `Loading terrain around ${r.config.departure.name}…`);
+    await s.spawn(this.photoreal.active ? (lat, lon) => this.photoreal.probe(lat, lon, []) : undefined);
+    this.photoreal.resetGround(s.groundOffset);
     if (this.session !== s) return;
     this.flightUI.closeOverlay();
     const startCam: CameraMode = 'chase';
@@ -424,7 +429,7 @@ export class App {
     if (s && s.status !== 'loading') {
       if (this.photoreal.active) {
         const t = s.fdm.telemetry;
-        this.photoreal.updateGround(dt, t.lat, t.lon, this.elevation.height(t.lat, t.lon), t.agl, s.view.pickExclusions);
+        this.photoreal.updateGround(dt, t.lat, t.lon, this.elevation.height(t.lat, t.lon), t.agl, s.view.pickExclusions, t.onGround);
         s.groundOffset = this.photoreal.groundCorrection;
       } else s.groundOffset = 0;
     }
