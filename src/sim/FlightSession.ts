@@ -88,7 +88,7 @@ export class FlightSession {
     const est = this.plan.estimate(def.spec.cruiseKtas * KT, def.perf.climbKt * KT * 1.2, def.perf.maxVsFpm * 0.5 * FT / 60);
     // Duration is only scored for real point-to-point flights.
     const timed = config.start !== 'final' && config.departure.ident !== config.destination.ident;
-    this.scoring = new Scoring(config.cruiseAltFt * FT, 0, timed ? est.eteS : 0, fuel);
+    this.scoring = new Scoring(timed ? config.cruiseAltFt * FT : 0, 0, timed ? est.eteS : 0, fuel);
     this.env = {
       windEnu: (lat, lon, alt) => {
         const g = this.elevation.height(lat, lon) ?? 0;

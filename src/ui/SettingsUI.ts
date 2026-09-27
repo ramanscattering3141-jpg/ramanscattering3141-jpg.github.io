@@ -103,6 +103,7 @@ export class SettingsUI {
               .map(([v, n]) => h('option', { value: v, selected: s.realism === v }, n)))),
         toggle('Country borders', 'showBorders'),
         toggle('City & airport labels', 'showLabels'),
+        toggle('Sound (engine, wind, warnings)', 'sound'),
         h('button', { class: 'btn', onclick: () => { Object.assign(s, { ...DEFAULT_SETTINGS, bindings: s.bindings, ionToken: s.ionToken }); saveSettings(s); (Object.keys(s) as (keyof Settings)[]).forEach(k => this.apply(s, k)); this.render(); } }, 'Restore default settings'),
       );
     }

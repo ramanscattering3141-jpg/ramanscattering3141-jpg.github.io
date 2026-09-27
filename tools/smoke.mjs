@@ -45,11 +45,11 @@ console.log('after takeoff roll', JSON.stringify(await tel()));
 await ff(20, `c.elevator = Math.max(-1, Math.min(1, (7 - t.pitch) * 0.1)); c.aileron = -t.roll * 0.05; c.rudder = 0;`);
 console.log('climb', JSON.stringify(await tel()));
 await page.screenshot({ path: `${OUT}/03-climb-chase.png` });
-await page.keyboard.press('Digit1'); await page.waitForTimeout(2500);
+await page.keyboard.press('Digit1'); await page.waitForTimeout(12000);
 await page.screenshot({ path: `${OUT}/04-cockpit.png` });
 await page.keyboard.press('Digit3'); await page.waitForTimeout(2500);
 await page.screenshot({ path: `${OUT}/05-wing.png` });
-await page.keyboard.press('Digit5'); await page.waitForTimeout(2500);
+await page.keyboard.press('Digit5'); await page.waitForTimeout(12000);
 await page.screenshot({ path: `${OUT}/06-tower.png` });
 console.log('after views', JSON.stringify(await tel()));
 

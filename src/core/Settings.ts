@@ -21,6 +21,7 @@ export interface Settings {
   units: 'aviation' | 'metric';
   bindings: Partial<Record<Action, string[]>>;
   controlSensitivity: number;
+  sound: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -40,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   units: 'aviation',
   bindings: {},
   controlSensitivity: 1,
+  sound: true,
 };
 
 const KEY = 'world-flight-sim.settings.v1';

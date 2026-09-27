@@ -37,6 +37,7 @@ export class Scoring {
     if (gps.hasPlan && depDistM > 8 * NM && destDistM > 12 * NM) {
       this.xtkSq += gps.crossTrackM ** 2 * dt; this.xtkN += dt;
     }
+    if (this.cruiseAltM <= 0) return; // no cruise segment (approach-only flights)
     if (!this.reachedCruise && Math.abs(t.alt - this.cruiseAltM) < 300 * FT) this.reachedCruise = true;
     if (this.reachedCruise && gps.hasPlan && gps.distToTodM > 0) { this.altDevSum += Math.abs(t.alt - this.cruiseAltM) * dt; this.altDevN += dt; }
   }

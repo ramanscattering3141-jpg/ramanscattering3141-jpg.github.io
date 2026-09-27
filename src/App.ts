@@ -14,6 +14,7 @@ import { WeatherVisuals } from './environment/WeatherVisuals';
 import { Input, type TriggerAction } from './input/Input';
 import { CameraSystem, CAMERA_MODES, type CameraMode } from './camera/CameraSystem';
 import { FlightSession } from './sim/FlightSession';
+import { SimAudio } from './sim/Audio';
 import { Planner, type PlannerResult } from './ui/Planner';
 import { FlightUI } from './ui/FlightUI';
 import { SettingsUI } from './ui/SettingsUI';
@@ -49,6 +50,7 @@ export class App {
   private lastResult: PlannerResult | null = null;
   private routeEntities: Entity[] = [];
   private status: HTMLElement;
+  audio = new SimAudio();
 
   constructor(private cesiumEl: HTMLElement, private uiEl: HTMLElement) {
     let s = loadSettings();
@@ -90,6 +92,10 @@ export class App {
     }, this.settings.realism);
     this.planner.onPreview = (dep, dest, plan) => this.previewRoute(dep, dest, plan);
     this.input.on(a => this.onAction(a));
+    // Browsers only allow audio after a user gesture.
+    const unlock = () => { this.audio.start(); this.audio.setMuted(!this.settings.sound); };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
 
     viewer.scene.preUpdate.addEventListener(() => this.frame());
     viewer.camera.setView({ destination: Cartesian3.fromDegrees(-100, 30, 2.2e7) });
@@ -122,6 +128,7 @@ export class App {
       case 'bindings': break;
       case 'realism': break;
       case 'controlSensitivity': break;
+      case 'sound': this.audio.setMuted(!s.sound); break;
     }
     if (k === 'terrainQuality' || k === 'shadowQuality' || k === 'textureQuality' || k === 'drawDistance') return;
   }
@@ -212,6 +219,7 @@ export class App {
     this.globe.viewer.scene.screenSpaceCameraController.enableTranslate = true;
     this.camera = null;
     this.flightUI.detach();
+    this.audio.update(null, true, false);
     this.weatherVisuals.clear();
     this.planner.show(true);
   }
@@ -344,6 +352,7 @@ export class App {
       s.view.update(s.renderPos, s.renderQ, s.fdm, running ? dt * s.simRate : 0, now / 1000, !!hideModel);
       this.camera?.update(dt, s.renderPos, s.renderQ, s.fdm.vel);
       this.flightUI.update(dt);
+      this.audio.update(s.fdm, s.paused || this.settingsUI.isOpen, this.camera?.mode === 'cockpit');
     }
     // World systems around the camera (or aircraft).
     const camGeo = ecefToGeodetic([v.camera.positionWC.x, v.camera.positionWC.y, v.camera.positionWC.z]);
