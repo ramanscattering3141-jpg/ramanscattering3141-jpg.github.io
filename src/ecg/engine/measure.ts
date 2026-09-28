@@ -99,8 +99,11 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
   const domBeats = sig.beats.filter((b) => b.ev.mechanism === dominant && b.ev.t >= 0);
   const mid = domBeats[Math.floor(domBeats.length / 2)];
   const qrs = mid ? Math.round(mid.morph.qrsDur) : null;
-  const qt = mid ? Math.round(mid.morph.qt) : null;
-  const rrForQT = mid ? mid.rr : meanRR;
+  // QT is only meaningful for organised non-tachyarrhythmic beats: prefer supraventricular/paced beats.
+  const qtPool = sig.beats.filter((b) => b.ev.t >= 0 && ['conducted', 'junction', 'ap', 'paced', 'escape', 'AIVR'].includes(b.ev.mechanism));
+  const qtBeat = qtPool[Math.floor(qtPool.length / 2)];
+  const qt = qtBeat ? Math.round(qtBeat.morph.qt) : null;
+  const rrForQT = qtBeat ? qtBeat.rr : meanRR;
   const qtcB = qt && rrForQT ? Math.round(qt / Math.sqrt(rrForQT / 1000)) : null;
   const qtcF = qt && rrForQT ? Math.round(qt / Math.cbrt(rrForQT / 1000)) : null;
   const polymorphic = dominant === 'torsades de pointes' || dominant === 'polymorphic VT';
