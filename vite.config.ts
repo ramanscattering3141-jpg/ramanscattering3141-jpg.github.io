@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
@@ -19,6 +20,16 @@ export default defineConfig({
       ],
     }),
   ],
-  build: { chunkSizeWarningLimit: 6000, target: 'es2022' },
+  build: {
+    chunkSizeWarningLimit: 6000,
+    target: 'es2022',
+    // Two independent apps: the flight simulator (/) and the ECG physiology lab (/ecg/).
+    rolldownOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        ecg: resolve(import.meta.dirname, 'ecg/index.html'),
+      },
+    },
+  },
   server: { host: true },
 });
