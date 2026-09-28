@@ -1,7 +1,7 @@
 // Signal synthesis: sum every atrial and ventricular activation/repolarisation component
 // into a 3-D heart-vector time series, then project it onto each lead axis.
 
-import { LEADS, TWELVE, type LeadId } from './leads';
+import { ELECTRODE_COEF, LEADS, TWELVE, type LeadId } from './leads';
 import { buildP, buildVentBeat, localAt, shapeAt, type BeatMorph, type Comp } from './morphology';
 import type { Physio } from './params';
 import { effectiveSinusRate } from './params';
@@ -160,8 +160,16 @@ export function synthesize(p: Physio, sim: SimResult, opts: SynthOptions = {}): 
     for (const c of morph.comps) addComp(ev.t, c);
   }
 
+  // --- Dextrocardia: the heart is a mirror image across the sagittal plane (x → −x). ---
+  if (p.dextrocardia) for (let i = 0; i < n; i++) vx[i] = -vx[i];
+
   // --- Project onto leads ---
-  const leadIds = opts.leads ?? TWELVE;
+  const requested = opts.leads ?? TWELVE;
+  const art = p.artifact ?? { kind: 'none', electrode: 'RA', amp: 0 };
+  const reversal = p.leadReversal ?? 'none';
+  const electrodeEffects = reversal !== 'none' || (art.kind !== 'none' && art.amp > 0);
+  // Electrode-level effects need the true I and II to reconstruct the limb-electrode potentials.
+  const leadIds: LeadId[] = electrodeEffects ? [...new Set<LeadId>([...requested, 'I', 'II'])] : requested;
   const out: Partial<Record<LeadId, Float32Array>> = {};
   const noiseAmp = opts.noise === false ? 0 : p.noise;
   const rngN = mulberry32(p.rhythm.seed * 97 + 3);
@@ -210,8 +218,76 @@ export function synthesize(p: Physio, sim: SimResult, opts: SynthOptions = {}): 
     }
     out[id] = arr;
   }
+
+  if (electrodeEffects) {
+    const I = out.I!;
+    const II = out.II!;
+    const artSig = artifactSignal(art.kind, art.amp, n, from, dt, p.rhythm.seed);
+    const eIdx = { RA: 0, LA: 1, LL: 2 }[art.electrode];
+    // Recorded cable inputs: which true electrode potential each cable actually carries.
+    const src: [number, number, number] = reversal === 'raLa' ? [1, 0, 2] : reversal === 'raLl' ? [2, 1, 0] : reversal === 'laLl' ? [0, 2, 1] : [0, 1, 2];
+    const recorded: Partial<Record<LeadId, Float32Array>> = {};
+    for (const id of requested) recorded[id] = new Float32Array(out[id]!);
+    const phi = [0, 0, 0];
+    const rec = [0, 0, 0];
+    for (let i = 0; i < n; i++) {
+      // Limb-electrode potentials relative to Wilson's central terminal (they sum to zero).
+      phi[0] = -(I[i] + II[i]) / 3;
+      phi[1] = (2 * I[i] - II[i]) / 3;
+      phi[2] = (2 * II[i] - I[i]) / 3;
+      const a = artSig ? artSig[i] : 0;
+      for (let e = 0; e < 3; e++) rec[e] = phi[src[e]] + (src[e] === eIdx ? a : 0);
+      const d0 = rec[0] - phi[0];
+      const d1 = rec[1] - phi[1];
+      const d2 = rec[2] - phi[2];
+      for (const id of requested) {
+        const k = ELECTRODE_COEF[id];
+        recorded[id]![i] += k[0] * d0 + k[1] * d1 + k[2] * d2;
+      }
+    }
+    return { fs, from, n, leads: recorded, vcg: [vx, vy, vz], beats };
+  }
   return { fs, from, n, leads: out, vcg: [vx, vy, vz], beats };
 }
+
+/**
+ * Non-cardiac potential generated at ONE limb electrode.
+ *  - tremor: continuous ~5 Hz rhythmic muscle activity (Parkinsonian tremor, shivering) → can mimic flutter/AF.
+ *  - motion: a burst of large, rapid oscillations (tooth-brushing, CPR-like movement, scratching) → can mimic VT/VF.
+ * The heart keeps beating normally underneath: native QRS complexes "march through" at the sinus rate.
+ */
+function artifactSignal(kind: string, amp: number, n: number, from: number, dt: number, seed: number): Float32Array | null {
+  if (kind === 'none' || amp <= 0) return null;
+  const out = new Float32Array(n);
+  const rng = mulberry32(seed * 13 + 5);
+  if (kind === 'tremor') {
+    const f = 4.8 + rng() * 1.2;
+    const ph = rng() * 6.28;
+    for (let i = 0; i < n; i++) {
+      const t = (from + i * dt) / 1000;
+      const env = 0.75 + 0.25 * Math.sin(2 * Math.PI * 0.3 * t + ph);
+      out[i] = 0.22 * amp * env * (Math.sin(2 * Math.PI * f * t + ph) + 0.35 * Math.sin(4 * Math.PI * f * t + 2 * ph));
+    }
+    return out;
+  }
+  // Motion burst from 2.5 s to 6.5 s with irregular ~4–5 Hz oscillation.
+  const t0 = 2500;
+  const t1 = 6500;
+  let phase = rng() * 6.28;
+  let fr = 4.5;
+  for (let i = 0; i < n; i++) {
+    const t = from + i * dt;
+    if (i % 100 === 0) fr = 4 + rng() * 1.4;
+    phase += 2 * Math.PI * fr * (dt / 1000);
+    if (t < t0 || t > t1) continue;
+    const env = smoothEnv((t - t0) / 250) * smoothEnv((t1 - t) / 250);
+    const x = Math.sin(phase);
+    out[i] = 1.1 * amp * env * Math.sign(x) * Math.pow(Math.abs(x), 0.6);
+  }
+  return out;
+}
+
+const smoothEnv = (u: number): number => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 
 /** Sample the heart vector of a single beat on its own (for the vector loop / physiology views). */
 export function beatVectorLoop(comps: Comp[], t0: number, t1: number, step = 2): Vec3[] {

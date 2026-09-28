@@ -6,6 +6,7 @@ import { SOURCES } from '../content/sources';
 import { resolveDx } from '../content/index';
 import { applyPatch, makePhysio, type Physio, type PhysioPatch } from '../engine/params';
 import { PRESETS } from '../engine/presets';
+import { isReviewed } from './progress';
 
 export function header(kicker: string, title: string, intro?: string): HTMLElement {
   return h('header', null, h('div', { class: 'kicker' }, kicker), h('h1', null, title), intro ? p(intro, 'lead') : null);
@@ -54,6 +55,7 @@ export function dxTile(d: Dx): HTMLAnchorElement {
     'a',
     { class: 'tile', href: `#/dx/${d.id}` },
     h('span', { class: `pill tier ${d.tier === 1 ? 'core' : ''}` }, d.tier === 1 ? 'core' : d.tier === 2 ? 'important' : 'advanced'),
+    isReviewed(d.id) ? h('span', { class: 'pill done', title: 'You marked this as reviewed' }, '✓ reviewed') : null,
     h('h3', null, d.name),
     h('p', null, d.definition.length > 150 ? `${d.definition.slice(0, 147)}…` : d.definition),
   );
@@ -96,7 +98,8 @@ export function openInSimulator(p: Physio): void {
 export function takeSimState(): Physio | null {
   try {
     const v = sessionStorage.getItem(SIM_KEY);
-    return v ? (JSON.parse(v) as Physio) : null;
+    // Merge over current defaults so states saved by an older version gain any new fields.
+    return v ? makePhysio(JSON.parse(v) as PhysioPatch) : null;
   } catch {
     return null;
   }

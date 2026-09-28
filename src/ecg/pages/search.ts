@@ -20,7 +20,8 @@ export function renderSearch(root: HTMLElement, _parts: string[], q: URLSearchPa
   const groups: [string, string][] = [
     ['finding', 'ECG findings — why they happen'],
     ['diagnosis', 'Diagnoses'],
-    ['page', 'Interactive pages'],
+    ['page', 'Interactive pages & tools'],
+    ['term', 'Glossary'],
   ];
   for (const [k, title] of groups) {
     const list = hits.filter((x) => x.kind === k);

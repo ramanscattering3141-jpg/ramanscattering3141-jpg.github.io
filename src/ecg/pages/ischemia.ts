@@ -76,19 +76,21 @@ export function renderIschemia(root: HTMLElement): () => void {
   let stage: IschemiaStage = 'stemi';
   let extent = 0.9;
   const view = new EcgView({ layout: '12' });
-  const right = new EcgView({ layout: 'strips', leads: ['V4R'], rowMm: 22, showRhythm: false });
+  const EXTRA: LeadId[] = ['V4R', 'V7', 'V8', 'V9'];
+  const ALL: LeadId[] = [...TWELVE, ...EXTRA];
+  const right = new EcgView({ layout: 'strips', leads: EXTRA, rowMm: 16, showRhythm: false });
   const table = h('div', { class: 'table-scroll' });
   const explain = h('div', { class: 'callout' });
   const diagram = h('div');
   const rerun = debounce(() => {
     const pp = presetPhysio('nsr', { ischemia: { territory: terr, stage, extent }, noise: 0.05 });
-    const run = runEcg(pp, 10000, [...TWELVE, 'V4R']);
+    const run = runEcg(pp, 10000, ALL);
     // ST at J+60 for the beat in the middle of the strip
     const b = run.sig.beats[Math.floor(run.sig.beats.length / 2)];
     const idx = Math.round(b.ev.t + b.morph.qrsDur + 60 - run.sig.from);
     const baseIdx = Math.round(b.ev.t - 30 - run.sig.from);
     const st: Record<string, number> = {};
-    for (const l of [...TWELVE, 'V4R'] as LeadId[]) st[l] = (run.sig.leads[l]![idx] - run.sig.leads[l]![baseIdx]) * 10;
+    for (const l of ALL) st[l] = (run.sig.leads[l]![idx] - run.sig.leads[l]![baseIdx]) * 10;
     const elevated = (TWELVE as LeadId[]).filter((l) => st[l] >= (l === 'V2' || l === 'V3' ? 2 : 1));
     const depressed = (TWELVE as LeadId[]).filter((l) => st[l] <= -0.5);
     view.setOptions({ highlight: elevated });
@@ -96,7 +98,7 @@ export function renderIschemia(root: HTMLElement): () => void {
     right.setRun(run);
     diagram.replaceChildren(wallDiagram(terr, stage));
     table.replaceChildren(
-      h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Lead'), ...[...TWELVE, 'V4R'].map((l) => h('th', null, l)))), h('tbody', null, h('tr', null, h('td', null, 'ST (mm) at J+60'), ...[...TWELVE, 'V4R'].map((l) => h('td', { style: st[l] >= 1 ? 'color:var(--danger);font-weight:700' : st[l] <= -0.5 ? 'color:var(--accent);font-weight:700' : '' }, st[l].toFixed(1)))))),
+      h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Lead'), ...ALL.map((l) => h('th', null, l)))), h('tbody', null, h('tr', null, h('td', null, 'ST (mm) at J+60'), ...ALL.map((l) => h('td', { style: st[l] >= (EXTRA.includes(l) && l !== 'V4R' ? 0.5 : 1) ? 'color:var(--danger);font-weight:700' : st[l] <= -0.5 ? 'color:var(--accent);font-weight:700' : '' }, st[l].toFixed(1)))))),
     );
     const T = TERRITORY[terr];
     const stageText: Record<IschemiaStage, string> = {
@@ -107,10 +109,14 @@ export function renderIschemia(root: HTMLElement): () => void {
       old: 'Old infarct: scar generates no forces → pathological Q waves; ST usually back to baseline.',
       subendocardial: 'Subendocardial ischaemia: the injury vector points toward the cavity → diffuse ST depression, ST elevation in aVR (± V1). ST depression does not localise the artery.',
       wellens: 'Reperfused LAD: deep symmetric T inversion in V2–V3 with preserved R waves.',
+      deWinter: 'de Winter pattern: the ST vector points slightly AWAY from the anterior wall (J-point depression) while the T waves become hyperacute — an occlusion without ST elevation.',
+      aneurysm: 'LV aneurysm: established Q/QS waves with ST elevation that persists for weeks over dyskinetic scar; T waves are small relative to the QRS.',
+      takotsubo: 'Takotsubo (subacute): apex-centred repolarisation delay → deep widespread T inversion and QT prolongation, not confined to one coronary territory (the territory selector has little effect).',
     };
+    const posterior = (['V7', 'V8', 'V9'] as LeadId[]).map((l) => `${l} ${st[l].toFixed(1)}`).join(', ');
     explain.replaceChildren(
       p(`**${T.label}** (${T.artery}; classic leads ${T.leads}). ${stageText[stage]}`),
-      p(`Model result — ST elevation: ${elevated.join(', ') || 'none'}; ST depression: ${depressed.join(', ') || 'none'}; V4R ${st.V4R.toFixed(1)} mm.`, 'ref-meta'),
+      p(`Model result — ST elevation: ${elevated.join(', ') || 'none'}; ST depression: ${depressed.join(', ') || 'none'}; V4R ${st.V4R.toFixed(1)} mm; posterior ${posterior} mm (≥ 0.5 mm in V7–V9 is significant).`, 'ref-meta'),
     );
   }, 60);
   root.append(
@@ -126,13 +132,16 @@ export function renderIschemia(root: HTMLElement): () => void {
           ['old', 'Old (Q waves)'],
           ['subendocardial', 'Subendocardial'],
           ['wellens', 'Wellens'],
+          ['deWinter', 'de Winter'],
+          ['aneurysm', 'LV aneurysm'],
+          ['takotsubo', 'Takotsubo'],
         ],
         stage,
         (v) => ((stage = v), rerun()),
         'Stage',
       ),
       slider({ label: 'Extent of injury', min: 0.2, max: 1, step: 0.05, value: extent, onInput: (v) => ((extent = v), rerun()) }),
-      h('div', { class: 'grid-2' }, h('div', null, diagram, explain), h('div', null, h('h3', null, 'Right-sided lead V4R'), right.el)),
+      h('div', { class: 'grid-2' }, h('div', null, diagram, explain), h('div', null, h('h3', null, 'Right-sided (V4R) and posterior (V7–V9) leads'), right.el, p('Posterior leads face the inferobasal wall directly: the ST depression that V1–V3 show in posterior MI appears here as ST elevation (smaller voltages — the electrodes are farther away).', 'ref-meta'))),
       view.el,
       table,
     ),

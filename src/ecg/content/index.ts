@@ -5,10 +5,12 @@ import { VENTRICULAR_DX } from './dx_ventricular';
 import { CONDUCTION_DX } from './dx_conduction';
 import { MORPH_DX } from './dx_morph';
 import { METABOLIC_DX } from './dx_metabolic';
+import { EXTRA_DX } from './dx_extra';
 import { FINDINGS } from './findings';
+import { GLOSSARY } from './glossary';
 import { PRESETS } from '../engine/presets';
 
-export const ALL_DX: Dx[] = [...RHYTHM_DX, ...REENTRY_DX, ...VENTRICULAR_DX, ...CONDUCTION_DX, ...MORPH_DX, ...METABOLIC_DX];
+export const ALL_DX: Dx[] = [...RHYTHM_DX, ...REENTRY_DX, ...VENTRICULAR_DX, ...CONDUCTION_DX, ...MORPH_DX, ...METABOLIC_DX, ...EXTRA_DX];
 
 const byId = new Map(ALL_DX.map((d) => [d.id, d]));
 
@@ -27,7 +29,7 @@ export function dxByCategory(cats: Category[]): Dx[] {
 export const SECTION_CATS: Record<string, Category[]> = {
   rhythm: ['sinus', 'premature', 'atrial', 'junctional', 'reentrant', 'ventricular', 'arrest'],
   conduction: ['avblock', 'ivcd', 'pacing'],
-  structural: ['structural', 'pericardial', 'pulmonary'],
+  structural: ['structural', 'cardiomyopathy', 'pericardial', 'pulmonary', 'technical'],
   ischemia: ['ischemia'],
   metabolic: ['electrolyte', 'drug'],
   inherited: ['inherited'],
@@ -42,7 +44,7 @@ export function presetLabel(id: string): string {
 // ---------------------------------------------------------------------------
 
 export interface SearchHit {
-  kind: 'diagnosis' | 'finding' | 'page';
+  kind: 'diagnosis' | 'finding' | 'page' | 'term';
   id: string;
   title: string;
   subtitle: string;
@@ -80,6 +82,14 @@ const PAGES: { id: string; title: string; href: string; keys: string }[] = [
   { id: 'cases', title: 'ECG case generator', href: '#/cases', keys: 'case cases clinical vignette practice' },
   { id: 'challenge', title: 'ECG challenge mode', href: '#/challenge', keys: 'quiz challenge test practice level' },
   { id: 'sources', title: 'Sources & evidence', href: '#/sources', keys: 'references sources guidelines evidence citation' },
+  { id: 'tools-qtc', title: 'QTc calculator (Bazett, Fridericia, Framingham, Hodges)', href: '#/tools/qtc', keys: 'qtc calculator corrected qt bazett fridericia framingham hodges formula' },
+  { id: 'tools-chads', title: 'CHA₂DS₂-VASc calculator', href: '#/tools/chads', keys: 'cha2ds2-vasc chads vasc stroke risk anticoagulation af score calculator' },
+  { id: 'tools-sgarbossa', title: 'Sgarbossa / Smith-modified criteria (MI in LBBB or paced rhythm)', href: '#/tools/sgarbossa', keys: 'sgarbossa smith modified lbbb paced rhythm mi concordant discordant st elevation' },
+  { id: 'tools-wct', title: 'Wide-complex tachycardia algorithms (Brugada, Vereckei aVR)', href: '#/tools/wct', keys: 'wide complex tachycardia vt vs svt aberrancy brugada algorithm vereckei avr algorithm rs interval' },
+  { id: 'tools-leads', title: 'Lead reversal, dextrocardia & artefact lab', href: '#/tools/leads', keys: 'lead reversal limb lead swap misplaced electrodes dextrocardia artefact artifact tremor motion pseudo vt' },
+  { id: 'tools-posterior', title: 'Posterior (V7–V9) and right-sided (V4R) leads', href: '#/ischemia', keys: 'posterior leads v7 v8 v9 right sided v4r posterior mi' },
+  { id: 'glossary', title: 'Glossary', href: '#/glossary', keys: 'glossary definitions terms vocabulary' },
+  { id: 'path', title: 'Learning path & progress', href: '#/path', keys: 'learning path curriculum progress reviewed study plan' },
 ];
 
 /** Curated query expansions so that clinical phrases map to the right tags. */
@@ -177,6 +187,14 @@ export function search(query: string): SearchHit[] {
     if (k.includes(q)) score += 20;
     for (const w of words) if (k.includes(w)) score += 3;
     if (score > 5) hits.push({ kind: 'page', id: pg.id, title: pg.title, subtitle: 'Interactive page', href: pg.href, score });
+  }
+  for (const g of GLOSSARY) {
+    let score = 0;
+    const t = norm(g.term);
+    if (t === q) score += 35;
+    else if (t.includes(q) || (q.length > 3 && q.includes(t))) score += 18;
+    if ((g.aka ?? []).some((a) => norm(a) === q)) score += 30;
+    if (score > 0) hits.push({ kind: 'term', id: `term-${g.id}`, title: `Glossary: ${g.term}`, subtitle: g.def.slice(0, 140), href: `#/glossary/${g.id}`, score });
   }
   return hits.sort((a, b) => b.score - a.score).slice(0, 30);
 }

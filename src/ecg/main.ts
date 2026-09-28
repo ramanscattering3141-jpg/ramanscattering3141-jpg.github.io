@@ -16,6 +16,9 @@ import { renderChallenge } from './pages/challenge';
 import { renderSandbox } from './pages/sandbox';
 import { renderDdx } from './pages/ddx';
 import { renderSearch, renderSources } from './pages/search';
+import { renderTools } from './pages/tools';
+import { renderGlossary } from './pages/glossary';
+import { renderPath } from './pages/path';
 import { disclaimer } from './ui/common';
 
 export type Cleanup = (() => void) | void;
@@ -38,7 +41,10 @@ const NAV: { letter: string; label: string; href: string; match: string }[] = [
   { letter: 'N', label: 'Physiology Sandbox', href: '#/sandbox', match: 'sandbox' },
 ];
 const EXTRA: { label: string; href: string; match: string }[] = [
+  { label: 'Learning path & progress', href: '#/path', match: 'path' },
   { label: 'Differential diagnosis engine', href: '#/ddx', match: 'ddx' },
+  { label: 'Clinical tools & calculators', href: '#/tools', match: 'tools' },
+  { label: 'Glossary', href: '#/glossary', match: 'glossary' },
   { label: 'Sources & evidence', href: '#/sources', match: 'sources' },
 ];
 
@@ -68,6 +74,9 @@ const ROUTES: Record<string, Renderer> = {
   ddx: renderDdx,
   search: renderSearch,
   sources: renderSources,
+  tools: renderTools,
+  glossary: renderGlossary,
+  path: renderPath,
 };
 
 function applyTheme(t: string): void {

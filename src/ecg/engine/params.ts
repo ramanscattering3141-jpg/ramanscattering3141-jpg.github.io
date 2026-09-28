@@ -6,7 +6,10 @@ export type AtrialSite = 'sinus' | 'highRA' | 'lowRA' | 'leftAtrial' | 'lowLA' |
 export type VentSite = 'rvApex' | 'rvot' | 'lvot' | 'lvApex' | 'lvLateral' | 'lvInferobasal' | 'septal' | 'fascicularPosterior' | 'fascicularAnterior';
 export type ApLocation = 'leftLateral' | 'leftPosterior' | 'posteroseptal' | 'rightFreeWall' | 'anteroseptal' | 'midseptal';
 export type Territory = 'anteroseptal' | 'anterior' | 'anterolateral' | 'highLateral' | 'lateral' | 'inferior' | 'posterior' | 'rv' | 'proxLAD' | 'wrapLAD' | 'proxRCA' | 'lcx' | 'diffuseSubendo';
-export type IschemiaStage = 'none' | 'hyperacute' | 'stemi' | 'evolving' | 'old' | 'subendocardial' | 'wellens';
+export type IschemiaStage = 'none' | 'hyperacute' | 'stemi' | 'evolving' | 'old' | 'subendocardial' | 'wellens' | 'deWinter' | 'aneurysm' | 'takotsubo';
+export type LeadReversal = 'none' | 'raLa' | 'raLl' | 'laLl';
+export type ArtifactKind = 'none' | 'tremor' | 'motion';
+export type Electrode = 'RA' | 'LA' | 'LL';
 export type Bundle = 'normal' | 'rbbb' | 'incompleteRbbb' | 'lbbb' | 'lafb' | 'lpfb' | 'rbbb+lafb' | 'rbbb+lpfb' | 'ivcd';
 export type AtrialMechanism = 'sinus' | 'focalAT' | 'mat' | 'flutter' | 'fibrillation' | 'none';
 export type VentMechanism = 'none' | 'monoVT' | 'polyVT' | 'torsades' | 'vflutter' | 'vf' | 'aivr' | 'bidirectional' | 'asystole';
@@ -139,6 +142,13 @@ export interface Physio {
   lowVoltage: number; // 0..1 (effusion / infiltration)
   alternans: number; // 0..1 beat-to-beat QRS amplitude alternation (swinging heart in large effusion)
   hypothermia: number; // 0..1 (Osborn waves)
+  // Cardiomyopathies
+  hcm: number; // 0..1 asymmetric septal hypertrophy (exaggerated septal forces → deep narrow Q waves)
+  arvc: number; // 0..1 fibrofatty RV myocardium (epsilon wave, right-precordial T inversion, terminal delay)
+  // Recording / anatomy (not physiology of the heart itself)
+  dextrocardia: boolean; // mirror-image heart position
+  leadReversal: LeadReversal; // limb-electrode cable swap
+  artifact: { kind: ArtifactKind; electrode: Electrode; amp: number };
   rhythm: RhythmParams;
 }
 
@@ -231,6 +241,11 @@ export function defaultPhysio(): Physio {
     lowVoltage: 0,
     alternans: 0,
     hypothermia: 0,
+    hcm: 0,
+    arvc: 0,
+    dextrocardia: false,
+    leadReversal: 'none',
+    artifact: { kind: 'none', electrode: 'RA', amp: 0.6 },
     rhythm: defaultRhythm(),
   };
 }

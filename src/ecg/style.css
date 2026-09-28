@@ -345,6 +345,56 @@ small {
   color: var(--danger);
   border-color: transparent;
 }
+.pill.done {
+  color: var(--good);
+  border-color: var(--good);
+  background: transparent;
+}
+h2 .pill {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+/* Glossary, learning path */
+.glossary-filter {
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 12px;
+}
+.glossary {
+  margin: 0;
+}
+.gl-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.gl-item.hit {
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 10px;
+}
+.gl-item dt {
+  font-weight: 700;
+}
+.gl-item dd {
+  margin: 4px 0 0;
+}
+.gl-item dd p {
+  margin: 0 0 4px;
+}
+.checklist {
+  list-style: none;
+  padding: 0;
+  columns: 2 240px;
+}
+.checklist li {
+  break-inside: avoid;
+  padding: 2px 0;
+}
+progress.progress {
+  width: 100%;
+  height: 12px;
+  accent-color: var(--good);
+}
 .callout {
   border-left: 4px solid var(--accent);
   background: var(--accent-soft);

@@ -1,7 +1,8 @@
 import { h, p, ul } from '../ui/dom';
 import { bullets, dxLink, dxTile, header, openInSimulator, presetPhysio, refList, section, whyBox } from '../ui/common';
 import { EcgPanel } from '../ui/panel';
-import { button, segmented } from '../ui/controls';
+import { button, segmented, toggle } from '../ui/controls';
+import { isReviewed, setReviewed } from '../ui/progress';
 import { ALL_DX, SECTION_CATS, dxByCategory, presetLabel, resolveDx } from '../content/index';
 import { CATEGORY_LABEL, type Category, type Dx, type Management } from '../content/types';
 import { PRESETS } from '../engine/presets';
@@ -34,14 +35,14 @@ export function renderLibrary(root: HTMLElement): void {
 }
 
 const SECTION_META: Record<string, { kicker: string; title: string; intro: string }> = {
-  structural: { kicker: 'F · Structural / Physiological ECG Changes', title: 'Hypertrophy, enlargement, pericardial and pulmonary patterns', intro: 'How chamber mass, chamber size, fluid, inflammation and pressure load reshape the vectors — and therefore the voltages, axis and ST–T.' },
+  structural: { kicker: 'F · Structural / Physiological ECG Changes', title: 'Hypertrophy, cardiomyopathy, pericardial, pulmonary and positional patterns', intro: 'How chamber mass, myocardial disease, fluid, inflammation, pressure load — and the position of the heart and electrodes — reshape the vectors, and therefore the voltages, axis and ST–T.' },
   inherited: { kicker: 'I · Inherited / Primary Electrical Syndromes', title: 'Repolarisation and J-wave disorders', intro: 'Channelopathies change the action potential in specific layers of the ventricle; the ECG pattern follows from which current and which layer. Use the ST/T/QT lab and the action-potential explorer alongside.' },
 };
 
 export function renderSection(root: HTMLElement, key: string): void {
   const meta = SECTION_META[key];
   root.append(header(meta.kicker, meta.title, meta.intro));
-  if (key === 'structural') root.append(h('p', null, h('a', { class: 'btn btn-primary', href: '#/sandbox/qrs' }, 'Open the QRS / hypertrophy lab →'), ' ', h('a', { class: 'btn', href: '#/sandbox/p' }, 'P-wave lab →')));
+  if (key === 'structural') root.append(h('p', null, h('a', { class: 'btn btn-primary', href: '#/sandbox/qrs' }, 'Open the QRS / hypertrophy lab →'), ' ', h('a', { class: 'btn', href: '#/sandbox/p' }, 'P-wave lab →'), ' ', h('a', { class: 'btn', href: '#/tools/leads' }, 'Lead reversal & artefact lab →')));
   if (key === 'inherited') root.append(h('p', null, h('a', { class: 'btn btn-primary', href: '#/sandbox/st' }, 'Open the ST/T/QT lab →'), ' ', h('a', { class: 'btn', href: '#/fundamentals/ap' }, 'Action-potential explorer →'), ' ', h('a', { class: 'btn', href: '#/rhythms/avrt-lab' }, 'WPW / accessory pathways →')));
   for (const cat of SECTION_CATS[key]) {
     const list = dxByCategory([cat]);
@@ -74,7 +75,8 @@ export function renderDx(root: HTMLElement, parts: string[]): (() => void) | voi
     return;
   }
   root.append(header(CATEGORY_LABEL[d.category as Category], d.name, d.definition));
-  root.append(h('div', null, h('span', { class: `pill ${d.tier === 1 ? 'core' : ''}` }, d.tier === 1 ? 'core curriculum' : d.tier === 2 ? 'important' : 'advanced'), ...(d.aliases ?? []).slice(0, 6).map((a) => h('span', { class: 'pill' }, a))));
+  const reviewed = toggle('Mark as reviewed (saved in this browser)', isReviewed(d.id), (v) => setReviewed(d.id, v));
+  root.append(h('div', null, h('span', { class: `pill ${d.tier === 1 ? 'core' : ''}` }, d.tier === 1 ? 'core curriculum' : d.tier === 2 ? 'important' : 'advanced'), ...(d.aliases ?? []).slice(0, 6).map((a) => h('span', { class: 'pill' }, a))), h('div', { class: 'btn-row' }, reviewed, h('a', { href: '#/path' }, 'Learning path & progress →')));
 
   let panel: EcgPanel | null = null;
   if (d.preset) {

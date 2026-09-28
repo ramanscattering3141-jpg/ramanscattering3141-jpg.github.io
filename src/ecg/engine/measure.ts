@@ -107,7 +107,9 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
   const qtcB = qt && rrForQT ? Math.round(qt / Math.sqrt(rrForQT / 1000)) : null;
   const qtcF = qt && rrForQT ? Math.round(qt / Math.cbrt(rrForQT / 1000)) : null;
   const polymorphic = dominant === 'torsades de pointes' || dominant === 'polymorphic VT';
-  const axis = mid && !polymorphic && !cont ? Math.round(axisOf(mid.morph.qrsArea)) : null;
+  // Dextrocardia mirrors the real heart vector (x → −x); cable reversal does not change the heart.
+  const area = mid ? (p.dextrocardia ? ([-mid.morph.qrsArea[0], mid.morph.qrsArea[1], mid.morph.qrsArea[2]] as const) : mid.morph.qrsArea) : null;
+  const axis = area && !polymorphic && !cont ? Math.round(axisOf(area)) : null;
 
   let avRelation = 'n/a';
   if (af) avRelation = 'no organised atrial activity (fibrillatory waves)';

@@ -15,7 +15,9 @@ export type Category =
   | 'pulmonary'
   | 'electrolyte'
   | 'drug'
-  | 'inherited';
+  | 'inherited'
+  | 'cardiomyopathy'
+  | 'technical';
 
 export const CATEGORY_LABEL: Record<Category, string> = {
   sinus: 'Sinus rhythms',
@@ -35,6 +37,8 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   electrolyte: 'Electrolytes',
   drug: 'Drugs & toxicology',
   inherited: 'Inherited / primary electrical syndromes',
+  cardiomyopathy: 'Cardiomyopathies & athlete’s heart',
+  technical: 'Heart position, lead reversal & artefact',
 };
 
 export type WhyLevel = 'cell' | 'conduction' | 'vector' | 'lead' | 'waveform' | 'diagnosis' | 'clinical' | 'treatment';
