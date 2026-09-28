@@ -48,7 +48,7 @@ export const ACLS: AclsCard[] = [
     group: 'tachy',
     title: 'Tachyarrhythmia with a pulse — UNSTABLE',
     presets: ['afRvr', 'monoVT', 'flutter21'],
-    recognition: ['Persistent tachyarrhythmia causing: hypotension, acutely altered mental status, signs of shock, ischaemic chest discomfort, or acute heart failure', 'Rates < 150/min rarely cause instability unless ventricular function is impaired — look for another cause'],
+    recognition: ['Persistent tachyarrhythmia causing: hypotension, acutely altered mental status, signs of shock, ischaemic chest discomfort, or acute heart failure', 'At rates < 150/min the tachycardia is less likely to be the primary cause of instability (unless ventricular function is impaired) — look for another cause'],
     action: ['Synchronised cardioversion (sedation if possible)', 'If regular narrow-complex: adenosine may be considered while preparing for cardioversion', 'Expert consultation'],
     electrical: ['Synchronised cardioversion; use device-specific energy recommendations to maximise first-shock success', 'AF/atrial flutter: initial 200 J biphasic with incremental increases as needed (2025 AHA)', 'Polymorphic VT/unstable irregular wide: treat as VF (unsynchronised defibrillation)'],
     why: 'Synchronisation delivers the shock on the R wave, avoiding the vulnerable period of the T wave (which could induce VF). Depolarising the whole heart terminates re-entry (AVNRT, AVRT, flutter, AF, VT).',

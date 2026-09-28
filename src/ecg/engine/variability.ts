@@ -22,6 +22,11 @@ export function randomVariation(p: Physio, seed = Math.floor(Math.random() * 1e9
   q.noise = clamp(q.noise + g(0.08), 0, 0.8);
   q.rhythm.sinusRate = clamp(q.rhythm.sinusRate * (1 + g(0.08)), 20, 190);
   q.rhythm.avnAHmin = clamp(q.rhythm.avnAHmin * (1 + g(0.12)), 40, 400);
+  q.K = clamp(q.K + g(0.15), 2, 9.5);
+  q.rhythm.avnERP = clamp(q.rhythm.avnERP * (1 + g(0.06)), 60, 900);
+  q.rhythm.atrialERP = clamp(q.rhythm.atrialERP * (1 + g(0.06)), 120, 360);
+  q.rhythm.hv = clamp(q.rhythm.hv + g(4), 30, 110);
+  if (q.ischemia.stage !== 'none') q.ischemia.extent = clamp(q.ischemia.extent * (1 + g(0.12)), 0.3, 1);
   q.rhythm.seed = Math.floor(r() * 1e6);
   if (q.sex && r() < 0.5) q.sex = q.sex === 'M' ? 'F' : 'M';
   return q;

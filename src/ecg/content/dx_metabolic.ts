@@ -280,7 +280,7 @@ export const METABOLIC_DX: Dx[] = [
     tier: 3,
     tags: ['short-qt', 'syncope', 'cardiac-arrest'],
     preset: 'sqts',
-    definition: 'Inherited channelopathy with a very short QT and risk of AF and VF. ESC 2022: diagnosed with QTc ≤ 320 ms; considered with QTc ≤ 360 ms plus arrhythmic syncope, family history, or survived VT/VF.',
+    definition: 'Inherited channelopathy with a very short QT and risk of AF and VF. The 2022 ESC guideline combines QTc thresholds in the ~320–360 ms range with a pathogenic variant, family history, or survived VT/VF in a structurally normal heart (see the guideline for exact criteria).',
     mechanism: 'Gain-of-function in repolarising K⁺ channels (KCNH2, KCNQ1, KCNJ2) shortens atrial and ventricular refractoriness → substrate for re-entry.',
     ecg: ['QTc ≤ 320–360 ms', 'Short or absent ST segment; tall, peaked, symmetric T waves', 'Poor QT rate adaptation; AF in young patients'],
     why: [
