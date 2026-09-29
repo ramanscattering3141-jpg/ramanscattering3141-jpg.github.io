@@ -29,6 +29,7 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; padding: 0; }
+html { background: var(--bg); }
 
 body {
   background: radial-gradient(1200px 700px at 70% -10%, #133046 0%, var(--bg) 60%);
@@ -368,3 +369,7 @@ a.btn.primary-link { background: var(--accent-dim); border-color: var(--accent-d
 .result:hover { background: #ffffff0a; text-decoration: none; }
 .result strong { margin-right: 8px; }
 .result .muted { display: block; font-size: 0.83rem; margin-top: 2px; }
+.handling { display: grid; gap: 7px; }
+.handling-row { display: grid; grid-template-columns: 90px 1fr 110px; gap: 10px; align-items: center; font-size: 0.86rem; }
+.handling-bar { height: 12px; background: #ffffff10; border-radius: 6px; overflow: hidden; }
+.handling-bar i { display: block; height: 100%; border-radius: 6px; transition: width 0.25s; }

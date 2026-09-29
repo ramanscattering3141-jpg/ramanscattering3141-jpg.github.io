@@ -5,7 +5,7 @@
 // gradually after a fall in GFR and what lets the sandbox reach a new steady state.
 
 import { clamp } from './math';
-import { acidBase, derivePlasma, edelmanNa, initialBody, respiratoryPCO2, type BodyState, type PlasmaDerived } from './body';
+import { acidBase, derivePlasma, ecfVolume, edelmanNa, initialBody, respiratoryPCO2, type BodyState, type PlasmaDerived } from './body';
 import { evaluateRegulation, type RegulationState } from './regulation';
 import { runKidney } from './kidney';
 import type { KidneyResult, Params } from './types';
@@ -328,7 +328,8 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   // Oedema: ECF expansion beyond ~3 L above normal, or altered Starling forces, moves fluid
   // into the interstitium instead of the plasma (Rose ch. 16).
   const ecfNormal = p.weightKg * (p.female ? 0.5 : 0.6) / 3;
-  const excessEcf = Math.max(0, b.tbw * b.ecfFraction - ecfNormal);
+  const ecfNow = ecfVolume(b, p.weightKg);
+  const excessEcf = Math.max(0, ecfNow - ecfNormal);
   const leakTendency = clamp(
     0.35 + 0.5 * clamp(1 - p.cardiacFunction, 0, 1) + 0.4 * p.portalHypertension + 0.5 * p.capillaryLeak + 0.4 * clamp((3.5 - p.albumin) / 2, 0, 1) + 0.02 * p.venousCongestion,
     0,
@@ -346,7 +347,7 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   b.hco3 = clamp(b.hco3 - (netAcid * dt) / Math.max(bufferVolume, 5), 3, 60);
   // Contraction alkalosis: losing Cl-rich, HCO3-poor fluid concentrates the bicarbonate pool.
   const ecfBefore = ev.plasma.ecf;
-  const ecfAfter = b.tbw * b.ecfFraction + b.edema;
+  const ecfAfter = ecfNow;
   if (ecfAfter > 0.5 && Math.abs(ecfAfter - ecfBefore) > 1e-6) {
     b.hco3 = clamp(b.hco3 * Math.pow(ecfBefore / ecfAfter, 0.55), 3, 60);
   }

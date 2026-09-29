@@ -30,13 +30,23 @@ export function arteriolarTone(p: Params, h: Hormones, perfusion: number, mdSign
     const dev = x - 1;
     return clamp(1 + (gain * dev) / (1 + 0.45 * Math.abs(dev)), lo, hi);
   };
-  const myogenic = resp(2.4, clamp(perfusion / 93, 0.35, 2), 0.45, 3.0);
+  // Myogenic response: the afferent arteriole constricts when stretched and relaxes when not, by
+  // roughly the amount needed to hold renal blood flow constant. `ideal` is the afferent
+  // resistance (relative to normal) that would keep flow exactly constant at this pressure; the
+  // stretch response supplies most of it and tubuloglomerular feedback the rest. Dilation runs out
+  // at about 70 mmHg, below which flow and filtration fall with pressure (Rose ch. 2, Fig. 2-8).
+  const x = clamp(perfusion / 93, 0.25, 2.4);
+  const idealAt = (r: number) => ((93 * r - GLOM_REF.Pv) / 1144 - (GLOM_REF.Re + GLOM_REF.Rpost)) / GLOM_REF.Ra;
+  const ideal = idealAt(x) / idealAt(1);
+  const myogenicRaw = clamp(1 + 0.85 * (ideal - 1), 0.45, 3.0);
+  const myogenic = 1 + clamp(p.myogenic, 0, 1) * (myogenicRaw - 1);
   // Tubuloglomerular feedback constricts strongly when NaCl uptake at the macula densa rises;
   // the vasodilator limb when uptake falls is weaker (Rose ch. 2, Fig. 2-9).
   const mdDev = mdSignal - 1;
   const tgfGain = mdDev > 0 ? 0.42 : 0.16;
-  const tgf = clamp(1 + (tgfGain * mdDev) / (1 + 0.5 * Math.abs(mdDev)), 0.86, 1.9) * (1 - (1 - p.tgf));
-  const sympathetic = resp(0.3, h.sns, 0.8, 2.2);
+  const tgfRaw = clamp(1 + (tgfGain * mdDev) / (1 + 0.5 * Math.abs(mdDev)), 0.86, 1.9);
+  const tgf = 1 + clamp(p.tgf, 0, 1) * (tgfRaw - 1);
+  const sympathetic = resp(0.6, h.sns, 0.8, 2.6);
   const angioAfferent = resp(0.14, h.at1, 0.85, 1.8);
   const pgDilate = 1 - 0.25 * clamp(h.pg - 0.2, -0.2, 0.6);
   const ccb = 1 - 0.3 * d.ccb;
@@ -66,7 +76,8 @@ function sideResult(
 ): KidneySide {
   // A stenosis drops the pressure delivered to the glomeruli; flow-dependent so we use a
   // fixed-point on the resulting RBF.
-  const { Ra, Re } = arteriolarTone(p, h, MAP * (1 - 0.5 * stenosis), mdSignal);
+  const stenosisDropHere = MAP * 0.62 * Math.pow(clamp(stenosis, 0, 0.95), 2.2);
+  const { Ra, Re } = arteriolarTone(p, h, Math.max(15, MAP - stenosisDropHere), mdSignal);
   const nephrons = clamp(share, 0.01, 1);
   // Remnant-nephron adaptation: surviving nephrons hyperfiltrate through afferent dilation
   // (Brenner 1982, Hostetter 1981). Single-nephron GFR rises, so whole-kidney GFR falls less
@@ -81,7 +92,11 @@ function sideResult(
   const ReSide = Re / (nephrons * Math.sqrt(adapt) * 0.95);
   const RpostSide = GLOM_REF.Rpost / Math.max(nephrons, 0.05);
   // Obstruction raises Bowman's space pressure; chronic obstruction also loses surface area.
-  const Pbs = GLOM_REF.Pbs + 45 * obstruction;
+  // Bowman's space pressure: ~4 mmHg of downstream (interstitial and pelvic) pressure plus the
+  // back-pressure of pushing filtrate down the tubule, ~6 mmHg at a normal single-nephron GFR.
+  // Obstruction raises the downstream component (Rose ch. 2).
+  const PbsBase = GLOM_REF.Pbs - 6 + 45 * obstruction;
+  const PbsFlow = 6 / (130 * nephrons);
   const chronicLoss = p.obstructionChronic ? 1 - 0.45 * obstruction : 1;
   const stenosisDrop = MAP * 0.62 * Math.pow(clamp(stenosis, 0, 0.95), 2.2);
   const Pa = Math.max(15, MAP - stenosisDrop);
@@ -93,8 +108,10 @@ function sideResult(
     Re: ReSide,
     Rpost: RpostSide,
     Kf: KfSide * chronicLoss * (1 - 0.33 * clamp(p.tubularInjury, 0, 1)),
-    Pbs,
-    Cp: clamp(pl.albumin * 1.75, 2, 12),
+    Pbs: PbsBase,
+    PbsFlow,
+    // Plasma protein = albumin + globulins (~3 g/dL); both exert oncotic pressure.
+    Cp: clamp(pl.albumin + 3.0, 2, 12),
     // Renal anaemia: erythropoietin production falls with functioning renal mass, so the
     // haematocrit falls as chronic kidney disease progresses (Rose ch. 1). This depends on
     // whole-body renal mass, not on this one kidney's share of it.
@@ -113,7 +130,7 @@ function sideResult(
     Ra: RaSide,
     Re: ReSide,
     Kf: KfSide * chronicLoss,
-    Pbs,
+    Pbs: g.Pbs,
     nephrons,
     mdSignal,
     urineFlow: 0,

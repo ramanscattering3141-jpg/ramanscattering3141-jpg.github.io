@@ -47,7 +47,11 @@ const MAP_REF = 93;
 
 /** Cardiac output from central blood volume on a Frank–Starling-type curve (Rose Fig. 16-6). */
 export function cardiacOutput(cardiacFunction: number, cbv: number) {
-  return clamp(cardiacFunction * ((1.4 * cbv) / (0.4 + cbv)), 0.05, 2);
+  // Below normal filling the curve is steep (stroke volume falls almost in proportion to
+  // venous return); above it the curve flattens, which is why a failing heart gains little from
+  // further volume expansion.
+  const filling = cbv >= 1 ? (1.4 * cbv) / (0.4 + cbv) : Math.pow(Math.max(cbv, 0.05), 0.9);
+  return clamp(cardiacFunction * filling, 0.05, 2);
 }
 
 /** Renin release from one kidney: baroreceptor × macula densa × β1 sympathetic (Rose ch. 2). */
@@ -90,7 +94,11 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     MAP = 0.5 * MAP + 0.5 * mapNew;
     // Baroreceptor signal ("effective arterial blood volume", Rose ch. 16)
     const eabv = clamp(MAP / MAP_REF, 0.2, 2);
-    const snsNew = clamp(Math.exp(-3.2 * (eabv - 1)), 0.4, 6) * p.snsOverride;
+    // Arterial baroreceptors plus the low-pressure cardiopulmonary receptors, which sense central
+    // blood volume: sympathetic outflow to the kidney rises with volume depletion even before the
+    // arterial pressure falls (Rose ch. 8).
+    const cardiopulmonary = cbv < 1 ? Math.exp(-2.5 * (cbv - 1)) : Math.exp(-0.8 * (cbv - 1));
+    const snsNew = clamp(Math.exp(-3.2 * (eabv - 1)) * cardiopulmonary, 0.4, 6) * p.snsOverride;
     sns = 0.5 * sns + 0.5 * snsNew;
 
     // Renin–angiotensin–aldosterone

@@ -14,7 +14,7 @@ export interface BodyState {
   kE: number;
   /** total body water, L */
   tbw: number;
-  /** extracellular fluid volume, L */
+  /** legacy field, no longer used: the ECF volume is derived from extracellular sodium (see ecfVolume) */
   ecfFraction: number;
   /** total body bicarbonate stores expressed as ECF [HCO3], mmol/L */
   hco3: number;
@@ -62,6 +62,23 @@ export function initialBody(p: Params): BodyState {
     mg: 0.85,
     edema: 0,
   };
+}
+
+/**
+ * Exchangeable sodium that is not in the extracellular fluid (cell and bone surface), mmol/kg.
+ * About 44 mmol/kg of sodium is exchangeable; ~28 of it is extracellular (14 L × 140 mmol/L).
+ */
+export const NA_NON_ECF_PER_KG = 16;
+
+/**
+ * Extracellular volume from extracellular sodium. Sodium is effectively confined to the
+ * extracellular fluid, so the ECF volume is its sodium content divided by its concentration
+ * (Rose ch. 7–8). This is why losing isotonic fluid shrinks the ECF litre for litre, while
+ * losing pure water shrinks it only by the ECF's share of body water.
+ */
+export function ecfVolume(b: BodyState, weightKg: number) {
+  const na = edelmanNa(b.naE, b.kE, b.tbw);
+  return clamp((b.naE - NA_NON_ECF_PER_KG * weightKg) / Math.max(na, 80), 0.08 * b.tbw, 0.75 * b.tbw);
 }
 
 /**
@@ -126,7 +143,9 @@ export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
   const k = plasmaPotassium(b.kE, p.weightKg, p, pH, effOsm);
   const bunOsm = b.bun / 2.8;
   const osm = effOsm + bunOsm + p.toxicAlcoholOsm;
-  const ecf = b.tbw * b.ecfFraction + b.edema;
+  // Total ECF includes any oedema; what supports the circulation is the rest of it.
+  const ecf = ecfVolume(b, p.weightKg);
+  const circulatingEcf = Math.max(ecf - b.edema, 0.3 * ecf);
   const cl = clamp(b.clE / Math.max(ecf, 1), 60, 130);
   const anionGap = na - cl - b.hco3;
   const albumin = clamp(p.albumin - 0.8 * clamp(p.proteinuria / 8, 0, 1), 1, 5.5);
@@ -135,7 +154,7 @@ export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
   const calcOsm = 2 * na + glucose / 18 + b.bun / 2.8;
   const plasmaVolumeNormal = p.weightKg * 0.043;
   const oncoticHold = clamp(albumin / 4, 0.45, 1.3);
-  const plasmaVolume = clamp(ecf * 0.215 * (0.55 + 0.45 * oncoticHold) * (1 - 0.5 * clamp(p.capillaryLeak, 0, 0.8)), 0.8, 8);
+  const plasmaVolume = clamp(circulatingEcf * 0.215 * (0.55 + 0.45 * oncoticHold) * (1 - 0.5 * clamp(p.capillaryLeak, 0, 0.8)), 0.8, 8);
   const ionizedCa = clamp(b.ca * 0.5 * (1 + 0.15 * (7.4 - pH) / 0.1), 0.5, 2.0);
 
   return {

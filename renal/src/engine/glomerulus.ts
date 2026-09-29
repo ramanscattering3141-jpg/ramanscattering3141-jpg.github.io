@@ -20,8 +20,15 @@ export interface GlomerularInput {
   Rpost: number;
   /** Ultrafiltration coefficient (Lp·S), mL/min/mmHg */
   Kf: number;
-  /** Hydraulic pressure in Bowman's space, mmHg */
+  /** Hydraulic pressure in Bowman's space, mmHg (at zero filtration when PbsFlow is given) */
   Pbs: number;
+  /**
+   * Rise in Bowman's space pressure per mL/min of filtrate. Filtrate has to be pushed down the
+   * tubule, so tubular (and Bowman's space) pressure rises and falls with the filtration rate.
+   * That back-pressure is a built-in brake: when afferent constriction lowers Pgc, Pbs falls too,
+   * so filtration is reduced rather than abolished.
+   */
+  PbsFlow?: number;
   /** Plasma protein concentration, g/dL */
   Cp: number;
   /** Hematocrit (fraction) */
@@ -54,6 +61,8 @@ export interface GlomerularResult {
   /** fraction of capillary length at which equilibrium was reached (1 if never) */
   xEq: number;
   profile: ProfilePoint[];
+  /** Bowman's space pressure actually reached */
+  Pbs: number;
   /** total renal vascular resistance */
   RVR: number;
 }
@@ -96,11 +105,25 @@ export function filterAlongCapillary(QP0: number, Pgc: number, Pbs: number, Cp: 
 }
 
 export function solveGlomerulus(inp: GlomerularInput): GlomerularResult {
-  const { Pa, Pv, Ra, Re, Rpost, Kf, Pbs, Cp, Hct } = inp;
+  const { Pa, Pv, Ra, Re, Rpost, Kf, Cp, Hct } = inp;
   const pf = 1 - Hct;
+  const slope = inp.PbsFlow ?? 0;
+  /** Filtration with Bowman's space pressure consistent with the flow it produces. */
+  const filterConsistent = (QP: number, Pgc: number, keep = false) => {
+    let Pbs = inp.Pbs;
+    let f = filterAlongCapillary(QP, Pgc, Pbs, Cp, Kf, keep && slope === 0);
+    if (slope > 0) {
+      for (let i = 0; i < 6; i++) {
+        const next = inp.Pbs + slope * f.GFR;
+        Pbs = 0.5 * Pbs + 0.5 * next;
+        f = filterAlongCapillary(QP, Pgc, Pbs, Cp, Kf, keep && i === 5);
+      }
+    }
+    return { f, Pbs };
+  };
   const residual = (Pgc: number) => {
     const QBa = Math.max(0, (Pa - Pgc) / Ra);
-    const f = filterAlongCapillary(QBa * pf, Pgc, Pbs, Cp, Kf);
+    const { f } = filterConsistent(QBa * pf, Pgc);
     const QBe = QBa - f.GFR;
     const Pptc = Pv + QBe * Rpost;
     return Pgc - (Pptc + QBe * Re);
@@ -108,7 +131,7 @@ export function solveGlomerulus(inp: GlomerularInput): GlomerularResult {
   const Pgc = bisect(residual, Pv + 1e-3, Math.max(Pv + 1e-3, Pa - 1e-3), 2e-4, 40);
   const RBF = Math.max(0, (Pa - Pgc) / Ra);
   const RPF = RBF * pf;
-  const f = filterAlongCapillary(RPF, Pgc, Pbs, Cp, Kf, true);
+  const { f, Pbs } = filterConsistent(RPF, Pgc, true);
   const GFR = f.GFR;
   const QBe = RBF - GFR;
   const Pptc = Pv + QBe * Rpost;
@@ -128,6 +151,7 @@ export function solveGlomerulus(inp: GlomerularInput): GlomerularResult {
     meanNFP: f.meanNFP,
     equilibrium: f.xEq < 0.999,
     xEq: f.xEq,
+    Pbs,
     profile: f.profile,
     RVR: RBF > 0 ? (Pa - Pv) / RBF : Infinity,
   };

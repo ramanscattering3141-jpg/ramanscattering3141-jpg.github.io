@@ -2,7 +2,7 @@
 // Every simulator is assembled from these, so the whole laboratory reads as one instrument.
 
 import { type ComponentChildren, type JSX } from 'preact';
-import { useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { EVIDENCE_DESCRIPTION, EVIDENCE_LABEL, formatRef, ref, refUrl, type Citation, type Evidence } from '../content/sources';
 
 export function Panel(props: { title?: string; note?: string; children: ComponentChildren; actions?: ComponentChildren; id?: string }) {
@@ -177,6 +177,37 @@ export interface Series {
   dashed?: boolean;
 }
 
+/** Width of an element, tracked as it resizes (charts draw at their real pixel width). */
+export function useWidth<T extends Element>(fallback = 640) {
+  const ref = useRef<T>(null);
+  const [w, setW] = useState(fallback);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      const cw = entries[0]?.contentRect.width;
+      if (cw && Math.abs(cw - w) > 1) setW(cw);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return [ref, w] as const;
+}
+
+/** Round axis ticks (1, 2, 2.5, 5 × 10ⁿ). */
+export function niceTicks(lo: number, hi: number, count = 4): number[] {
+  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return [lo];
+  const raw = (hi - lo) / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw;
+  const out: number[] = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return out;
+}
+
+const fmtTick = (v: number) => (Math.abs(v) >= 100 || Number.isInteger(v) ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(Math.abs(v) < 1 ? 2 : 1));
+
 export function LineChart(props: {
   series: Series[];
   xLabel?: string;
@@ -188,54 +219,68 @@ export function LineChart(props: {
   bands?: { from: number; to: number; label?: string; color?: string }[];
   /** vertical marker, e.g. "now" */
   marker?: number;
+  /** format x tick labels (e.g. undo a log scale) */
+  xFormat?: (x: number) => string;
 }) {
-  const h = props.height ?? 190;
-  const pad = { l: 46, r: 12, t: 10, b: 28 };
-  const all = props.series.flatMap((s) => s.points);
-  if (all.length === 0) return null;
+  const [ref, width] = useWidth<HTMLDivElement>();
+  const h = props.height ?? 200;
+  const pad = { l: 44, r: 12, t: 10, b: props.xLabel ? 38 : 22 };
+  const all = props.series.flatMap((s) => s.points).filter((p) => Number.isFinite(p.y));
+  if (all.length === 0) return <div ref={ref} />;
   const xs = all.map((p) => p.x);
   const ys = all.map((p) => p.y);
   const x0 = Math.min(...xs);
-  const x1 = Math.max(...xs) || 1;
-  const y0 = props.yMin ?? Math.min(...ys, ...(props.bands ?? []).map((b) => b.from));
-  const y1 = props.yMax ?? Math.max(...ys, ...(props.bands ?? []).map((b) => b.to));
-  const w = 640;
+  const x1 = Math.max(...xs);
+  let y0 = props.yMin ?? Math.min(...ys, ...(props.bands ?? []).map((b) => b.from));
+  let y1 = props.yMax ?? Math.max(...ys, ...(props.bands ?? []).map((b) => b.to));
+  if (y1 - y0 < 1e-9) {
+    y0 -= 1;
+    y1 += 1;
+  } else if (props.yMax === undefined) y1 += (y1 - y0) * 0.06;
+  const w = Math.max(240, width);
   const sx = (x: number) => pad.l + ((x - x0) / (x1 - x0 || 1)) * (w - pad.l - pad.r);
-  const sy = (y: number) => h - pad.b - ((y - y0) / (y1 - y0 || 1)) * (h - pad.t - pad.b);
+  const sy = (y: number) => h - pad.b - ((Math.max(y0, Math.min(y1, y)) - y0) / (y1 - y0 || 1)) * (h - pad.t - pad.b);
   const palette = ['#5ecfba', '#f2b134', '#6aa9e8', '#b08ee0', '#7bc47f', '#e4696b'];
-  const ticks = 4;
+  const yt = niceTicks(y0, y1, 4);
+  const xt = niceTicks(x0, x1, Math.max(3, Math.floor(w / 110)));
   return (
-    <figure>
+    <figure ref={ref}>
       <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" aria-label={`${props.yLabel ?? 'value'} against ${props.xLabel ?? 'x'}`}>
         {(props.bands ?? []).map((b, i) => (
           <rect key={i} x={pad.l} y={sy(b.to)} width={w - pad.l - pad.r} height={Math.max(1, sy(b.from) - sy(b.to))} fill={b.color ?? '#7bc47f'} opacity="0.09" />
         ))}
-        {Array.from({ length: ticks + 1 }, (_, i) => {
-          const y = y0 + ((y1 - y0) * i) / ticks;
-          return (
-            <g key={i}>
-              <line x1={pad.l} x2={w - pad.r} y1={sy(y)} y2={sy(y)} stroke="#ffffff12" />
-              <text class="svg-label" x={pad.l - 6} y={sy(y) + 3} textAnchor="end">
-                {Math.abs(y) >= 100 ? y.toFixed(0) : y.toFixed(1)}
-              </text>
-            </g>
-          );
-        })}
-        {props.marker !== undefined && <line x1={sx(props.marker)} x2={sx(props.marker)} y1={pad.t} y2={h - pad.b} stroke="#ffffff33" strokeDasharray="3 3" />}
+        {yt.map((y) => (
+          <g key={`y${y}`}>
+            <line x1={pad.l} x2={w - pad.r} y1={sy(y)} y2={sy(y)} stroke="#ffffff12" />
+            <text class="svg-label" x={pad.l - 6} y={sy(y) + 3} textAnchor="end">
+              {fmtTick(y)}
+            </text>
+          </g>
+        ))}
+        {xt.map((x) => (
+          <text key={`x${x}`} class="svg-label" x={sx(x)} y={h - pad.b + 14} textAnchor="middle">
+            {props.xFormat ? props.xFormat(x) : fmtTick(x)}
+          </text>
+        ))}
+        {props.marker !== undefined && <line x1={sx(props.marker)} x2={sx(props.marker)} y1={pad.t} y2={h - pad.b} stroke="#ffffff55" strokeDasharray="3 3" />}
         {props.series.map((s, i) => (
           <polyline
             key={s.label}
-            points={s.points.map((p) => `${sx(p.x)},${sy(p.y)}`).join(' ')}
+            points={s.points
+              .filter((p) => Number.isFinite(p.y))
+              .map((p) => `${sx(p.x)},${sy(p.y)}`)
+              .join(' ')}
             fill="none"
             stroke={s.color ?? palette[i % palette.length]}
-            strokeWidth="1.9"
-            strokeDasharray={s.dashed ? '4 3' : undefined}
+            strokeWidth="2"
+            strokeDasharray={s.dashed ? '5 4' : undefined}
             strokeLinejoin="round"
+            opacity={s.dashed ? 0.6 : 1}
           />
         ))}
         <line x1={pad.l} x2={w - pad.r} y1={h - pad.b} y2={h - pad.b} stroke="#ffffff25" />
         {props.xLabel && (
-          <text class="svg-label" x={(w + pad.l) / 2} y={h - 6} textAnchor="middle">
+          <text class="svg-label" x={(w + pad.l) / 2} y={h - 4} textAnchor="middle">
             {props.xLabel}
           </text>
         )}
@@ -244,7 +289,7 @@ export function LineChart(props: {
         <div class="chips" style={{ marginTop: 2 }}>
           {props.series.map((s, i) => (
             <span key={s.label} class="tag" style={{ color: s.color ?? palette[i % palette.length] }}>
-              ■ {s.label}
+              {s.dashed ? '┅' : '■'} {s.label}
             </span>
           ))}
         </div>
