@@ -107,6 +107,22 @@ export function runNephron(inp: NephronInput): NephronResult {
   const pl = inp.plasma;
   const injury = clamp(p.tubularInjury, 0, 1);
 
+  /**
+   * The arterial PCO2 as an independent determinant of H+ secretion, not merely a consequence of
+   * it. A rise in PCO2 raises the tubular cell's intracellular H+ concentration, which drives both
+   * proximal Na+-H+ exchange and the distal H+-ATPase (Rose ch. 11). This is the entire mechanism
+   * of renal compensation for a respiratory disturbance: chronic hypercapnia raises the plasma
+   * bicarbonate by about 3.5 mmol/L per 10 mmHg, and chronic hypocapnia lowers it by about 4
+   * (Rose Table 17-3), and neither happens if the kidney cannot see the PCO2.
+   *
+   * It also means a respiratory disturbance blunts the renal handling of a metabolic one, which is
+   * correct: the hypocapnia of a compensated metabolic acidosis genuinely reduces bicarbonate
+   * reabsorption.
+   */
+  // Asymmetric: the renal response to hypocapnia is weaker than to hypercapnia, which together
+  // with the non-renal buffering reproduces Rose's +1 acute / +3.5 chronic and -2 / -4 per 10 mmHg.
+  const pco2Drive = clamp(1 + (pl.PCO2 > 40 ? 0.015 : 0.008) * (pl.PCO2 - 40), 0.78, 1.55);
+
   // ---------------------------------------------------------------- filtered loads
   const gfr = Math.max(inp.GFR, 0.01); // mL/min
   const f = zero();
@@ -172,7 +188,11 @@ export function runNephron(inp: NephronInput): NephronResult {
     (1 - 0.35 * d.acetazolamide) *
     (1 - 0.6 * injury);
   const caActivity = t.CA * (1 - 0.9 * d.acetazolamide);
-  const hco3Fraction = clamp(0.9 * nheActivity * Math.pow(caActivity, 0.6) * Math.pow(t.NBCe1, 0.8), 0, 0.95);
+  // Proximal H+ secretion rises with PCO2 as well, but gently: applied at full strength here a
+  // fall in PCO2 strips bicarbonate faster than any kidney does, because the filtered load is
+  // enormous and a few per cent of it is hundreds of millimoles a day. The reabsorptive threshold
+  // below is what sets where the plasma bicarbonate finally settles.
+  const hco3Fraction = clamp(0.9 * nheActivity * Math.pow(pco2Drive, 0.35) * Math.pow(caActivity, 0.6) * Math.pow(t.NBCe1, 0.8), 0, 0.985);
   // There is no fixed Tm for bicarbonate, but reabsorption does plateau: in the intact kidney it
   // levels off near a plasma concentration of 26 mmol/L, so anything above that is excreted
   // (Rose ch. 11, Fig. 11-14). That threshold is not fixed either — volume depletion (angiotensin
@@ -180,7 +200,7 @@ export function runNephron(inp: NephronInput): NephronResult {
   // a metabolic alkalosis is maintained instead of being excreted.
   const kOnHco3 = clamp(1 + 0.09 * (4.2 - pl.K), 0.85, 1.45);
   const volumeFactor = clamp(Math.pow(Math.max(h.at1, 0.05), 0.12), 0.85, 1.35);
-  const threshold = 26 * volumeFactor * kOnHco3 * clamp(Math.pow(Math.max(h.mr, 0.05), 0.05), 0.9, 1.2);
+  const threshold = 26 * volumeFactor * kOnHco3 * pco2Drive * clamp(Math.pow(Math.max(h.mr, 0.05), 0.05), 0.9, 1.2);
   const gfrLitresPerMin = inp.GFR / 1000;
   const hco3Ceiling = threshold * gfrLitresPerMin * 0.93 * Math.pow(clamp(t.NBCe1, 0.05, 1.5), 0.5);
   const hco3ReabPT = Math.min(f.HCO3, f.HCO3 * hco3Fraction, hco3Ceiling);
@@ -222,7 +242,12 @@ export function runNephron(inp: NephronInput): NephronResult {
   const mgReabPT = f.Mg * 0.25;
 
   // Ammoniagenesis from glutamine: stimulated by acidosis and hypokalemia, limited by nephron mass.
-  const acidStim = clamp(Math.pow(24 / Math.max(pl.HCO3, 5), 1.6), 0.4, 6);
+  // The stimulus is the cell's acidity, which tracks extracellular pH — that is, the ratio of
+  // PCO2 to bicarbonate, not either alone. Keyed to bicarbonate by itself the kidney is blind to a
+  // respiratory disturbance; keyed to PCO2 by itself it is blind to a metabolic one. Writing it as
+  // pH also gives the right negative feedback: as compensation succeeds and the pH returns toward
+  // normal, the stimulus fades, which is why compensation is partial.
+  const acidStim = clamp(Math.pow(10, 3.0 * (7.4 - pl.pH)), 0.4, 6);
   const kStim = clamp(1 + 0.35 * (4.2 - pl.K), 0.6, 2.2);
   const ammoniagenesis =
     40 * acidStim * kStim * Math.pow(inp.nephronFraction, 0.85) * (1 - 0.5 * injury) * (pl.pH > 7.5 ? 0.5 : 1); // mmol/day
@@ -608,10 +633,13 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
 
   // --- Acid-base in the collecting duct: H-ATPase secretion titrates phosphate (titratable
   //     acid) and traps NH3 as NH4+; type B cells secrete HCO3 via pendrin when alkalotic.
+  // Driven by cell acidity, as ammoniagenesis is: keyed to plasma bicarbonate alone the pump would
+  // switch itself off as compensation raised the bicarbonate, and chronic hypercapnia could never
+  // generate the new bicarbonate it needs (Rose ch. 11, Table 17-3).
   const hPump =
     t.HATPase *
     clamp(Math.pow(Math.max(mr, 0.02), 0.15), 0.5, 1.6) *
-    clamp(1 + 1.6 * (24 - pl.HCO3) / 24, 0.25, 3.2) *
+    clamp(1 + 6.0 * (7.4 - pl.pH), 0.25, 3.2) *
     (0.55 + 0.45 * voltage) *
     (1 - 0.4 * injury) *
     clamp(1 + 0.15 * (4.2 - pl.K), 0.7, 1.5);

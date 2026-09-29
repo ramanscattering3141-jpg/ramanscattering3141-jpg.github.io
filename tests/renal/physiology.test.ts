@@ -416,12 +416,86 @@ describe('potassium', () => {
 describe('acid–base', () => {
   test('Henderson–Hasselbalch and the expected compensations', () => {
     expect(acidBase(24, 40).pH).toBeCloseTo(7.4, 1);
-    // metabolic acidosis: PCO2 falls 1.2 mmHg per 1 mEq/L fall in HCO3
     const p = applyPatch(DEFAULT_PARAMS, {});
-    expect(respiratoryPCO2(24, p)).toBeCloseTo(40, 5);
-    expect(respiratoryPCO2(14, p)).toBeCloseTo(28, 0);
-    // metabolic alkalosis: PCO2 rises 0.7 mmHg per 1 mEq/L rise
-    expect(respiratoryPCO2(34, p)).toBeCloseTo(47, 0);
+    // PCO2 is solved from the ventilatory response to pH rather than read off a bicarbonate rule,
+    // so it lands near rather than exactly on 40 at a normal bicarbonate.
+    expect(respiratoryPCO2(24, p)).toBeCloseTo(40, 0);
+
+    // The rule itself relates the two numbers a blood gas reports, so it has to be checked on
+    // those: the stored bicarbonate pool differs from the measured one by the acute buffering of
+    // whatever PCO2 the compensation produced.
+    const b = initialBody(p);
+    const gas = (hco3: number) => {
+      const ev = evaluate({ ...b, hco3 }, p);
+      return { pco2: ev.plasma.PCO2, hco3: ev.plasma.HCO3 };
+    };
+    const ref = gas(24);
+    const acidotic = gas(16);
+    const alkalotic = gas(33);
+    const slopeDown = (ref.pco2 - acidotic.pco2) / (ref.hco3 - acidotic.hco3);
+    const slopeUp = (alkalotic.pco2 - ref.pco2) / (alkalotic.hco3 - ref.hco3);
+    // Rose Table 17-3: 1.2 mmHg per mmol/L for metabolic acidosis, 0.7 for metabolic alkalosis
+    expect(slopeDown).toBeGreaterThan(1.0);
+    expect(slopeDown).toBeLessThan(1.45);
+    expect(slopeUp).toBeGreaterThan(0.55);
+    expect(slopeUp).toBeLessThan(0.95);
+  });
+
+  /**
+   * Rose Table 17-3, the compensations the whole diagnostic approach rests on. The respiratory
+   * disorders separate into acute and chronic because the non-renal buffering is immediate and the
+   * renal response takes days; the metabolic ones do not, because ventilation responds in minutes.
+   */
+  test('respiratory disturbances: acute buffering, then renal compensation over days', () => {
+    const settledBody = runToSteadyState(DEFAULT_PARAMS, 60).state.body;
+    const baseline = evaluate(settledBody, DEFAULT_PARAMS);
+    const at = (offset: number, days: number) => {
+      const p = applyPatch(DEFAULT_PARAMS, { paco2Offset: offset });
+      const ev = days < 0.05 ? evaluate(settledBody, p) : simulate(p, days, 0.05, settledBody).final;
+      const dP = ev.plasma.PCO2 - baseline.plasma.PCO2;
+      const dH = ev.plasma.HCO3 - baseline.plasma.HCO3;
+      return { per10: (dH / dP) * 10, ev };
+    };
+
+    // acute respiratory acidosis: bicarbonate rises about 1 mmol/L per 10 mmHg, from buffering
+    expect(at(20, 0).per10).toBeGreaterThan(0.6);
+    expect(at(20, 0).per10).toBeLessThan(1.6);
+    // chronic: the kidney adds to it over days, and the pH is better protected as a result
+    expect(at(20, 5).per10).toBeGreaterThan(at(20, 0).per10 + 0.7);
+    expect(at(20, 5).ev.plasma.pH).toBeGreaterThan(at(20, 0).ev.plasma.pH);
+
+    // acute respiratory alkalosis: about 2 mmol/L per 10 mmHg downwards
+    expect(at(-15, 0).per10).toBeGreaterThan(1.5);
+    expect(at(-15, 0).per10).toBeLessThan(2.6);
+    // chronic: roughly double, and again the pH is pulled back toward normal
+    expect(at(-15, 5).per10).toBeGreaterThan(3);
+    expect(at(-15, 5).per10).toBeLessThan(5.5);
+    expect(at(-15, 5).ev.plasma.pH).toBeLessThan(at(-15, 0).ev.plasma.pH);
+  });
+
+  test('the kidney responds to acidity, not to bicarbonate alone', () => {
+    // A respiratory acidosis has a normal bicarbonate at the outset, so a kidney keyed to
+    // bicarbonate would do nothing at all. Ammoniagenesis and net acid excretion must rise.
+    const settledBody = runToSteadyState(DEFAULT_PARAMS, 60).state.body;
+    const normal = evaluate(settledBody, DEFAULT_PARAMS);
+    const hypercapnic = evaluate(settledBody, applyPatch(DEFAULT_PARAMS, { paco2Offset: 25 }));
+    expect(hypercapnic.plasma.PCO2).toBeGreaterThan(normal.plasma.PCO2 + 8);
+    expect(hypercapnic.kidney.ammoniagenesis).toBeGreaterThan(1.3 * normal.kidney.ammoniagenesis);
+    expect(hypercapnic.kidney.urine.exc.NAE).toBeGreaterThan(normal.kidney.urine.exc.NAE);
+    // and the converse: hypocapnia suppresses it
+    const hypocapnic = evaluate(settledBody, applyPatch(DEFAULT_PARAMS, { paco2Offset: -15 }));
+    expect(hypocapnic.kidney.ammoniagenesis).toBeLessThan(normal.kidney.ammoniagenesis);
+  });
+
+  test('a primary respiratory disturbance does not run away', () => {
+    // Written as a bicarbonate rule, the ventilatory compensation is positive feedback when the
+    // primary problem is respiratory: the renal response lowers the bicarbonate, the rule reads
+    // that as a metabolic acidosis and lowers the PCO2 further. This is the regression test.
+    const settledBody = runToSteadyState(DEFAULT_PARAMS, 60).state.body;
+    const long = simulate(applyPatch(DEFAULT_PARAMS, { paco2Offset: -20 }), 40, 0.2, settledBody).final;
+    expect(long.plasma.HCO3).toBeGreaterThan(14);
+    expect(long.plasma.PCO2).toBeGreaterThan(18);
+    expect(long.plasma.pH).toBeLessThan(7.62);
   });
 
   test('metabolic acidosis increases net acid excretion and ammoniagenesis when the kidney is intact', () => {
