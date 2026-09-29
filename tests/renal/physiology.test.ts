@@ -904,6 +904,56 @@ describe('the model is in balance and stays there', () => {
   });
 });
 
+describe('renal acid-base handling (Rose ch. 11)', () => {
+  const atHco3 = (hco3: number, patch: ParamPatch = {}) =>
+    evaluate(
+      { ...initialBody(applyPatch(DEFAULT_PARAMS, patch)), hco3 },
+      applyPatch(DEFAULT_PARAMS, patch),
+    );
+
+  test('bicarbonate reabsorption plateaus near a plasma level of 26 mmol/L', () => {
+    // Rose Fig. 11-14: below the threshold essentially none is lost; above it the excess spills,
+    // which is why a metabolic alkalosis cannot persist in a volume-replete person.
+    expect(atHco3(20).kidney.urine.exc.HCO3).toBeLessThan(5);
+    expect(atHco3(24).kidney.urine.exc.HCO3).toBeLessThan(15);
+    expect(atHco3(32).kidney.urine.exc.HCO3).toBeGreaterThan(80);
+    expect(atHco3(38).kidney.urine.exc.HCO3).toBeGreaterThan(atHco3(32).kidney.urine.exc.HCO3);
+  });
+
+  test('volume depletion raises that threshold, so the alkalosis is maintained', () => {
+    const replete = atHco3(32).kidney.urine.exc.HCO3;
+    const depleted = evaluate(
+      withIsotonicChange({ ...initialBody(DEFAULT_PARAMS), hco3: 32 }, 3),
+      DEFAULT_PARAMS,
+    ).kidney.urine.exc.HCO3;
+    expect(depleted).toBeLessThan(replete * 0.75);
+  });
+
+  test('acidaemia raises ammonium excretion far more than titratable acid', () => {
+    const normal = atHco3(24);
+    const acidotic = atHco3(12);
+    const nh4Ratio = acidotic.kidney.urine.exc.NH4 / Math.max(normal.kidney.urine.exc.NH4, 1e-6);
+    const taRatio = acidotic.kidney.urine.exc.TA / Math.max(normal.kidney.urine.exc.TA, 1e-6);
+    expect(nh4Ratio).toBeGreaterThan(1.5);
+    expect(nh4Ratio).toBeGreaterThan(taRatio);
+    expect(acidotic.kidney.urine.pH).toBeLessThan(normal.kidney.urine.pH);
+  });
+
+  test('blocking the distal H+ pump raises urine pH and cuts net acid excretion (distal RTA)', () => {
+    const rta = atHco3(16, { transporters: { HATPase: 0.1 } });
+    const normal = atHco3(16);
+    expect(rta.kidney.urine.pH).toBeGreaterThan(5.5);
+    expect(rta.kidney.urine.pH).toBeGreaterThan(normal.kidney.urine.pH);
+    expect(rta.kidney.urine.exc.NAE).toBeLessThan(normal.kidney.urine.exc.NAE);
+  });
+
+  test('carbonic anhydrase blockade wastes bicarbonate (acetazolamide, proximal RTA)', () => {
+    const acz = atHco3(24, { transporters: { CA: 0.1 } });
+    expect(acz.kidney.urine.exc.HCO3).toBeGreaterThan(atHco3(24).kidney.urine.exc.HCO3 + 40);
+    expect(acz.kidney.urine.pH).toBeGreaterThan(atHco3(24).kidney.urine.pH);
+  });
+});
+
 describe('volume regulation and the independence of Na+ and K+ (Rose ch. 6, 8)', () => {
   const steadyAt = (patch: ParamPatch) => runToSteadyState(applyPatch(DEFAULT_PARAMS, patch), 60).ev;
   const low = steadyAt({ naIntake: 20 });

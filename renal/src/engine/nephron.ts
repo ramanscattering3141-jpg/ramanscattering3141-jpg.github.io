@@ -151,10 +151,18 @@ export function runNephron(inp: NephronInput): NephronResult {
     (1 - 0.75 * d.acetazolamide) *
     (1 - 0.6 * injury);
   const caActivity = t.CA * (1 - 0.9 * d.acetazolamide);
-  const hco3Capacity = f.HCO3 * clamp(0.9 * nheActivity * Math.pow(caActivity, 0.6) * Math.pow(t.NBCe1, 0.8), 0, 0.95);
-  // Volume depletion raises HCO3 reabsorptive capacity (no fixed Tm; Rose ch. 3 Fig. 3-11)
-  const volumeFactor = clamp(Math.pow(Math.max(h.at1, 0.05), 0.1), 0.85, 1.25);
-  const hco3ReabPT = Math.min(f.HCO3, hco3Capacity * volumeFactor);
+  const hco3Fraction = clamp(0.9 * nheActivity * Math.pow(caActivity, 0.6) * Math.pow(t.NBCe1, 0.8), 0, 0.95);
+  // There is no fixed Tm for bicarbonate, but reabsorption does plateau: in the intact kidney it
+  // levels off near a plasma concentration of 26 mmol/L, so anything above that is excreted
+  // (Rose ch. 11, Fig. 11-14). That threshold is not fixed either — volume depletion (angiotensin
+  // II, avid Na+ reabsorption), hypokalaemia and aldosterone all raise it, which is precisely how
+  // a metabolic alkalosis is maintained instead of being excreted.
+  const kOnHco3 = clamp(1 + 0.09 * (4.2 - pl.K), 0.85, 1.45);
+  const volumeFactor = clamp(Math.pow(Math.max(h.at1, 0.05), 0.12), 0.85, 1.35);
+  const threshold = 26 * volumeFactor * kOnHco3 * clamp(Math.pow(Math.max(h.mr, 0.05), 0.05), 0.9, 1.2);
+  const gfrLitresPerMin = inp.GFR / 1000;
+  const hco3Ceiling = threshold * gfrLitresPerMin * 0.93 * Math.pow(clamp(t.NBCe1, 0.05, 1.5), 0.5);
+  const hco3ReabPT = Math.min(f.HCO3, f.HCO3 * hco3Fraction, hco3Ceiling);
 
   // Non-reabsorbable solute in the lumen (spilled glucose, infused mannitol) retains water and
   // lowers the luminal Na concentration, which reduces net proximal Na reabsorption.
