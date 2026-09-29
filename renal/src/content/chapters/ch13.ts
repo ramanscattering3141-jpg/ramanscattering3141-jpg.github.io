@@ -1,0 +1,177 @@
+import type { ChapterContent } from './types';
+
+export const chapter: ChapterContent = {
+  n: 13,
+  title: 'Meaning and application of urine chemistries',
+  thesis:
+    'Urine electrolytes have no normal values: the kidney is supposed to vary them with intake and with what the body needs. They are read as answers to a question — is the kidney behaving as though volume were low? is it excreting the acid it should? is it conserving potassium? — and every one of them has a setting in which it misleads. Knowing those settings is what makes the tests useful rather than dangerous.',
+  concepts: [
+    {
+      heading: 'Urine sodium: the kidney’s own estimate of effective volume',
+      body: [
+        'The kidney varies sodium excretion to defend effective circulating volume, so a urine Na⁺ below about 20 mmol/L means it is behaving as though volume were low. That is the practical use: distinguishing hypovolaemia from SIADH in hyponatraemia, and pre-renal physiology from acute tubular necrosis, where the urine Na⁺ usually exceeds 40 mmol/L because damaged tubules cannot reabsorb it.',
+        'In a steady state, 24-hour sodium excretion equals intake — so it is also the way to check dietary adherence in hypertension, where the target is under 100 mmol/day. Diuretics do not invalidate that, provided dose and intake are steady, because within about a week a new steady state is reached in which excretion again equals intake at a smaller volume.',
+        'A 24-hour collection in stone formers measures calcium and urate excretion, both of which track sodium reabsorption — so a high salt intake raises calcium excretion.',
+      ],
+      points: ['Urine Na⁺ < 20 mmol/L: behaving as volume-depleted', 'Urine Na⁺ > 40 mmol/L in AKI: favours tubular injury', 'Dietary adherence in hypertension: < 100 mmol/day'],
+      cite: { rose: [13, 8], evidence: 'clinical' },
+      route: '/urine-chemistry',
+    },
+    {
+      heading: 'Where urine sodium misleads',
+      body: [
+        'Low despite normal volume: selective renal or glomerular ischaemia — bilateral renal artery stenosis, acute glomerulonephritis. The kidney sees low pressure even though the patient does not.',
+        'High despite hypovolaemia: any tubular defect in sodium reabsorption — diuretics, salt-wasting nephropathy, adrenal insufficiency, or a non-reabsorbable anion carrying sodium out (bicarbonate in vomiting, ketoacid anions).',
+        'Concentration versus rate: urine Na⁺ is a concentration, so water reabsorption changes it. In central diabetes insipidus passing 10 L/day, excreting a normal 100 mmol of sodium gives a urine Na⁺ of 10 mmol/L — which looks like avid retention and is not.',
+      ],
+      cite: { rose: [13], evidence: 'clinical' },
+      route: '/urine-chemistry',
+    },
+    {
+      heading: 'Fractional excretion of sodium — and why 1% is not a constant',
+      body: [
+        'FENa expresses sodium excretion as a fraction of what was filtered, using creatinine to cancel the urine flow rate: FENa = (UNa × Pcr) ÷ (PNa × Ucr) × 100. It removes the water-reabsorption problem that makes the urine sodium concentration ambiguous, which is why it separates pre-renal from tubular injury better in the overlap zone of 20–40 mmol/L.',
+        'But the threshold depends on the filtered load. With a normal GFR of 180 L/day and plasma Na⁺ 150, about 27,000 mmol is filtered and 1% is 270 mmol/day — far more than anyone eats, so a normal person on a normal diet has a FENa well below 1%. When GFR falls to a tenth of normal, 1% of the filtered load is only about 14 mmol/day. The same number means different things at different GFRs.',
+        'Exceptions run both ways. FENa can be under 1% in established acute tubular necrosis when it is superimposed on chronic effective volume depletion — cirrhosis, heart failure, burns — and in contrast- or pigment-induced injury. And diuretics raise FENa in genuinely hypovolaemic patients, making it uninterpretable.',
+        'Alternatives for the diuretic problem: fractional excretion of urea (less affected by loop diuretics because urea reabsorption is largely passive) and of urate — in one study a fractional urate excretion below 12% suggested pre-renal disease, with modest sensitivity (68%) and specificity (78%). Fractional lithium clearance measures proximal function directly but is rarely available.',
+      ],
+      equation: 'fena',
+      cite: { rose: [13, 14], evidence: 'clinical', refs: ['espinel1976', 'miller1978', 'carvounis2002'] },
+      route: '/fractional-excretion',
+    },
+    {
+      heading: 'Urine chloride: when it says something sodium does not',
+      body: [
+        'Chloride is reabsorbed with sodium throughout the nephron, so the two usually agree and measuring chloride adds nothing. In about 30% of hypovolaemic patients, though, they differ by more than 15 mmol/L — because sodium is leaving with another anion, or chloride with another cation.',
+        'The important case is metabolic alkalosis. A volume-depleted patient who is excreting some of the excess bicarbonate as sodium bicarbonate can have a urine Na⁺ over 100 mmol/L while still being avidly volume depleted. The urine chloride stays appropriately low and reveals it — unless a diuretic is still acting.',
+        'The other case is a normal anion gap acidosis. In diarrhoea, ammonium excretion rises appropriately and chloride accompanies it, so the urine chloride is high and the urine anion gap negative. In renal tubular acidosis, ammonium excretion fails: the urine anion gap is positive and the urine pH inappropriately high.',
+      ],
+      equation: 'uag',
+      chain: ['Metabolic alkalosis + volume depletion', 'Some NaHCO₃ excreted → urine Na⁺ can be high', 'Cl⁻ is still avidly reabsorbed → urine Cl⁻ low', 'Urine Cl⁻ is the reliable marker: chloride-responsive alkalosis'],
+      cite: { rose: [13, 18, 19], evidence: 'clinical' },
+      route: '/urine-chemistry',
+    },
+    {
+      heading: 'Urine potassium',
+      body: [
+        'In hypokalaemia the question is whether the kidney is the route of loss. Appropriate conservation takes excretion down to 5–25 mmol/day; more than that in a hypokalaemic patient means renal wasting. A spot K⁺/creatinine ratio serves when a 24-hour collection is impractical.',
+        'In hyperkalaemia it helps less, because chronic hyperkalaemia already implies a secretory defect — normal kidneys adapt to intakes far above the usual 40–120 mmol/day.',
+      ],
+      equation: 'ukcr',
+      cite: { rose: [13, 12], evidence: 'clinical' },
+      route: '/hypokalemia',
+    },
+    {
+      heading: 'Urine osmolality',
+      body: [
+        'In hyponatraemia with true hypo-osmolality, ADH should be off and the urine maximally dilute (< 100 mOsm/kg). If it is, the problem is water intake outrunning excretory capacity — primary polydipsia, or a very low solute intake. If it is higher, ADH is present: volume depletion, SIADH, or another non-osmotic stimulus.',
+        'In hypernatraemia, ADH should be maximal and the urine above 600–800 mOsm/kg. If it is, water is being lost elsewhere (skin, airway) or sodium has been given in excess of water. A urine below plasma osmolality means renal water loss — diabetes insipidus.',
+        'In acute kidney injury, ADH is high in both pre-renal states and tubular necrosis, but injured tubules cannot respond: a urine osmolality above ~500 favours pre-renal, while an isosthenuric urine near 300 favours tubular injury.',
+      ],
+      cite: { rose: [13, 23, 24], evidence: 'clinical' },
+      route: '/urine-osmolality',
+    },
+    {
+      heading: 'Specific gravity, and when it disagrees with osmolality',
+      body: [
+        'Specific gravity measures weight, osmolality measures particle number, so they track each other only while the solutes are small and familiar. In normal urine each 30–35 mOsm/kg adds about 0.001, so 1.010 corresponds to roughly 300–350 mOsm/kg.',
+        'Large molecules break the relation: glucose in uncontrolled diabetes, radiocontrast (MW ≈ 550) and high-dose carbenicillin all raise the specific gravity far more than the osmolality. A specific gravity of 1.030 with a modest osmolality should prompt that thought.',
+      ],
+      cite: { rose: [13], evidence: 'clinical' },
+      route: '/urine-chemistry',
+    },
+    {
+      heading: 'Urine pH',
+      body: [
+        'The appropriate response to metabolic acidosis is a urine pH below 5.3, usually below 5.0. A higher value in an acidaemic adult suggests a defect in urinary acidification — with a positive urine anion gap, since ammonium excretion is impaired. Distinguishing the types of renal tubular acidosis then depends on the urine pH and the fractional excretion of bicarbonate at different plasma bicarbonate concentrations.',
+        'Urine pH also monitors treatment. In metabolic alkalosis with volume depletion the urine is paradoxically acid (≤ 6.0) because all the filtered bicarbonate is being reabsorbed; giving NaCl restores volume, the excess bicarbonate is excreted, and the urine pH rises above 7.0. A urine pH that stays low means volume repletion is still inadequate.',
+        'In uric acid stone disease the target is the opposite: alkalinising the urine keeps urate in its soluble form.',
+      ],
+      cite: { rose: [13, 18, 19], evidence: 'clinical' },
+      route: '/rta',
+    },
+  ],
+  numbers: [
+    { label: 'Urine Na⁺ suggesting hypovolaemia', value: '< 20 mmol/L' },
+    { label: 'Urine Na⁺ in acute tubular necrosis', value: '> 40 mmol/L (usually)' },
+    { label: 'Overlap zone', value: '20–40 mmol/L — use FENa' },
+    { label: 'FENa threshold', value: '< 1% pre-renal, > 2% tubular injury (GFR-dependent)' },
+    { label: 'FEurea threshold', value: '< 35% pre-renal (less affected by diuretics)' },
+    { label: 'Fractional urate excretion', value: '< 12% suggested pre-renal (sens 68%, spec 78%)' },
+    { label: 'Salt restriction target', value: '< 100 mmol/day of urinary Na⁺' },
+    { label: 'Minimum urinary K⁺ in depletion', value: '5–25 mmol/day' },
+    { label: 'Maximally dilute urine', value: '< 100 mOsm/kg' },
+    { label: 'Expected urine osmolality in hypernatraemia', value: '> 600–800 mOsm/kg' },
+    { label: 'Specific gravity conversion', value: '0.001 ≈ 30–35 mOsm/kg' },
+    { label: 'Appropriate urine pH in acidosis', value: '< 5.3 (usually < 5.0)' },
+    { label: 'Urine Na⁺ vs Cl⁻ discrepancy', value: '> 15 mmol/L in ~30% of hypovolaemic patients' },
+  ],
+  equations: ['fena', 'feurea', 'uag', 'uosmgap', 'ukcr'],
+  clinical: [
+    'There are no normal values for urine electrolytes — interpret them against the question you are asking and the patient’s state.',
+    'A urine Na⁺ below 20 mmol/L means the kidney is retaining sodium; it does not by itself mean the patient is dry (think renal artery stenosis, glomerulonephritis) — and a high value does not exclude hypovolaemia (diuretics, salt wasting, bicarbonaturia).',
+    'Use FENa rather than urine Na⁺ when the concentration is in the 20–40 mmol/L overlap, but remember the threshold shifts with GFR and that diuretics invalidate it.',
+    'Measure urine chloride when a seemingly hypovolaemic patient has a high urine sodium — especially in metabolic alkalosis.',
+    'A urine pH above 5.3 during metabolic acidosis, with a positive urine anion gap, points to renal tubular acidosis rather than gastrointestinal loss.',
+    'In metabolic alkalosis, a urine pH that stays acid means volume and chloride repletion is incomplete.',
+    'Specific gravity out of proportion to osmolality means a large solute is present: glucose, contrast, or certain antibiotics.',
+  ],
+  pathology: [
+    { name: 'Pre-renal azotaemia', broken: 'Renal perfusion, tubules intact', consequence: 'Urine Na⁺ < 20, FENa < 1%, urine osmolality > 500', route: '/prerenal-atn' },
+    { name: 'Acute tubular necrosis', broken: 'Tubular reabsorption and ADH response', consequence: 'Urine Na⁺ > 40, FENa > 2%, isosthenuric urine ≈ 300', route: '/prerenal-atn' },
+    { name: 'Bilateral renal artery stenosis', broken: 'Perfusion to the kidney alone', consequence: 'Avid sodium retention with normal systemic volume — urine Na⁺ misleadingly low', route: '/arterioles' },
+    { name: 'Diuretic use', broken: 'Tubular Na⁺ reabsorption', consequence: 'Urine Na⁺ and FENa high despite hypovolaemia — use FEurea or urate instead', route: '/diuretics' },
+    { name: 'Chloride-responsive metabolic alkalosis', broken: 'Bicarbonate excretion', consequence: 'Urine Na⁺ may be high while urine Cl⁻ stays low; urine pH paradoxically acid', route: '/metabolic-alkalosis' },
+    { name: 'Renal tubular acidosis', broken: 'Urinary acidification / ammonium excretion', consequence: 'Urine pH > 5.3 with acidaemia and a positive urine anion gap', route: '/rta' },
+    { name: 'Central diabetes insipidus', broken: 'ADH', consequence: 'Huge dilute urine makes every urine concentration look low, including sodium', route: '/water-disorders' },
+  ],
+  questions: [
+    {
+      q: 'A patient with vomiting looks volume depleted but has a urine Na⁺ of 90 mmol/L. What should you measure?',
+      options: ['Urine osmolality', 'Urine chloride — it stays low while sodium leaves with bicarbonate', 'Serum aldosterone', 'Urine creatinine'],
+      answer: 1,
+      explanation: 'In metabolic alkalosis, sodium must accompany the bicarbonate being excreted. Chloride is still avidly reabsorbed, so a low urine chloride reveals the volume depletion — and predicts a response to saline.',
+      route: '/urine-chemistry',
+    },
+    {
+      q: 'Why does a FENa of 1% mean something different at a GFR of 120 than at a GFR of 12 mL/min?',
+      options: ['It does not', 'Because FENa is a fraction of the filtered load: 1% of a tenth of the normal load is only about 14 mmol/day', 'Because creatinine changes', 'Because urine flow differs'],
+      answer: 1,
+      explanation: 'The threshold is not fixed. A patient with advanced CKD excreting 1% of a small filtered load may still be in sodium balance.',
+      route: '/fractional-excretion',
+    },
+    {
+      q: 'A patient with central diabetes insipidus passes 10 L/day and excretes 100 mmol of sodium. The urine Na⁺ is 10 mmol/L. Is this avid sodium retention?',
+      options: ['Yes', 'No — 100 mmol/day is a normal excretion; the concentration is low only because of the large water output', 'Cannot tell', 'Yes, because ADH is absent'],
+      answer: 1,
+      explanation: 'Concentration is excretion divided by volume. When urine volume is extreme, use the daily excretion or the fractional excretion instead.',
+      route: '/urine-chemistry',
+    },
+    {
+      q: 'A normal anion gap acidosis with a positive urine anion gap and a urine pH of 6.0 suggests:',
+      options: ['Diarrhoea', 'Renal tubular acidosis — ammonium excretion is impaired', 'Lactic acidosis', 'Ketoacidosis'],
+      answer: 1,
+      explanation: 'In diarrhoea the kidney responds appropriately: ammonium (with chloride) is high, the urine anion gap negative and the urine pH low. The opposite pattern points to the kidney as the problem.',
+      route: '/rta',
+    },
+    {
+      q: 'Urine specific gravity is 1.035 but the measured osmolality is only 400 mOsm/kg. Why?',
+      options: ['Laboratory error', 'A large solute is present — glucose, radiocontrast or carbenicillin — which weighs more per particle', 'The urine is very dilute', 'High ammonium']  ,
+      answer: 1,
+      explanation: 'Specific gravity reflects weight per volume, osmolality the number of particles. Large molecules dissociate the two.',
+      route: '/urine-chemistry',
+    },
+  ],
+  updates: [
+    {
+      topic: 'Biomarkers beyond urine chemistry',
+      text: 'Damage biomarkers (NGAL, KIM-1, TIMP-2·IGFBP7) detect tubular injury earlier than creatinine and do not depend on the volume-driven indices this chapter describes. They refine rather than replace them: KDIGO still stages acute kidney injury by creatinine and urine output, and no biomarker has displaced the clinical judgement these tests support.',
+      cite: { refs: ['kellum2021', 'kellum2013aki'], evidence: 'guideline' },
+    },
+    {
+      topic: 'How much the indices really discriminate',
+      text: 'Later work confirms the chapter’s caution rather than overturning it: urine sodium and FENa overlap substantially between pre-renal states and tubular injury, and FEurea performs inconsistently across studies. They are best used as one piece of evidence about volume, not as a test for a diagnosis.',
+      cite: { refs: ['carvounis2002', 'perazella2012'], evidence: 'clinical' },
+    },
+  ],
+};

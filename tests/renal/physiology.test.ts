@@ -1046,3 +1046,108 @@ describe('volume regulation and the independence of Na+ and K+ (Rose ch. 6, 8)',
     expect(mid.kidney.kSecretion * 1440).toBeGreaterThan(0.5 * mid.kidney.urine.exc.K);
   });
 });
+
+/**
+ * The urine-chemistry module claims that each index succeeds in some states and misleads in
+ * others, and it scores the model's own numbers against the truth it holds. Those claims are only
+ * honest if the engine really produces the patterns, at the moment the page jumps to — so each
+ * scenario below is the page's own parameter patch, read at its own teaching moment.
+ *
+ * Note the times: these are all non-steady states. In balance, excretion equals intake and FENa
+ * reports the diet, which is precisely why urine chemistries are read early.
+ */
+describe('urine chemistries and where they mislead (Rose ch. 13)', () => {
+  const settled = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 150 }), 60).state.body;
+
+  /** The state a given number of days after the change, starting from a settled normal body. */
+  function at(patch: ParamPatch, day: number) {
+    const p = applyPatch(DEFAULT_PARAMS, { naIntake: 150, ...patch });
+    const ev = day === 0 ? evaluate(settled, p) : simulate(p, day, Math.min(0.021, day / 8), settled).final;
+    const u = ev.kidney.urine;
+    return { ev, u, UNa: u.Na, UCl: u.Cl, FENa: ev.derived.FENa, Uosm: u.osm, naExc: u.exc.Na };
+  }
+
+  test('diarrhoea: the case the indices were designed for — all three point at hypovolaemia', () => {
+    const d = at({ diarrhea: 2, waterIntake: 1.2, naIntake: 60 }, 1);
+    expect(d.UNa).toBeLessThan(20);
+    expect(d.FENa).toBeLessThan(1);
+    expect(d.Uosm).toBeGreaterThan(500);
+  });
+
+  test('acute tubular necrosis: sodium is not reabsorbed and the urine is isosthenuric', () => {
+    const a = at({ tubularInjury: 0.75 }, 0.25);
+    expect(a.UNa).toBeGreaterThan(40);
+    expect(a.FENa).toBeGreaterThan(1);
+    expect(a.Uosm).toBeLessThan(350);
+  });
+
+  test('ATN on heart failure: FENa stays far below 1% although the tubules are injured', () => {
+    const a = at({ tubularInjury: 0.7, cardiacFunction: 0.42 }, 1);
+    expect(a.FENa).toBeLessThan(1);
+    expect(a.UNa).toBeLessThan(20);
+    // the volume signal that overrides the injury is real, not an artefact
+    expect(a.ev.reg.hormones.aldo).toBeGreaterThan(1.5);
+  });
+
+  test('a loop diuretic drives FENa to ~5% through entirely normal tubules', () => {
+    const l = at({ drugs: { furosemide: 0.9 } }, 0);
+    expect(l.FENa).toBeGreaterThan(2);
+    expect(l.FENa).toBeLessThan(15);
+    expect(DEFAULT_PARAMS.tubularInjury).toBe(0);
+  });
+
+  test('braking: the same loop diuretic is back under 1% within hours', () => {
+    const early = at({ drugs: { furosemide: 0.9 } }, 0);
+    const later = at({ drugs: { furosemide: 0.9 } }, 1);
+    expect(later.FENa).toBeLessThan(1);
+    expect(later.naExc).toBeLessThan(0.2 * early.naExc);
+  });
+
+  test('vomiting: urine Na+ is high while urine Cl- stays low — bicarbonate carries the sodium out', () => {
+    const v = at({ vomiting: 1, waterIntake: 2.5 }, 2);
+    expect(v.ev.plasma.HCO3).toBeGreaterThan(28);
+    expect(v.UNa).toBeGreaterThan(40);
+    expect(v.UCl).toBeLessThan(20);
+    expect(v.UNa - v.UCl).toBeGreaterThan(15);
+    expect(v.u.pH).toBeGreaterThan(7);
+  });
+
+  test('diabetes insipidus: a low urine Na+ concentration with a normal daily excretion', () => {
+    const di = at({ centralDI: 0.95 }, 3);
+    expect(di.UNa).toBeLessThan(30);
+    expect(di.u.volumePerDay).toBeGreaterThan(4);
+    // the concentration is low only because of the volume: excretion is near intake
+    expect(di.naExc).toBeGreaterThan(80);
+  });
+
+  test('SIADH: water is retained but sodium handling is untouched, so urine Na+ is not low', () => {
+    const s = at({ adhAutonomous: 5 }, 3);
+    expect(s.ev.plasma.Na).toBeLessThan(135);
+    expect(s.UNa).toBeGreaterThan(40);
+    expect(s.Uosm).toBeGreaterThan(500);
+  });
+
+  test('bilateral renal artery stenosis: avid sodium retention without volume depletion', () => {
+    const r = at({ stenosisL: 0.8, stenosisR: 0.78 }, 0.5);
+    expect(r.UNa).toBeLessThan(20);
+    expect(r.FENa).toBeLessThan(1);
+    // the patient is not dry — extracellular volume is normal or high
+    expect(r.ev.derived.ecfLiters).toBeGreaterThan(13.5);
+  });
+
+  test('advanced CKD: FENa exceeds 3% in a patient who is in sodium balance', () => {
+    const c = at({ nephronFraction: 0.13 }, 1);
+    expect(c.FENa).toBeGreaterThan(2);
+    expect(c.naExc).toBeGreaterThan(100); // still excreting roughly the intake
+    expect(c.ev.derived.ecfLiters).toBeLessThan(15.5);
+  });
+
+  test('in a steady state FENa only reports the diet, whatever the kidney', () => {
+    const lowSalt = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 20 }), 40).ev;
+    const highSalt = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 300 }), 40).ev;
+    expect(lowSalt.derived.FENa).toBeLessThan(highSalt.derived.FENa);
+    // and both are in balance: excretion has returned to intake
+    expect(Math.abs(lowSalt.kidney.urine.exc.Na - 20)).toBeLessThan(12);
+    expect(Math.abs(highSalt.kidney.urine.exc.Na - 300)).toBeLessThan(40);
+  });
+});

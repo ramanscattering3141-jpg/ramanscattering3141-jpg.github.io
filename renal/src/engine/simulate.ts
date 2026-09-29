@@ -489,6 +489,11 @@ export interface TrajectoryPoint {
   urineK: number;
   /** change in exchangeable Na+ since the start, mmol (cumulative balance) */
   naBalance: number;
+  /** urinary Cl- excretion, mmol/day */
+  urineCl: number;
+  /** fractional excretion of Na+, per cent */
+  fena: number;
+  urinePH: number;
 }
 
 export function simulate(params: Params, days: number, dt = 0.25, start?: BodyState): { points: TrajectoryPoint[]; final: Evaluation; state: SimState } {
@@ -523,6 +528,9 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       urineNa: ev.kidney.urine.exc.Na,
       urineK: ev.kidney.urine.exc.K,
       naBalance: state.body.naE - naE0,
+      urineCl: ev.kidney.urine.exc.Cl,
+      fena: ev.derived.FENa,
+      urinePH: ev.kidney.urine.pH,
     });
     if (i === steps || state.outOfRange) break;
     const next = stepDay(state, params, dt, ev.reg, h);
@@ -531,4 +539,43 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
     h = next.h;
   }
   return { points, final: ev, state };
+}
+
+/**
+ * Settle the body on one set of parameters, then switch to another and record the transition —
+ * the shape of most teaching experiments (a diet changed, a drug started, an injury sustained).
+ *
+ * With `fineDays` and `coarseDt`, the first part is recorded at `dt` and the remainder at the
+ * coarser interval. That matters for speed as well as detail: the integrator cannot take a
+ * substep longer than the recording interval, so recording a fortnight at half-hourly resolution
+ * costs several seconds, while the information a perturbation carries is nearly all in its first
+ * hours. The cumulative fields (`naBalance`, `weightChange`) restart at zero in each `simulate`
+ * call, so the second phase is offset to stay continuous with the first.
+ */
+export function stepCourse(
+  from: Params,
+  to: Params,
+  days: number,
+  dt: number,
+  settleDays = 60,
+  fineDays?: number,
+  coarseDt?: number,
+): { points: TrajectoryPoint[]; final: Evaluation; state: SimState; before: Evaluation } {
+  const settled = runToSteadyState(from, settleDays);
+  if (!fineDays || !coarseDt || fineDays >= days) {
+    const r = simulate(to, days, dt, settled.state.body);
+    return { ...r, before: settled.ev };
+  }
+  const fine = simulate(to, fineDays, dt, settled.state.body);
+  const rest = simulate(to, days - fineDays, coarseDt, fine.state.body);
+  const last = fine.points[fine.points.length - 1];
+  const points = fine.points.concat(
+    rest.points.slice(1).map((p) => ({
+      ...p,
+      day: p.day + fineDays,
+      naBalance: p.naBalance + last.naBalance,
+      weightChange: p.weightChange + last.weightChange,
+    })),
+  );
+  return { points, final: rest.final, state: rest.state, before: settled.ev };
 }

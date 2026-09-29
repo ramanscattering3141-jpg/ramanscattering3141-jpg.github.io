@@ -9,7 +9,7 @@
 // slider back to a value already visited is instant.
 
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { evaluate, runToSteadyState, simulate, type Evaluation, type SimState, type TrajectoryPoint } from '../engine/simulate';
+import { evaluate, runToSteadyState, simulate, stepCourse, type Evaluation, type SimState, type TrajectoryPoint } from '../engine/simulate';
 import { initialBody, type BodyState } from '../engine/body';
 import type { Job } from './worker';
 import { applyPatch, DEFAULT_PARAMS, type ParamPatch, type Params } from '../engine/types';
@@ -42,7 +42,7 @@ export function useAcute(p: Params, body?: BodyState): Evaluation {
 type JobSpec =
   | { kind: 'steady'; params: Params; days: number; start?: BodyState }
   | { kind: 'trajectory'; params: Params; days: number; dt: number; start?: BodyState }
-  | { kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number };
+  | { kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number };
 
 type SteadyResult = { state: SimState; ev: Evaluation };
 type CourseResult = { points: TrajectoryPoint[]; final: Evaluation; state: SimState };
@@ -90,10 +90,7 @@ function run<T>(job: JobSpec): Promise<T> {
       setTimeout(() => {
         if (job.kind === 'steady') resolve(runToSteadyState(job.params, job.days, 0.5, job.start) as T);
         else if (job.kind === 'trajectory') resolve(simulate(job.params, job.days, job.dt, job.start) as T);
-        else {
-          const settled = runToSteadyState(job.from, job.settleDays ?? 60);
-          resolve({ ...simulate(job.to, job.days, job.dt, settled.state.body), before: settled.ev } as T);
-        }
+        else resolve(stepCourse(job.from, job.to, job.days, job.dt, job.settleDays, job.fineDays, job.coarseDt) as T);
       }, 0),
     );
   }
@@ -172,12 +169,12 @@ const stepCache = new Map<string, StepResult>();
  * the shape of most teaching experiments (a change of diet, a drug started). Both halves run in
  * one worker job so the two never race.
  */
-export function useStep(from: Params, to: Params, days: number, dt = 0.25, settleDays = 60) {
-  const key = paramsKey(from, `|${paramsKey(to)}|${days}|${dt}|${settleDays}`);
+export function useStep(from: Params, to: Params, days: number, dt = 0.25, settleDays = 60, fineDays?: number, coarseDt?: number) {
+  const key = paramsKey(from, `|${paramsKey(to)}|${days}|${dt}|${settleDays}|${fineDays ?? ''}|${coarseDt ?? ''}`);
   const r = useAsync(key, () => {
     const hit = stepCache.get(key);
     if (hit) return Promise.resolve(hit);
-    return run<StepResult>({ kind: 'step', from, to, days, dt, settleDays }).then((v) => {
+    return run<StepResult>({ kind: 'step', from, to, days, dt, settleDays, fineDays, coarseDt }).then((v) => {
       if (stepCache.size > 100) stepCache.clear();
       stepCache.set(key, v);
       return v;
