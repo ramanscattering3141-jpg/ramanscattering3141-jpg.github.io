@@ -542,12 +542,19 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   // The equations keep producing numbers there, so the limits are stated explicitly: past them
   // the trajectory is held and the interface says the disturbance is lethal rather than
   // reporting a serum sodium of 57 as though it were a finding.
+  //
+  // The test is the direction of travel, not the value alone. A treatment simulation starts from
+  // the severe state it is treating - a sodium of 185 in untreated diabetes insipidus, a
+  // bicarbonate of 4 in untreated ketoacidosis - and the first thing it does is move back towards
+  // normal. Stopping such a run at its first step would report a successful treatment as a lethal
+  // disturbance. Only a body still moving away from life is out of range.
   if (!outOfRange) {
+    const naPrev = edelmanNa(state.body.naE, state.body.kE, state.body.tbw);
     const naNext = edelmanNa(b.naE, b.kE, b.tbw);
-    if (naNext < 100) outOfRange = 'Serum sodium has fallen below 100 mmol/L, which is not survivable: the disturbance has no steady state and would have been treated long before this.';
-    else if (naNext > 185) outOfRange = 'Serum sodium has risen above 185 mmol/L, which is not survivable: the disturbance has no steady state.';
-    else if (b.hco3 <= 4) outOfRange = 'Bicarbonate has been consumed almost completely: the acid load exceeds anything the kidney and buffers can offset.';
-    else if (b.hco3 >= 55) outOfRange = 'Bicarbonate has risen beyond what the model can represent.';
+    if (naNext < 100 && naNext <= naPrev) outOfRange = 'Serum sodium has fallen below 100 mmol/L, which is not survivable: the disturbance has no steady state and would have been treated long before this.';
+    else if (naNext > 185 && naNext >= naPrev) outOfRange = 'Serum sodium has risen above 185 mmol/L, which is not survivable: the disturbance has no steady state.';
+    else if (b.hco3 <= 4 && b.hco3 <= state.body.hco3) outOfRange = 'Bicarbonate has been consumed almost completely: the acid load exceeds anything the kidney and buffers can offset.';
+    else if (b.hco3 >= 55 && b.hco3 >= state.body.hco3) outOfRange = 'Bicarbonate has risen beyond what the model can represent.';
   }
 
   return { state: { body: b, day: state.day + dt, outOfRange }, ev, rate };
