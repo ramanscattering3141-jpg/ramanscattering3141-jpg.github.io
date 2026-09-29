@@ -1,3 +1,4 @@
+import { si } from '../units';
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related } from '../ui/page';
 import { Panel, Readout, Slider, Chain, Sources, Predict, BarRow } from '../ui/kit';
@@ -75,7 +76,7 @@ export default function Loop() {
             <Slider label="Claudin-16/19 (paracellular Ca²⁺/Mg²⁺)" value={s.claudin16} min={0} max={1.5} step={0.05} unit="×" onInput={(v) => up({ claudin16: v })} />
             <Slider label="Calcium-sensing receptor activation" value={s.casr} min={0.5} max={2.5} step={0.05} unit="×" onInput={(v) => up({ casr: v })} />
             <Slider label="Furosemide" value={s.furosemide} min={0} max={1} step={0.05} format={(v) => `${Math.round(v * 100)}% block`} onInput={(v) => up({ furosemide: v })} />
-            <Slider label="Plasma ADH (fixed)" value={s.adh} min={0} max={10} step={0.5} unit="pg/mL" onInput={(v) => up({ adh: v })} hint="0 = let osmolality set it" />
+            <Slider label="Plasma ADH (fixed)" value={s.adh} min={0} max={10} step={0.5} unit="pmol/L" format={(v) => si.adh(v).toFixed(1)} onInput={(v) => up({ adh: v })} hint="0 = let osmolality set it" />
           </Panel>
           <Panel title="Loop function">
             <div class="readout-grid">

@@ -29,7 +29,7 @@ const SCENARIOS: { id: string; label: string; patch: ParamPatch; depleted?: numb
   { id: 'loop', label: 'Loop diuretic', patch: { drugs: { furosemide: 1 } } },
   { id: 'thiazide', label: 'Thiazide', patch: { drugs: { thiazide: 1 } } },
   { id: 'sglt2i', label: 'SGLT2 inhibitor', patch: { drugs: { sglt2i: 1 } } },
-  { id: 'dm', label: 'Glucose 400 mg/dL', patch: { glucose: 400 } },
+  { id: 'dm', label: 'Glucose 22 mmol/L', patch: { glucose: 400 } }, // engine glucose is mg/dL
   { id: 'volume', label: 'Volume depletion', patch: {}, depleted: 3 },
   { id: 'aldo', label: 'High aldosterone', patch: { aldoAutonomous: 5 } },
   { id: 'acid', label: 'Metabolic acidosis', patch: {}, hco3: 13 },
@@ -205,7 +205,7 @@ export default function FlowSimulator() {
         <div>
           <Panel title={`Fate of filtered ${label}`} note="Share of the filtered load reabsorbed (−) or added (+) in each segment, first hours of the scenario.">
             <p class="muted" style={{ fontSize: '0.85rem' }}>
-              Filtered: {solute === 'water' ? `${(filtered * 1.44).toFixed(0)} L/day` : solute === 'glucose' || solute === 'creat' ? `${((filtered * 1440) / 1000).toFixed(1)} g/day` : `${(filtered * 1440).toFixed(0)} mmol/day`}
+              Filtered: {solute === 'water' ? `${(filtered * 1.44).toFixed(0)} L/day` : solute === 'glucose' ? `${((filtered * 1440) / 180.16).toFixed(0)} mmol/day` : solute === 'creat' ? `${((filtered * 1440) / 113.12).toFixed(1)} mmol/day` : `${(filtered * 1440).toFixed(0)} mmol/day`}
             </p>
             {perSeg.map((d) => (
               <BarRow

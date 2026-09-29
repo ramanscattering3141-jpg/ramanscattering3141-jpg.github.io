@@ -3,6 +3,7 @@
 // Conventions
 //   flows:          mL/min (renal), L/day (whole body)
 //   concentrations: mmol/L (mEq/L for monovalent ions); glucose & BUN & creatinine in mg/dL
+//                   internally, as in Rose & Post — the UI converts everything to SI (see src/units.ts)
 //   renal loads:    mmol/min (creatinine mg/min, glucose mg/min)
 //   hormones:       dimensionless "relative to normal" (1 = normal) unless stated
 

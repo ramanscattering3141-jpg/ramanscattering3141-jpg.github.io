@@ -1,3 +1,4 @@
+import { si } from '../units';
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related } from '../ui/page';
 import { Panel, Readout, Slider, Chain, Sources, Predict, BarRow } from '../ui/kit';
@@ -21,7 +22,7 @@ export default function Urea() {
   const { mode } = useMode();
   const [s, setS] = useState<S>(START);
   const up = (p: Partial<S>) => setS({ ...s, ...p });
-  // Steady-state BUN rises with production and falls with clearance (~half of GFR).
+  // Steady-state BUN (engine units, mg/dL) rises with production and falls with clearance (~half of GFR).
   const bun = Math.max(3, ((ureaGen(s.protein) * 1440) / (s.gfr * 1.44 * 0.5)) * 2.8 * 0.95);
   const aqp2 = Math.pow(s.adh, 1.4) / (Math.pow(s.adh, 1.4) + Math.pow(0.666, 1.4)) * 1.12;
   const r = useMemo(
@@ -65,14 +66,14 @@ export default function Urea() {
         <div>
           <Panel title="Controls">
             <Slider label="Protein intake" value={s.protein} min={10} max={220} unit="g/day" onInput={(v) => up({ protein: v })} />
-            <Slider label="Plasma ADH" value={s.adh} min={0} max={10} step={0.1} unit="pg/mL" onInput={(v) => up({ adh: v })} />
+            <Slider label="Plasma ADH" value={s.adh} min={0} max={10} step={0.1} unit="pmol/L" format={(v) => si.adh(v).toFixed(1)} onInput={(v) => up({ adh: v })} />
             <Slider label="IMCD urea transporters (UT-A1/A3)" value={s.uta} min={0} max={1.5} step={0.05} unit="×" onInput={(v) => up({ uta: v })} />
             <Slider label="GFR" value={s.gfr} min={20} max={180} unit="mL/min" onInput={(v) => up({ gfr: v })} />
           </Panel>
           <Panel title="Results">
             <div class="readout-grid">
               <Readout label="Urea made" value={ureaGen(s.protein) * 1440} unit="mmol/day" />
-              <Readout label="BUN (steady)" value={bun} unit="mg/dL" />
+              <Readout label="Plasma urea (steady)" value={si.urea(bun)} digits={1} unit="mmol/L" />
               <Readout label="Filtered urea" value={filteredUrea} unit="mmol/day" />
               <Readout label="Urine urea" value={uUrea} unit="mmol/L" />
               <Readout label="Medullary urea" value={r.gUrea} unit="mOsm/kg" />
@@ -122,10 +123,10 @@ export default function Urea() {
           explanation="Less urea reaches the inner medulla, so the papilla is less concentrated and the urine can only equilibrate with a lower osmolality. (A low solute intake also limits free-water excretion — the ‘tea and toast’ problem, but that is about dilution.)"
         />
         <Predict
-          question="In volume depletion the BUN rises out of proportion to creatinine. Why?"
+          question="In volume depletion the plasma urea rises out of proportion to creatinine. Why?"
           options={['Urea production rises', 'More proximal Na⁺ and water reabsorption means more passive urea reabsorption (and ADH increases medullary urea reabsorption)', 'GFR falls more than creatinine shows']}
           correct={1}
-          explanation="Urea follows water. Creatinine is not reabsorbed, so the BUN/creatinine ratio rises above ~20:1."
+          explanation="Urea follows water. Creatinine is not reabsorbed, so the urea/creatinine ratio rises above ~80 (in US units, BUN/creatinine above 20:1)."
         />
       </div>
       <Panel title="The five questions">
@@ -134,7 +135,7 @@ export default function Urea() {
           why={<p>Collecting ducts are impermeable to urea until the inner medulla, where ADH-regulated transporters let concentrated urea out; recycling through the thin limbs keeps it there.</p>}
           change={<p>More protein or ADH: more medullary urea. Less of either, or loss of UT-A: less concentrating ability.</p>}
           abnormal={<p>Low protein intake, water loading, diabetes insipidus and urea-transporter defects all reduce maximal urine osmolality.</p>}
-          clinical={<p>BUN reflects production (protein, GI bleeding, steroids, catabolism) and reabsorption (volume depletion) as well as GFR. Urea is an ineffective osmole across cell membranes, so uraemia does not cause cell shrinkage.</p>}
+          clinical={<p>Plasma urea reflects production (protein, GI bleeding, steroids, catabolism) and reabsorption (volume depletion) as well as GFR. Urea is an ineffective osmole across cell membranes, so uraemia does not cause cell shrinkage.</p>}
         />
         <Sources cite={{ rose: [4, 2], evidence: 'physiology', refs: ['fenton2004', 'sands2009', 'klein2011'] }} />
       </Panel>

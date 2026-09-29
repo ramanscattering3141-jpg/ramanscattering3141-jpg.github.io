@@ -3,6 +3,7 @@ import { PageHead, FiveQuestions, WhatIf, Related, Toggle } from '../ui/page';
 import { Panel, Readout, Slider, Chain, Sources, Predict, LineChart } from '../ui/kit';
 import { saturable } from '../engine/math';
 import { acute, makeParams, NORMAL } from '../sim/hooks';
+import { conv } from '../units';
 
 interface S {
   glucose: number;
@@ -11,11 +12,15 @@ interface S {
   sglt1: number;
   inhibitor: boolean;
 }
-const START: S = { glucose: 95, gfr: 125, sglt2: 1, sglt1: 1, inhibitor: false };
-const TM = 375;
+// glucose in mmol/L; loads in mmol/min
+const START: S = { glucose: 5.3, gfr: 125, sglt2: 1, sglt1: 1, inhibitor: false };
+/** whole-kidney glucose Tm ≈ 375 mg/min */
+const TM = 2.08;
+/** 1 mg/min of glucose, the smallest glucosuria we call glucosuria */
+const TRACE = 1 / 180;
 
 function titration(s: S, P: number) {
-  const filtered = (s.gfr * P) / 100;
+  const filtered = (s.gfr * P) / 1000;
   const tm2 = TM * 0.92 * s.sglt2 * (s.inhibitor ? 0.15 : 1);
   const tm1 = TM * 0.08 * s.sglt1;
   const g2 = saturable(filtered, tm2, 0.93);
@@ -102,11 +107,11 @@ export default function Glucose() {
   const t = titration(s, s.glucose);
   const curve = useMemo(() => {
     const rows = [];
-    for (let P = 0; P <= 800; P += 10) rows.push({ P, ...titration(s, P) });
+    for (let P = 0; P <= 45; P += 0.5) rows.push({ P, ...titration(s, P) });
     return rows;
   }, [s.gfr, s.sglt2, s.sglt1, s.inhibitor]);
-  const threshold = curve.find((r) => r.excreted > 1)?.P;
-  const ev = useMemo(() => acute(makeParams({ glucose: s.glucose, drugs: { sglt2i: s.inhibitor ? 1 : 0 }, transporters: { SGLT2: s.sglt2, SGLT1: s.sglt1 } })), [s]);
+  const threshold = curve.find((r) => r.excreted > TRACE)?.P;
+  const ev = useMemo(() => acute(makeParams({ glucose: conv.glucose(s.glucose), drugs: { sglt2i: s.inhibitor ? 1 : 0 }, transporters: { SGLT2: s.sglt2, SGLT1: s.sglt1 } })), [s]);
   const n = NORMAL();
   const u = ev.kidney.urine;
 
@@ -115,19 +120,19 @@ export default function Glucose() {
       <PageHead path="/glucose" lede="Filtered glucose rises with plasma glucose; reabsorptive capacity does not. Raise the glucose, lower the GFR, weaken or block SGLT2, and watch the titration curve, the threshold and the downstream osmotic diuresis." />
       <WhatIf
         options={[
-          { label: 'Uncontrolled diabetes (glucose 450)', explain: 'Filtered load ≈ 560 mg/min exceeds the Tm: ~190 mg/min is excreted, dragging water and Na⁺ with it (osmotic diuresis).' },
-          { label: 'SGLT2 inhibitor at normal glucose', explain: 'The threshold falls toward ~40–80 mg/dL: tens of grams of glucose a day are excreted even with normal blood glucose, with a mild natriuresis that raises NaCl delivery to the macula densa.' },
+          { label: 'Uncontrolled diabetes (glucose 25)', explain: 'Filtered load ≈ 3.1 mmol/min exceeds the Tm (≈2.1): about 1 mmol/min is excreted, dragging water and Na⁺ with it (osmotic diuresis).' },
+          { label: 'SGLT2 inhibitor at normal glucose', explain: 'The threshold falls toward ~2–4.5 mmol/L: tens of grams of glucose a day are excreted even with normal blood glucose, with a mild natriuresis that raises NaCl delivery to the macula densa.' },
           { label: 'Familial renal glucosuria', explain: 'Fewer or weaker SGLT2 carriers: glucosuria with normal blood glucose.' },
-          { label: 'Low GFR (CKD) + glucose 250', explain: 'A smaller filtered load means less glucosuria at the same plasma glucose — and SGLT2 inhibitors lower glucose less in CKD.' },
+          { label: 'Low GFR (CKD) + glucose 14', explain: 'A smaller filtered load means less glucosuria at the same plasma glucose — and SGLT2 inhibitors lower glucose less in CKD.' },
           { label: 'Pregnancy-like high GFR', explain: 'A 50% rise in GFR raises the filtered load, so glucosuria can appear at plasma glucose that would not normally cause it.' },
         ]}
         onApply={(o) => {
           const m: Record<string, Partial<S>> = {
-            'Uncontrolled diabetes (glucose 450)': { glucose: 450 },
+            'Uncontrolled diabetes (glucose 25)': { glucose: 25 },
             'SGLT2 inhibitor at normal glucose': { inhibitor: true },
             'Familial renal glucosuria': { sglt2: 0.25 },
-            'Low GFR (CKD) + glucose 250': { gfr: 35, glucose: 250 },
-            'Pregnancy-like high GFR': { gfr: 180, glucose: 170 },
+            'Low GFR (CKD) + glucose 14': { gfr: 35, glucose: 14 },
+            'Pregnancy-like high GFR': { gfr: 180, glucose: 9.5 },
           };
           setS({ ...START, ...m[o.label] });
         }}
@@ -136,7 +141,7 @@ export default function Glucose() {
       <div class="grid grid-sidebar">
         <div>
           <Panel title="Controls">
-            <Slider label="Plasma glucose" value={s.glucose} min={40} max={800} step={5} unit="mg/dL" onInput={(v) => up({ glucose: v })} />
+            <Slider label="Plasma glucose" value={s.glucose} min={2} max={45} step={0.1} unit="mmol/L" onInput={(v) => up({ glucose: v })} />
             <Slider label="GFR" value={s.gfr} min={15} max={200} unit="mL/min" onInput={(v) => up({ gfr: v })} />
             <Slider label="SGLT2 capacity" value={s.sglt2} min={0} max={1.5} step={0.05} unit="×" onInput={(v) => up({ sglt2: v })} />
             <Slider label="SGLT1 capacity" value={s.sglt1} min={0} max={2} step={0.05} unit="×" onInput={(v) => up({ sglt1: v })} />
@@ -144,20 +149,20 @@ export default function Glucose() {
           </Panel>
           <Panel title="Handling now">
             <div class="readout-grid">
-              <Readout label="Filtered" value={t.filtered} unit="mg/min" />
-              <Readout label="Reabsorbed by SGLT2" value={t.g2} unit="mg/min" />
-              <Readout label="by SGLT1" value={t.g1} unit="mg/min" />
-              <Readout label="Excreted" value={t.excreted} digits={1} unit="mg/min" tone={t.excreted > 1 ? 'high' : 'normal'} />
-              <Readout label="Glucosuria" value={(t.excreted * 1440) / 1000} digits={1} unit="g/day" />
-              <Readout label="Tm (whole kidney)" value={t.tm} unit="mg/min" />
-              <Readout label="Threshold" value={threshold ?? NaN} unit="mg/dL" title="Plasma glucose at which glucose first appears in the urine" />
+              <Readout label="Filtered" value={t.filtered} digits={2} unit="mmol/min" />
+              <Readout label="Reabsorbed by SGLT2" value={t.g2} digits={2} unit="mmol/min" />
+              <Readout label="by SGLT1" value={t.g1} digits={2} unit="mmol/min" />
+              <Readout label="Excreted" value={t.excreted} digits={2} unit="mmol/min" tone={t.excreted > TRACE ? 'high' : 'normal'} />
+              <Readout label="Glucosuria" value={t.excreted * 1440} digits={0} unit="mmol/day" />
+              <Readout label="Tm (whole kidney)" value={t.tm} digits={2} unit="mmol/min" />
+              <Readout label="Threshold" value={threshold ?? NaN} digits={1} unit="mmol/L" title="Plasma glucose at which glucose first appears in the urine" />
             </div>
           </Panel>
         </div>
         <div>
           <Panel title="Glucose titration curve" note="Solid: with splay (nephron heterogeneity). Dashed: the idealised sharp Tm. Vertical line: current plasma glucose.">
             <LineChart
-              xLabel="plasma glucose (mg/dL)"
+              xLabel="plasma glucose (mmol/L)"
               series={[
                 { label: 'Filtered', points: curve.map((r) => ({ x: r.P, y: r.filtered })), color: '#6aa9e8' },
                 { label: 'Reabsorbed', points: curve.map((r) => ({ x: r.P, y: r.reab })), color: '#7bc47f' },
@@ -170,7 +175,7 @@ export default function Glucose() {
             />
           </Panel>
           <Panel title="From carrier to cell">
-            <CellDiagram sglt2={s.sglt2} sglt1={s.sglt1} inhibitor={s.inhibitor} flux={t.reab / 375} />
+            <CellDiagram sglt2={s.sglt2} sglt1={s.sglt1} inhibitor={s.inhibitor} flux={t.reab / TM} />
           </Panel>
           <div class="grid grid-2">
             <Panel title="Downstream: the whole kidney" note="Integrated model, first hours (before the body’s balances shift).">
@@ -185,11 +190,11 @@ export default function Glucose() {
             <Panel title="Causal chain">
               <Chain
                 steps={[
-                  { text: s.inhibitor ? 'SGLT2 blocked' : t.excreted > 1 ? 'Filtered glucose exceeds reabsorptive capacity' : 'All filtered glucose reabsorbed', direction: s.inhibitor || t.excreted > 1 ? -1 : 0 },
-                  { text: 'Unreabsorbed glucose stays in the lumen as an osmole', direction: t.excreted > 1 ? 1 : 0 },
-                  { text: 'Proximal water and Na⁺ reabsorption fall (and Na⁺ no longer co-transported with glucose)', direction: t.excreted > 1 ? -1 : 0 },
-                  { text: 'More NaCl reaches the macula densa → afferent constriction, lower intraglomerular pressure', direction: t.excreted > 1 ? 1 : 0 },
-                  { text: 'Osmotic diuresis and natriuresis: glucose, water and Na⁺ in the urine', direction: t.excreted > 1 ? 1 : 0 },
+                  { text: s.inhibitor ? 'SGLT2 blocked' : t.excreted > TRACE ? 'Filtered glucose exceeds reabsorptive capacity' : 'All filtered glucose reabsorbed', direction: s.inhibitor || t.excreted > TRACE ? -1 : 0 },
+                  { text: 'Unreabsorbed glucose stays in the lumen as an osmole', direction: t.excreted > TRACE ? 1 : 0 },
+                  { text: 'Proximal water and Na⁺ reabsorption fall (and Na⁺ no longer co-transported with glucose)', direction: t.excreted > TRACE ? -1 : 0 },
+                  { text: 'More NaCl reaches the macula densa → afferent constriction, lower intraglomerular pressure', direction: t.excreted > TRACE ? 1 : 0 },
+                  { text: 'Osmotic diuresis and natriuresis: glucose, water and Na⁺ in the urine', direction: t.excreted > TRACE ? 1 : 0 },
                 ]}
               />
             </Panel>
@@ -198,8 +203,8 @@ export default function Glucose() {
       </div>
       <div class="grid grid-2">
         <Predict
-          question="With a Tm of 375 mg/min and GFR 125 mL/min, glucosuria should begin at 300 mg/dL. When does it actually begin?"
-          options={['At 300 mg/dL', 'At about 180–200 mg/dL', 'Only above 500 mg/dL']}
+          question="With a Tm of ~2.1 mmol/min and GFR 125 mL/min, glucosuria should begin at ~17 mmol/L. When does it actually begin?"
+          options={['At ~17 mmol/L', 'At about 10–11 mmol/L', 'Only above 28 mmol/L']}
           correct={1}
           explanation="Splay: nephrons differ in glomerular size relative to proximal tubular length, so some saturate early. The curve bends before the whole-kidney Tm is reached."
         />
@@ -212,9 +217,9 @@ export default function Glucose() {
       </div>
       <Panel title="The five questions">
         <FiveQuestions
-          normal={<p>All ~180 g/day of filtered glucose is reabsorbed proximally: SGLT2 takes ~90% in S1–S2, SGLT1 the rest in S3.</p>}
+          normal={<p>All ~1000 mmol/day (≈180 g) of filtered glucose is reabsorbed proximally: SGLT2 takes ~90% in S1–S2, SGLT1 the rest in S3.</p>}
           why={<p>Secondary active transport: sodium’s inward gradient pulls glucose uphill into the cell; GLUT carriers let it out down its gradient.</p>}
-          change={<p>Raise the filtered load past the Tm (with splay beginning at ~180–200 mg/dL) and the excess is excreted; lower the capacity and glucosuria appears at normal glucose.</p>}
+          change={<p>Raise the filtered load past the Tm (with splay beginning at ~10–11 mmol/L) and the excess is excreted; lower the capacity and glucosuria appears at normal glucose.</p>}
           abnormal={<p>Diabetes (load), renal glucosuria (carrier), Fanconi syndrome (generalised), SGLT2 inhibition (drug). Unreabsorbed glucose causes an osmotic diuresis and impairs tubuloglomerular feedback.</p>}
           clinical={<p>Glucosuria causes polyuria and volume depletion in uncontrolled diabetes. SGLT2 inhibitors are now used for kidney and heart protection; they can cause euglycaemic ketoacidosis and genital infections, and cause an early, reversible dip in eGFR.</p>}
         />

@@ -10,14 +10,14 @@ export interface GlomControls {
   map: number; // renal artery pressure, mmHg
   aff: number; // afferent resistance multiplier
   eff: number; // efferent resistance multiplier
-  protein: number; // plasma protein g/dL
+  protein: number; // plasma total protein, g/L
   pbs: number; // Bowman's space pressure mmHg
   lp: number; // hydraulic conductivity multiplier
   area: number; // surface area multiplier
   venous: number; // renal venous pressure
 }
 
-export const GLOM_DEFAULT: GlomControls = { map: 93, aff: 1, eff: 1, protein: 7, pbs: 10, lp: 1, area: 1, venous: 4 };
+export const GLOM_DEFAULT: GlomControls = { map: 93, aff: 1, eff: 1, protein: 70, pbs: 10, lp: 1, area: 1, venous: 4 };
 
 /** The isolated glomerulus: pure Starling physics with the arteriolar tones held where you set them. */
 export function isolatedGlomerulus(c: GlomControls): GlomerularResult {
@@ -29,7 +29,7 @@ export function isolatedGlomerulus(c: GlomControls): GlomerularResult {
     Re: GLOM_REF.Re * c.eff,
     Kf: GLOM_REF.Kf * c.lp * c.area,
     Pbs: c.pbs,
-    Cp: c.protein,
+    Cp: c.protein / 10, // the glomerular model works in g/dL
   });
 }
 
@@ -51,7 +51,7 @@ export function intactKidney(c: GlomControls, extra: ParamPatch = {}): KidneyRes
     obstructionR: Math.max(0, (c.pbs - 10) / 45),
     ...extra,
   });
-  const plasma = { ...n.plasma, albumin: Math.max(1, c.protein - 3) };
+  const plasma = { ...n.plasma, albumin: Math.max(1, c.protein / 10 - 3) };
   return runKidney({ params, plasma, hormones: n.reg.hormones, MAP: c.map, ureaProduction: 0.28 });
 }
 

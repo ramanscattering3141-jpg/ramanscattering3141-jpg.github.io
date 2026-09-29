@@ -197,7 +197,7 @@ export const SEGMENT_INFO: Record<SegmentId, SegmentInfo> = {
       },
     ],
     clinical: [
-      'Volume depletion raises proximal reabsorption, and with it the reabsorption of urea, urate and calcium — which is why hypovolaemia raises the BUN and urate together.',
+      'Volume depletion raises proximal reabsorption, and with it the reabsorption of urea, urate and calcium — which is why hypovolaemia raises the plasma urea and urate together.',
       'Because bicarbonate reabsorption is tied to sodium reabsorption, there is no fixed bicarbonate transport maximum: a volume-depleted, chloride-depleted patient will reclaim bicarbonate avidly and sustain a metabolic alkalosis.',
       'Acetazolamide blocks the first step of bicarbonate reclamation, but the resulting diuresis is modest because the loop of Henle reclaims most of what escapes.',
     ],

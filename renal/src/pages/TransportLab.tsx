@@ -108,7 +108,7 @@ export default function TransportLab({ query }: { query: URLSearchParams }) {
               <Readout label="K⁺" value={ev.kidney.urine.exc.K} unit="mmol/d" delta={ev.kidney.urine.exc.K - n.kidney.urine.exc.K} />
               <Readout label="Osmolality" value={ev.kidney.urine.osm} unit="mOsm/kg" />
               <Readout label="pH" value={ev.kidney.urine.pH} digits={2} />
-              <Readout label="Glucose" value={ev.kidney.urine.exc.glucose} digits={1} unit="g/d" />
+              <Readout label="Glucose" value={(ev.kidney.urine.exc.glucose * 1000) / 180.16} digits={0} unit="mmol/d" />
             </div>
           </Panel>
           <Panel title="After the body re-balances" note="Steady state after weeks with the change in place.">

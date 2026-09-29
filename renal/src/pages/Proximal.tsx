@@ -3,6 +3,7 @@ import { PageHead, FiveQuestions, WhatIf, Related, Toggle } from '../ui/page';
 import { Panel, Readout, Slider, Chain, Sources, Predict, LineChart } from '../ui/kit';
 import { nephronRun, volumeState } from '../sim/nephron';
 import { NORMAL } from '../sim/hooks';
+import { conv } from '../units';
 import { useMode } from '../ui/mode';
 
 interface S {
@@ -15,7 +16,7 @@ interface S {
   gfr: number;
   pth: number;
 }
-const START: S = { volume: 0, nhe3: 1, acetazolamide: false, sglt2i: false, glucose: 95, hco3: 24, gfr: 130, pth: 1 };
+const START: S = { volume: 0, nhe3: 1, acetazolamide: false, sglt2i: false, glucose: 5.3, hco3: 24, gfr: 130, pth: 1 };
 
 /** Amount remaining along the tubule for a solute of which `frac` is reabsorbed, front-loaded with rate k. */
 const remaining = (x: number, frac: number, k: number) => 1 - frac * ((1 - Math.exp(-k * x)) / (1 - Math.exp(-k)));
@@ -29,7 +30,7 @@ export default function Proximal() {
       nephronRun({
         ...volumeState(s.volume),
         GFR: s.gfr,
-        plasma: { glucose: s.glucose, HCO3: s.hco3, pH: 6.1 + Math.log10(s.hco3 / (0.03 * (40 + 1.2 * Math.min(0, s.hco3 - 24) + 0.7 * Math.max(0, s.hco3 - 24)))) },
+        plasma: { glucose: conv.glucose(s.glucose), HCO3: s.hco3, pH: 6.1 + Math.log10(s.hco3 / (0.03 * (40 + 1.2 * Math.min(0, s.hco3 - 24) + 0.7 * Math.max(0, s.hco3 - 24)))) },
         hormones: { ...volumeState(s.volume).hormones, pth: s.pth },
         patch: { transporters: { NHE3: s.nhe3 }, drugs: { acetazolamide: s.acetazolamide ? 1 : 0, sglt2i: s.sglt2i ? 1 : 0 } },
       }),
@@ -80,7 +81,7 @@ export default function Proximal() {
           { label: 'Volume depletion', explain: 'Angiotensin II and noradrenaline activate NHE3 and raise the filtration fraction: proximal reabsorption of Na⁺ — and with it urea, urate, calcium and bicarbonate — rises.' },
           { label: 'Volume expansion', explain: 'Angiotensin II and noradrenaline fall, dopamine rises: fractional proximal reabsorption falls and more NaCl is delivered downstream.' },
           { label: 'Acetazolamide', explain: 'Carbonic anhydrase inhibition blunts bicarbonate reclamation — and because the chloride gradient depends on it, NaCl reabsorption falls too.' },
-          { label: 'Plasma glucose 400', explain: 'The filtered load exceeds the transport maximum. Unreabsorbed glucose holds water in the lumen and lowers luminal Na⁺, so NaCl reabsorption falls too (osmotic diuresis).' },
+          { label: 'Plasma glucose 22', explain: 'The filtered load exceeds the transport maximum. Unreabsorbed glucose holds water in the lumen and lowers luminal Na⁺, so NaCl reabsorption falls too (osmotic diuresis).' },
           { label: 'Metabolic acidosis (HCO₃⁻ 12)', explain: 'Less bicarbonate is filtered, so the passive chloride-driven component of NaCl reabsorption falls; phosphate reabsorption also falls.' },
           { label: 'High PTH', explain: 'NaPi-IIa is withdrawn from the brush border: phosphaturia.' },
           { label: 'GFR rises 30%', explain: 'Glomerulotubular balance: absolute reabsorption rises almost in proportion, so distal delivery barely changes.' },
@@ -90,7 +91,7 @@ export default function Proximal() {
             'Volume depletion': { volume: -1 },
             'Volume expansion': { volume: 1 },
             Acetazolamide: { acetazolamide: true },
-            'Plasma glucose 400': { glucose: 400 },
+            'Plasma glucose 22': { glucose: 22 },
             'Metabolic acidosis (HCO₃⁻ 12)': { hco3: 12 },
             'High PTH': { pth: 5 },
             'GFR rises 30%': { gfr: 170 },
@@ -105,7 +106,7 @@ export default function Proximal() {
             <Slider label="Effective volume" value={s.volume} min={-1} max={1} step={0.05} format={(v) => (v < -0.1 ? 'depleted' : v > 0.1 ? 'expanded' : 'normal')} onInput={(v) => up({ volume: v })} hint="Sets angiotensin II, sympathetic tone and peritubular Starling forces together" />
             <Slider label="GFR" value={s.gfr} min={40} max={200} unit="mL/min" onInput={(v) => up({ gfr: v })} />
             <Slider label="NHE3 activity" value={s.nhe3} min={0} max={1.6} step={0.05} unit="×" onInput={(v) => up({ nhe3: v })} />
-            <Slider label="Plasma glucose" value={s.glucose} min={60} max={800} step={5} unit="mg/dL" onInput={(v) => up({ glucose: v })} />
+            <Slider label="Plasma glucose" value={s.glucose} min={3} max={45} step={0.1} unit="mmol/L" onInput={(v) => up({ glucose: v })} />
             <Slider label="Plasma HCO₃⁻" value={s.hco3} min={8} max={45} step={0.5} unit="mmol/L" onInput={(v) => up({ hco3: v })} />
             <Slider label="PTH" value={s.pth} min={0.1} max={8} step={0.1} unit="× normal" onInput={(v) => up({ pth: v })} />
             <Toggle label="Acetazolamide" checked={s.acetazolamide} onChange={(v) => up({ acetazolamide: v })} />
@@ -160,7 +161,7 @@ export default function Proximal() {
                 steps={[
                   { text: s.volume < -0.1 ? 'Volume depletion: ↑ angiotensin II, noradrenaline, filtration fraction' : s.volume > 0.1 ? 'Volume expansion: ↓ angiotensin II, ↑ dopamine' : 'Normal volume', direction: s.volume < -0.1 ? 1 : s.volume > 0.1 ? -1 : 0 },
                   { text: `Proximal Na⁺ reabsorption ${(fNa * 100).toFixed(0)}%`, direction: (Math.abs(fNa - (1 - base.segments.PT.out.Na / base.segments.PT.in.Na)) < 0.01 ? 0 : Math.sign(fNa - (1 - base.segments.PT.out.Na / base.segments.PT.in.Na))) as 1 | -1 | 0 },
-                  { text: 'Urea follows water → BUN rises without creatinine (prerenal azotaemia)' },
+                  { text: 'Urea follows water → plasma urea rises without creatinine (prerenal azotaemia)' },
                   { text: 'Urate reabsorption tracks Na⁺ → diuretic hyperuricaemia' },
                   { text: 'Ca²⁺ follows passively → saline + loop diuretic for hypercalcaemia' },
                   { text: 'HCO₃⁻ reabsorption rises → metabolic alkalosis maintained' },

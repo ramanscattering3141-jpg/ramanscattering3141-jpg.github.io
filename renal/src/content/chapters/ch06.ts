@@ -103,7 +103,7 @@ export const chapter: ChapterContent = {
     {
       heading: 'PTH, calcitriol and calcium–phosphate balance',
       body: [
-        'Calcium and phosphate absorption is incomplete (of ~1000 mg dietary calcium, net absorption is only 100–200 mg), so gut, bone and kidney all participate. About 40% of plasma calcium is albumin-bound, 15% complexed, 45% ionised; correct the total by +0.8 mg/dL per 1 g/dL fall in albumin.',
+        'Calcium and phosphate absorption is incomplete (of ~25 mmol (1000 mg) dietary calcium, net absorption is only 2.5–5 mmol), so gut, bone and kidney all participate. About 40% of plasma calcium is albumin-bound, 15% complexed, 45% ionised; correct the total by +0.02 mmol/L per 1 g/L fall in albumin (below 40 g/L).',
         'PTH is secreted when the parathyroid calcium-sensing receptor detects a fall in ionised calcium. It raises plasma calcium three ways: bone resorption (with vitamin D present), calcitriol synthesis (hence gut absorption), and distal tubular calcium reabsorption. It lowers proximal phosphate reabsorption (NaPi-II), which usually outweighs its phosphate-releasing effects on bone and gut, so plasma phosphate falls.',
         'Vitamin D₃ is 25-hydroxylated in the liver (unregulated, substrate-dependent) and 1α-hydroxylated in the kidney to calcitriol, stimulated by PTH and hypophosphataemia and inhibited by hypercalcaemia and calcitriol itself. Calcitriol raises gut calcium and phosphate absorption and bone resorption, and suppresses PTH. Macrophages in sarcoidosis, tuberculosis and lymphoma make calcitriol autonomously → hypercalciuria and hypercalcaemia.',
         'Hypocalcaemia → PTH → calcitriol: calcium rises with little change in phosphate. Hypophosphataemia → more NaPi carriers and more calcitriol, PTH falls: phosphate rises with little change in calcium. PTH also helps defend against acid loads, by increasing phosphate buffer delivery and bone buffering.',
@@ -157,7 +157,7 @@ export const chapter: ChapterContent = {
     { label: 'NSAID effect on BP in treated hypertension', value: '+3–5 (up to 10) mmHg' },
     { label: 'NSAID effect on K⁺', value: '+0.2 mmol/L (normal), +0.6 (renal insufficiency)' },
     { label: 'Plasma calcium', value: '≈40% albumin-bound, 15% complexed, 45% ionised' },
-    { label: 'Net gut calcium absorption', value: '100–200 mg/day (of ~1000 ingested)' },
+    { label: 'Net gut calcium absorption', value: '2.5–5 mmol/day (of ~25 ingested)' },
     { label: 'Fractional phosphate reabsorption in severe CKD', value: 'down to ~15%' },
   ],
   equations: ['correctedCa'],

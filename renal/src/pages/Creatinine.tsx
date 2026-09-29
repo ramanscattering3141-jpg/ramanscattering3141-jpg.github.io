@@ -3,6 +3,7 @@ import { PageHead, FiveQuestions, WhatIf, Related, Toggle } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, LineChart, Chain } from '../ui/kit';
 import { EquationCard } from '../ui/EquationCard';
 import { equationById } from '../content/equations';
+import { si } from '../units';
 
 interface S {
   baseGfr: number;
@@ -17,7 +18,8 @@ interface S {
 }
 const START: S = { baseGfr: 120, newGfr: 120, injuryDays: 0, weight: 70, age: 40, female: false, muscle: 1, secretionBlock: false, meatMeal: false };
 
-/** Creatinine generation, mg/day (Rose ch. 2: men 28 − 0.2·age, women 22 − age/9, mg/kg/day). */
+/** Creatinine generation, mg/day (Rose ch. 2: men 28 − 0.2·age, women 22 − age/9, mg/kg/day). Kinetics run in the
+ * book's units; everything displayed is converted to µmol/L and mmol/day. */
 const generation = (s: S) => (s.female ? 22 - s.age / 9 : 28 - 0.2 * s.age) * s.weight * s.muscle;
 
 /**
@@ -43,11 +45,12 @@ function kinetics(s: S) {
     const meal = s.meatMeal && t >= 1 && t < 1.25 ? 400 / 0.25 : 0; // ~400 mg extra over 6 h
     const excretionPerDay = (clAt(gfr) * 1440 * pcr) / 100;
     pcr += ((G + meal - excretionPerDay) / Vd) * dt;
-    if (Math.abs(t - Math.round(t * 4) / 4) < 1e-6) pts.push({ day: t, pcr, gfr, egfr: ckdEpi(pcr, s.age, s.female) });
+    if (Math.abs(t - Math.round(t * 4) / 4) < 1e-6) pts.push({ day: t, pcr: si.creat(pcr), gfr, egfr: ckdEpi(si.creat(pcr), s.age, s.female) });
   }
-  return { pts, G, ssBase: ss(s.baseGfr), ssNew: ss(s.newGfr) };
+  return { pts, G, ssBase: si.creat(ss(s.baseGfr)), ssNew: si.creat(ss(s.newGfr)) };
 }
 
+/** scr in µmol/L */
 function ckdEpi(scr: number, age: number, female: boolean) {
   const eq = equationById.get('ckdepi')!;
   return eq.compute({ scr, age, female: female ? 1 : 0 }).value;
@@ -61,12 +64,12 @@ export default function Creatinine() {
   const day2 = k.pts.find((p) => p.day >= 2)!;
   const hyper = useMemo(() => {
     const pts: { x: number; y: number }[] = [];
-    for (let g = 5; g <= 150; g += 2.5) pts.push({ x: g, y: (k.G / (g * (1 + secretionFraction(g, s.secretionBlock)) * 1440)) * 100 });
+    for (let g = 5; g <= 150; g += 2.5) pts.push({ x: g, y: si.creat((k.G / (g * (1 + secretionFraction(g, s.secretionBlock)) * 1440)) * 100) });
     return pts;
   }, [k.G, s.secretionBlock]);
   const pureFiltration = useMemo(() => {
     const pts: { x: number; y: number }[] = [];
-    for (let g = 5; g <= 150; g += 2.5) pts.push({ x: g, y: (k.G / (g * 1440)) * 100 });
+    for (let g = 5; g <= 150; g += 2.5) pts.push({ x: g, y: si.creat((k.G / (g * 1440)) * 100) });
     return pts;
   }, [k.G]);
 
@@ -75,12 +78,12 @@ export default function Creatinine() {
       <PageHead path="/creatinine" lede="Serum creatinine is the kidney’s most-used report card — and a lagging, muscle-dependent, secretion-contaminated one. Drop the GFR and watch creatinine climb over days, not minutes; change the patient and watch the same GFR produce a different creatinine." />
       <WhatIf
         options={[
-          { label: 'Sudden 90% fall in GFR', explain: 'Day 1 creatinine is near normal; it climbs ~1–2 mg/dL/day and plateaus after 1–2 weeks. Any estimating equation applied on day 2 is badly wrong.' },
+          { label: 'Sudden 90% fall in GFR', explain: 'Day 1 creatinine is near normal; it climbs ~90–180 µmol/L per day and plateaus after 1–2 weeks. Any estimating equation applied on day 2 is badly wrong.' },
           { label: 'Transient 3-day injury', explain: 'The peak comes as GFR is already recovering — creatinine lags on the way down too.' },
           { label: 'Same GFR, small elderly woman', explain: 'Lower muscle mass means lower production, so a GFR of 40 can sit behind a “normal” creatinine.' },
           { label: 'Trimethoprim', explain: 'Blocking secretion raises creatinine with no change in GFR.' },
           { label: 'Cooked-meat meal', explain: 'Heating converts creatine to creatinine: a transient rise without any change in filtration.' },
-          { label: 'Halve GFR from normal', explain: 'The first half of the GFR costs only ~0.5–0.8 mg/dL of creatinine — the steep part of the hyperbola is at low GFR.' },
+          { label: 'Halve GFR from normal', explain: 'The first half of the GFR costs only ~45–70 µmol/L of creatinine — the steep part of the hyperbola is at low GFR.' },
         ]}
         onApply={(o) => {
           const m: Record<string, Partial<S>> = {
@@ -110,28 +113,28 @@ export default function Creatinine() {
             <Slider label="Muscle mass" value={s.muscle} min={0.4} max={1.5} step={0.05} unit="× typical" onInput={(v) => up({ muscle: v })} hint="Cirrhosis, malnutrition, amputation, bed rest lower it" />
             <Toggle label="Female" checked={s.female} onChange={(v) => up({ female: v })} />
             <div class="readout-grid">
-              <Readout label="Creatinine production" value={k.G} unit="mg/day" />
-              <Readout label="per kg" value={k.G / s.weight} digits={1} unit="mg/kg/day" />
+              <Readout label="Creatinine production" value={si.creatPerDay(k.G)} digits={1} unit="mmol/day" />
+              <Readout label="per kg" value={(si.creatPerDay(k.G) / s.weight) * 1000} unit="µmol/kg/day" />
             </div>
           </Panel>
         </div>
         <div>
-          <Panel title="Three weeks of serum creatinine" note="The true GFR (right axis scaled into the same chart as GFR ÷ 20) changes instantly; creatinine follows over days. The eGFR calculated from each day's creatinine is shown for comparison.">
+          <Panel title="Three weeks of serum creatinine" note="The true GFR (scaled into the same chart as GFR × 5) changes instantly; creatinine follows over days. The eGFR calculated from each day's creatinine is shown for comparison.">
             <LineChart
               xLabel="day"
               series={[
-                { label: 'Serum creatinine (mg/dL)', points: k.pts.map((p) => ({ x: p.day, y: p.pcr })), color: '#f2b134' },
-                { label: 'True GFR ÷ 20', points: k.pts.map((p) => ({ x: p.day, y: p.gfr / 20 })), color: '#5ecfba' },
-                { label: 'eGFR from that day’s creatinine ÷ 20', points: k.pts.map((p) => ({ x: p.day, y: Math.min(p.egfr, 160) / 20 })), color: '#6aa9e8', dashed: true },
+                { label: 'Serum creatinine (µmol/L)', points: k.pts.map((p) => ({ x: p.day, y: p.pcr })), color: '#f2b134' },
+                { label: 'True GFR × 5', points: k.pts.map((p) => ({ x: p.day, y: p.gfr * 5 })), color: '#5ecfba' },
+                { label: 'eGFR from that day’s creatinine × 5', points: k.pts.map((p) => ({ x: p.day, y: Math.min(p.egfr, 160) * 5 })), color: '#6aa9e8', dashed: true },
               ]}
               yMin={0}
               height={250}
             />
             <div class="readout-grid">
-              <Readout label="Creatinine before" value={k.pts[0].pcr} digits={2} unit="mg/dL" />
-              <Readout label="Creatinine day 2" value={day2.pcr} digits={2} unit="mg/dL" />
-              <Readout label="Day 21" value={last.pcr} digits={2} unit="mg/dL" />
-              <Readout label="New steady state" value={k.ssNew} digits={2} unit="mg/dL" />
+              <Readout label="Creatinine before" value={k.pts[0].pcr} unit="µmol/L" />
+              <Readout label="Creatinine day 2" value={day2.pcr} unit="µmol/L" />
+              <Readout label="Day 21" value={last.pcr} unit="µmol/L" />
+              <Readout label="New steady state" value={k.ssNew} unit="µmol/L" />
               <Readout label="eGFR on day 2" value={day2.egfr} unit="mL/min" tone={Math.abs(day2.egfr - s.newGfr) > 20 ? 'danger' : 'normal'} title="CKD-EPI 2021 applied to a non-steady-state creatinine" />
               <Readout label="True GFR on day 2" value={day2.gfr} unit="mL/min" />
             </div>
@@ -145,7 +148,7 @@ export default function Creatinine() {
                   { label: 'filtration only', points: pureFiltration, color: '#f2b134', dashed: true },
                 ]}
                 yMin={0}
-                yMax={Math.min(15, Math.max(4, k.ssNew * 1.3))}
+                yMax={Math.min(1300, Math.max(350, k.ssNew * 1.3))}
                 marker={s.newGfr}
               />
             </Panel>
@@ -165,10 +168,10 @@ export default function Creatinine() {
       </div>
       <div class="grid grid-2">
         <Predict
-          question="Two patients have a creatinine of 1.4 mg/dL: an 85 kg man of 20 and a 40 kg woman of 80. Their creatinine clearances are about:"
+          question="Two patients have a creatinine of 124 µmol/L: an 85 kg man of 20 and a 40 kg woman of 80. Their creatinine clearances are about:"
           options={['Equal', '≈100 and ≈20 mL/min', '≈50 and ≈50 mL/min']}
           correct={1}
-          explanation="Cockcroft–Gault: (140−20)×85/(72×1.4) ≈ 101 mL/min; (140−80)×40/(72×1.4)×0.85 ≈ 20 mL/min. Production differs five-fold, so the same creatinine means very different filtration."
+          explanation="Cockcroft–Gault (SI): (140−20)×85×1.23/124 ≈ 101 mL/min; (140−80)×40×1.04/124 ≈ 20 mL/min. Production differs five-fold, so the same creatinine means very different filtration."
         />
         <EquationCard eq="cockcroft" />
       </div>
@@ -178,7 +181,7 @@ export default function Creatinine() {
           normal={<p>Creatinine is made from muscle creatine at a steady rate and excreted mostly by filtration, so in a steady state Pcr ≈ production ÷ GFR.</p>}
           why={<p>Accumulation needs time: the plasma level rises only as fast as unexcreted production accumulates in total body water.</p>}
           change={<p>Halving GFR doubles creatinine — eventually. Production (muscle, meat) and secretion shift the curve; the hyperbola makes early GFR loss hard to see and late loss easy to see.</p>}
-          abnormal={<p>Rising secretion hides early GFR loss (a stable Pcr &lt;1.5 mg/dL does not prove stable disease); low muscle mass hides advanced loss; drugs blocking secretion mimic loss.</p>}
+          abnormal={<p>Rising secretion hides early GFR loss (a stable Pcr &lt;130 µmol/L does not prove stable disease); low muscle mass hides advanced loss; drugs blocking secretion mimic loss.</p>}
           clinical={<p>Estimating equations need a steady state. In acute kidney injury, a rising creatinine means GFR is lower than any equation says; KDIGO staging relies on the change in creatinine and on urine output instead.</p>}
         />
         <Sources cite={{ rose: [2], evidence: 'physiology', refs: ['cockcroft1976', 'inker2021ckdepi', 'kellum2013aki'] }} />

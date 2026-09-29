@@ -375,3 +375,10 @@ a.btn.primary-link { background: var(--accent-dim); border-color: var(--accent-d
 .handling-bar i { display: block; height: 100%; border-radius: 6px; transition: width 0.25s; }
 .seg-detail h4 { margin-top: 12px; color: var(--accent); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .seg-detail p, .seg-detail li { font-size: 0.88rem; }
+
+/* ---- shared small pieces used by the regulation modules */
+.svg-small { font-size: 9px; fill: var(--ink-dim); }
+.diagram { width: 100%; height: auto; display: block; }
+.callout { border-left: 3px solid var(--accent, #6aa9e8); background: color-mix(in srgb, var(--accent, #6aa9e8) 10%, transparent); padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; margin: 0; }
+.callout.danger { border-left-color: #d9534f; background: color-mix(in srgb, #d9534f 12%, transparent); }
+.callout.good { border-left-color: #3fae6a; background: color-mix(in srgb, #3fae6a 12%, transparent); }

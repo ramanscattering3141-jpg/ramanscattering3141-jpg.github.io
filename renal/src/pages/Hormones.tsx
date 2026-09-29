@@ -1,3 +1,4 @@
+import { si } from '../units';
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, Related } from '../ui/page';
 import { Panel, Readout, Slider, Sources } from '../ui/kit';
@@ -8,8 +9,8 @@ import { href } from '../router';
 import type { ParamPatch } from '../engine/types';
 
 /** Which hormones can be driven directly in the engine, and how. */
-const DRIVE: Record<string, { label: string; min: number; max: number; step: number; unit: string; patch: (v: number) => ParamPatch; base: number }> = {
-  adh: { label: 'Plasma ADH (fixed)', min: 0, max: 12, step: 0.25, unit: 'pg/mL', base: 1.5, patch: (v) => ({ adhAutonomous: v, centralDI: 1 }) },
+const DRIVE: Record<string, { label: string; min: number; max: number; step: number; unit: string; patch: (v: number) => ParamPatch; base: number; format?: (v: number) => string }> = {
+  adh: { label: 'Plasma ADH (fixed)', min: 0, max: 12, step: 0.25, unit: 'pmol/L', base: 1.5, format: (v) => si.adh(v).toFixed(1), patch: (v) => ({ adhAutonomous: v, centralDI: 1 }) },
   aldosterone: { label: 'Aldosterone (autonomous)', min: 0, max: 8, step: 0.25, unit: '× normal', base: 1, patch: (v) => ({ aldoAutonomous: v, aldoSynthesis: v < 0.2 ? 0.05 : 1 }) },
   angII: { label: 'Renin (autonomous)', min: 0, max: 8, step: 0.25, unit: '× normal', base: 1, patch: (v) => ({ reninAutonomous: v }) },
   catecholamines: { label: 'Sympathetic tone', min: 0.4, max: 4, step: 0.1, unit: '×', base: 1, patch: (v) => ({ snsOverride: v }) },
@@ -79,7 +80,7 @@ export default function Hormones({ query }: { query: URLSearchParams }) {
           </Panel>
           {drive && ev && (
             <Panel title="Drive it" note="Integrated model, first hours after the change.">
-              <Slider label={drive.label} value={v} min={drive.min} max={drive.max} step={drive.step} unit={drive.unit} onInput={(x) => setLevel({ ...level, [h.id]: x })} />
+              <Slider label={drive.label} value={v} min={drive.min} max={drive.max} step={drive.step} unit={drive.unit} format={drive.format} onInput={(x) => setLevel({ ...level, [h.id]: x })} />
               <div class="readout-grid">
                 <Readout label="Urine volume" value={ev.kidney.urine.volumePerDay} digits={2} unit="L/d" delta={ev.kidney.urine.volumePerDay - n.kidney.urine.volumePerDay} deltaDigits={2} />
                 <Readout label="Urine osm" value={ev.kidney.urine.osm} unit="mOsm/kg" />

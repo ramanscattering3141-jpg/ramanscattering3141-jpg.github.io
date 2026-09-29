@@ -1,3 +1,4 @@
+import { si } from '../units';
 import { useState } from 'preact/hooks';
 import { GROUPS, ROUTES } from '../routes';
 import { href } from '../router';
@@ -41,7 +42,7 @@ export default function Home() {
         <Panel title="Try it: vasopressin and the urine" note="Drag ADH. The collecting duct’s water permeability, urine volume and urine osmolality all come from the same model the rest of the laboratory uses.">
           <div class="grid grid-2">
             <div>
-              <Slider label="Plasma ADH" value={adh} min={0} max={10} step={0.1} unit="pg/mL" onInput={setAdh} normal={1.5} />
+              <Slider label="Plasma ADH" value={adh} min={0} max={10} step={0.1} unit="pmol/L" format={(v) => si.adh(v).toFixed(1)} onInput={setAdh} normal={1.5} />
               <div class="readout-grid">
                 <Readout label="AQP2 insertion" value={ev.reg.hormones.aqp2 * 100} unit="%" />
                 <Readout label="Urine volume" value={u.volumePerDay} digits={1} unit="L/day" tone={u.volumePerDay > 3 ? 'high' : u.volumePerDay < 0.8 ? 'low' : 'normal'} />

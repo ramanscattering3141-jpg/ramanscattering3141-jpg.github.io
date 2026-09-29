@@ -46,7 +46,7 @@ export const EQUATIONS: EquationDef[] = [
   // ------------------------------------------------------------------ units & osmolality
   {
     id: 'units',
-    name: 'mg/dL → mmol/L',
+    name: 'US units (mg/dL) → SI (mmol/L)',
     formula: 'mmol/L = (mg/dL × 10) ÷ molecular weight',
     group: 'Units & osmolality',
     vars: [
@@ -55,26 +55,26 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => ({ value: (v.mg * 10) / v.mw, unit: 'mmol/L', digits: 2 }),
     show: (v) => `(${f(v.mg)} × 10) ÷ ${f(v.mw, 1)}`,
-    explain: 'The factor of 10 converts per-decilitre to per-litre. Glucose (MW 180) in mg/dL ÷ 18 gives mmol/L; blood urea nitrogen (two nitrogens, 28 g/mol) ÷ 2.8.',
+    explain: 'Canadian laboratories report in SI units; Rose & Post and most US sources use mg/dL. The factor of 10 converts per-decilitre to per-litre. Glucose (MW 180): mg/dL ÷ 18 = mmol/L. Blood urea nitrogen (two nitrogens, 28 g/mol): mg/dL ÷ 2.8 = urea mmol/L. Creatinine: mg/dL × 88.4 = µmol/L. Calcium: mg/dL × 0.25 = mmol/L. Albumin: g/dL × 10 = g/L.',
     chapters: [1, 30],
     keywords: ['conversion', 'millimole', 'milliequivalent'],
   },
   {
     id: 'posm',
     name: 'Calculated plasma osmolality',
-    formula: 'Posm ≈ 2 × [Na⁺] + glucose/18 + BUN/2.8',
+    formula: 'Posm ≈ 2 × [Na⁺] + [glucose] + [urea]   (all mmol/L)',
     group: 'Units & osmolality',
     vars: [
       { key: 'na', label: 'Na⁺', unit: 'mmol/L', min: 100, max: 180, step: 1, value: 140 },
-      { key: 'glu', label: 'Glucose', unit: 'mg/dL', min: 40, max: 1500, step: 5, value: 90 },
-      { key: 'bun', label: 'BUN', unit: 'mg/dL', min: 2, max: 200, step: 1, value: 14 },
+      { key: 'glu', label: 'Glucose', unit: 'mmol/L', min: 2, max: 80, step: 0.1, value: 5 },
+      { key: 'urea', label: 'Urea', unit: 'mmol/L', min: 1, max: 70, step: 0.5, value: 5 },
     ],
     compute: (v) => {
-      const val = 2 * v.na + v.glu / 18 + v.bun / 2.8;
+      const val = 2 * v.na + v.glu + v.urea;
       return { value: val, unit: 'mOsm/kg', read: val < 275 ? 'Hypo-osmolal' : val > 295 ? 'Hyperosmolal' : 'Normal range (≈275–290)' };
     },
-    show: (v) => `2 × ${f(v.na)} + ${f(v.glu)}/18 + ${f(v.bun)}/2.8`,
-    explain: 'Sodium is doubled to account for its accompanying anions. Glucose and urea are converted from mg/dL. Urea counts toward measured osmolality but not toward tonicity, because it crosses cell membranes.',
+    show: (v) => `2 × ${f(v.na)} + ${f(v.glu, 1)} + ${f(v.urea, 1)}`,
+    explain: 'Sodium is doubled to account for its accompanying anions. In SI units glucose and urea are added directly (the book, in mg/dL, divides glucose by 18 and BUN by 2.8). Urea counts toward measured osmolality but not toward tonicity, because it crosses cell membranes.',
     chapters: [1, 7, 22],
     route: '/body-water',
     keywords: ['osmolality', 'plasma osmolality', 'serum osmolality'],
@@ -82,14 +82,14 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'effosm',
     name: 'Effective osmolality (tonicity)',
-    formula: 'Effective Posm ≈ 2 × [Na⁺] + glucose/18',
+    formula: 'Effective Posm ≈ 2 × [Na⁺] + [glucose]   (mmol/L)',
     group: 'Units & osmolality',
     vars: [
       { key: 'na', label: 'Na⁺', unit: 'mmol/L', min: 100, max: 180, step: 1, value: 140 },
-      { key: 'glu', label: 'Glucose', unit: 'mg/dL', min: 40, max: 1500, step: 5, value: 90 },
+      { key: 'glu', label: 'Glucose', unit: 'mmol/L', min: 2, max: 80, step: 0.1, value: 5 },
     ],
-    compute: (v) => ({ value: 2 * v.na + v.glu / 18, unit: 'mOsm/kg' }),
-    show: (v) => `2 × ${f(v.na)} + ${f(v.glu)}/18`,
+    compute: (v) => ({ value: 2 * v.na + v.glu, unit: 'mOsm/kg' }),
+    show: (v) => `2 × ${f(v.na)} + ${f(v.glu, 1)}`,
     explain: 'Only solutes confined to the extracellular fluid move water across cell membranes. Tonicity, not measured osmolality, determines cell volume and the risk of cerebral oedema or demyelination.',
     chapters: [7, 22],
     route: '/body-water',
@@ -98,19 +98,19 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'osmgap',
     name: 'Plasma osmolal gap',
-    formula: 'Osmolal gap = measured Posm − (2 × Na⁺ + glucose/18 + BUN/2.8)',
+    formula: 'Osmolal gap = measured Posm − (2 × Na⁺ + glucose + urea)',
     group: 'Units & osmolality',
     vars: [
       { key: 'meas', label: 'Measured Posm', unit: 'mOsm/kg', min: 240, max: 400, step: 1, value: 290 },
       { key: 'na', label: 'Na⁺', unit: 'mmol/L', min: 100, max: 180, step: 1, value: 140 },
-      { key: 'glu', label: 'Glucose', unit: 'mg/dL', min: 40, max: 1500, step: 5, value: 90 },
-      { key: 'bun', label: 'BUN', unit: 'mg/dL', min: 2, max: 200, step: 1, value: 14 },
+      { key: 'glu', label: 'Glucose', unit: 'mmol/L', min: 2, max: 80, step: 0.1, value: 5 },
+      { key: 'urea', label: 'Urea', unit: 'mmol/L', min: 1, max: 70, step: 0.5, value: 5 },
     ],
     compute: (v) => {
-      const gap = v.meas - (2 * v.na + v.glu / 18 + v.bun / 2.8);
+      const gap = v.meas - (2 * v.na + v.glu + v.urea);
       return { value: gap, unit: 'mOsm/kg', read: gap > 10 ? 'Raised: an unmeasured osmole (ethanol, methanol, ethylene glycol, mannitol…)' : 'Not raised (normal ≈ <10)' };
     },
-    show: (v) => `${f(v.meas)} − (2 × ${f(v.na)} + ${f(v.glu)}/18 + ${f(v.bun)}/2.8)`,
+    show: (v) => `${f(v.meas)} − (2 × ${f(v.na)} + ${f(v.glu, 1)} + ${f(v.urea, 1)})`,
     explain: 'A gap between what the osmometer counts and what the three main solutes account for means another osmole is present. With a high anion gap acidosis, it points to methanol or ethylene glycol.',
     caveat: 'A normal osmolal gap does not exclude toxic alcohol ingestion, particularly late, once the parent alcohol has been metabolised to its acids.',
     chapters: [19, 22],
@@ -121,23 +121,23 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'glucoseNa',
     name: 'Sodium in hyperglycaemia',
-    formula: 'Expected fall in Na⁺ ≈ (glucose − 100) ÷ 62  (Rose)  — or ÷ 42 (Hillier)',
+    formula: 'Corrected Na⁺ ≈ Na⁺ + 0.29 × (glucose − 5.5)  (Rose: 1.6 per 5.5 mmol/L)  — or 0.43 × (Hillier: 2.4 per 5.5)',
     group: 'Units & osmolality',
     vars: [
       { key: 'na', label: 'Measured Na⁺', unit: 'mmol/L', min: 100, max: 170, step: 1, value: 128 },
-      { key: 'glu', label: 'Glucose', unit: 'mg/dL', min: 100, max: 1500, step: 10, value: 800 },
+      { key: 'glu', label: 'Glucose', unit: 'mmol/L', min: 5.5, max: 80, step: 0.5, value: 44 },
     ],
     compute: (v) => {
-      const corr = v.na + (v.glu - 100) / 62;
-      const hill = v.na + (v.glu - 100) / 42;
-      return { value: corr, unit: 'mmol/L', digits: 0, read: `Corrected ≈ ${f(corr)} (1.6 per 100 mg/dL); ≈ ${f(hill)} with the 2.4 factor` };
+      const corr = v.na + (1.6 / 5.55) * (v.glu - 5.55);
+      const hill = v.na + (2.4 / 5.55) * (v.glu - 5.55);
+      return { value: corr, unit: 'mmol/L', digits: 0, read: `Corrected ≈ ${f(corr)} (1.6 per 5.5 mmol/L); ≈ ${f(hill)} with the 2.4 factor` };
     },
-    show: (v) => `${f(v.na)} + (${f(v.glu)} − 100)/62`,
+    show: (v) => `${f(v.na)} + 0.29 × (${f(v.glu, 1)} − 5.5)`,
     explain: 'Glucose confined to the extracellular fluid draws water out of cells, diluting the sodium. The corrected value predicts the sodium once the glucose is normalised — and so whether the patient is truly water-depleted.',
-    caveat: 'The textbook uses 1.6 mmol/L per 100 mg/dL. An experimental study in volunteers found an average of 2.4, with 1.6 holding up to ~400 mg/dL; both are used.',
+    caveat: 'The textbook uses a fall of 1.6 mmol/L in Na⁺ for every 5.5 mmol/L (100 mg/dL) rise in glucose. An experimental study in volunteers found an average of 2.4, with 1.6 holding up to a glucose of ~22 mmol/L; both are used.',
     chapters: [25, 30],
     route: '/hyperglycemia',
-    cite: { rose: [25, 30], evidence: 'physiology', refs: ['hillier1999'], update: 'In volunteers made acutely hyperglycaemic, Hillier et al. (1999) measured an average fall of 2.4 mmol/L per 100 mg/dL, with the 1.6 factor accurate up to ~400 mg/dL and underestimating above it.' },
+    cite: { rose: [25, 30], evidence: 'physiology', refs: ['hillier1999'], update: 'In volunteers made acutely hyperglycaemic, Hillier et al. (1999) measured an average fall of 2.4 mmol/L per 5.5 mmol/L (100 mg/dL) of glucose, with the 1.6 factor accurate up to ~22 mmol/L (400 mg/dL) and underestimating above it.' },
     keywords: ['corrected sodium', 'pseudohyponatremia', 'translocational'],
   },
 
@@ -202,13 +202,13 @@ export const EQUATIONS: EquationDef[] = [
     formula: 'Cx = (Ux × V) ÷ Px',
     group: 'Filtration & clearance',
     vars: [
-      { key: 'u', label: 'Urine concentration', unit: 'mg/dL', min: 1, max: 400, step: 1, value: 125 },
+      { key: 'u', label: 'Urine concentration (e.g. creatinine)', unit: 'µmol/L', min: 500, max: 40000, step: 100, value: 11000 },
       { key: 'v', label: 'Urine flow', unit: 'mL/min', min: 0.2, max: 20, step: 0.1, value: 1 },
-      { key: 'p', label: 'Plasma concentration', unit: 'mg/dL', min: 0.1, max: 20, step: 0.1, value: 1 },
+      { key: 'p', label: 'Plasma concentration', unit: 'µmol/L', min: 20, max: 1500, step: 1, value: 88 },
     ],
     compute: (v) => ({ value: (v.u * v.v) / v.p, unit: 'mL/min', digits: 1 }),
-    show: (v) => `(${f(v.u)} × ${f(v.v, 1)}) ÷ ${f(v.p, 1)}`,
-    explain: 'Clearance is the volume of plasma completely cleared of a substance per minute. For a substance that is filtered but neither reabsorbed nor secreted (inulin), clearance equals GFR. Higher than GFR means net secretion; lower means net reabsorption.',
+    show: (v) => `(${f(v.u)} × ${f(v.v, 1)}) ÷ ${f(v.p)}`,
+    explain: 'U and P must be in the same unit — any unit will do. Clearance is the volume of plasma completely cleared of a substance per minute. For a substance that is filtered but neither reabsorbed nor secreted (inulin), clearance equals GFR. Higher than GFR means net secretion; lower means net reabsorption.',
     chapters: [2, 30],
     route: '/clearance',
     keywords: ['inulin', 'PAH', 'creatinine clearance'],
@@ -216,33 +216,33 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'crcl24',
     name: 'Creatinine clearance (timed urine)',
-    formula: 'CrCl = (Ucr × V) ÷ (Pcr × 1440)',
+    formula: 'CrCl = (Ucr × 1000 × V) ÷ (Pcr × 1440)   [Ucr mmol/L, Pcr µmol/L, V mL/day]',
     group: 'Filtration & clearance',
     vars: [
-      { key: 'ucr', label: 'Urine creatinine', unit: 'mg/dL', min: 10, max: 400, step: 1, value: 100 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 1, max: 35, step: 0.1, value: 8.8 },
       { key: 'vol', label: '24-h urine volume', unit: 'mL', min: 200, max: 6000, step: 50, value: 1440 },
-      { key: 'pcr', label: 'Plasma creatinine', unit: 'mg/dL', min: 0.3, max: 15, step: 0.1, value: 1 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 88 },
     ],
-    compute: (v) => ({ value: (v.ucr * v.vol) / (v.pcr * 1440), unit: 'mL/min', digits: 0 }),
-    show: (v) => `(${f(v.ucr)} × ${f(v.vol)}) ÷ (${f(v.pcr, 1)} × 1440)`,
+    compute: (v) => ({ value: (v.ucr * 1000 * v.vol) / (v.pcr * 1440), unit: 'mL/min', digits: 0, read: `Creatinine excreted: ${((v.ucr * v.vol) / 1000).toFixed(1)} mmol/day` }),
+    show: (v) => `(${f(v.ucr, 1)} × 1000 × ${f(v.vol)}) ÷ (${f(v.pcr)} × 1440)`,
     explain: 'A 24-hour collection measures creatinine excretion directly. Because some creatinine is secreted, creatinine clearance overestimates GFR — by 10–20% normally, and much more as GFR falls.',
-    caveat: 'Check completeness: daily creatinine excretion should be about 20–25 mg/kg in men and 15–20 mg/kg in women.',
+    caveat: 'Check completeness: daily creatinine excretion should be about 0.18–0.22 mmol/kg in men and 0.13–0.18 mmol/kg in women (20–25 and 15–20 mg/kg).',
     chapters: [2],
     route: '/creatinine',
   },
   {
     id: 'cockcroft',
     name: 'Cockcroft–Gault',
-    formula: 'CrCl ≈ (140 − age) × weight ÷ (72 × Pcr)  [× 0.85 if female]',
+    formula: 'CrCl ≈ (140 − age) × weight × 1.23 ÷ Pcr (µmol/L)   [1.04 instead of 1.23 if female]',
     group: 'Filtration & clearance',
     vars: [
       { key: 'age', label: 'Age', unit: 'years', min: 18, max: 95, step: 1, value: 60 },
       { key: 'wt', label: 'Weight', unit: 'kg', min: 30, max: 150, step: 1, value: 70 },
-      { key: 'pcr', label: 'Plasma creatinine', unit: 'mg/dL', min: 0.3, max: 15, step: 0.1, value: 1.2 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 106 },
       { key: 'female', label: 'Female (0/1)', min: 0, max: 1, step: 1, value: 0 },
     ],
-    compute: (v) => ({ value: (((140 - v.age) * v.wt) / (72 * v.pcr)) * (v.female ? 0.85 : 1), unit: 'mL/min', digits: 0 }),
-    show: (v) => `(140 − ${f(v.age)}) × ${f(v.wt)} ÷ (72 × ${f(v.pcr, 1)})${v.female ? ' × 0.85' : ''}`,
+    compute: (v) => ({ value: ((140 - v.age) * v.wt * (v.female ? 1.04 : 1.23)) / v.pcr, unit: 'mL/min', digits: 0 }),
+    show: (v) => `(140 − ${f(v.age)}) × ${f(v.wt)} × ${v.female ? '1.04' : '1.23'} ÷ ${f(v.pcr)}`,
     explain: 'Creatinine production falls with age and rises with muscle mass (approximated by weight). The formula estimates creatinine clearance, not GFR, and assumes a steady state.',
     chapters: [2],
     route: '/creatinine',
@@ -251,21 +251,23 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'ckdepi',
     name: 'eGFR (CKD-EPI 2021, race-free)',
-    formula: 'eGFR = 142 × min(Scr/κ,1)^α × max(Scr/κ,1)^−1.200 × 0.9938^age [× 1.012 female]',
+    formula: 'eGFR = 142 × min(Scr/κ,1)^α × max(Scr/κ,1)^−1.200 × 0.9938^age [× 1.012 female];  κ = 62 µmol/L (F), 80 µmol/L (M)',
     group: 'Filtration & clearance',
     vars: [
-      { key: 'scr', label: 'Serum creatinine', unit: 'mg/dL', min: 0.3, max: 15, step: 0.05, value: 1.0 },
+      { key: 'scr', label: 'Serum creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 88 },
       { key: 'age', label: 'Age', unit: 'years', min: 18, max: 95, step: 1, value: 50 },
       { key: 'female', label: 'Female (0/1)', min: 0, max: 1, step: 1, value: 0 },
     ],
     compute: (v) => {
+      // the published coefficients use mg/dL (κ 0.7/0.9); µmol/L ÷ 88.4 converts
+      const scr = v.scr / 88.4;
       const k = v.female ? 0.7 : 0.9;
       const a = v.female ? -0.241 : -0.302;
-      const e = 142 * Math.pow(Math.min(v.scr / k, 1), a) * Math.pow(Math.max(v.scr / k, 1), -1.2) * Math.pow(0.9938, v.age) * (v.female ? 1.012 : 1);
+      const e = 142 * Math.pow(Math.min(scr / k, 1), a) * Math.pow(Math.max(scr / k, 1), -1.2) * Math.pow(0.9938, v.age) * (v.female ? 1.012 : 1);
       const stage = e >= 90 ? 'G1' : e >= 60 ? 'G2' : e >= 45 ? 'G3a' : e >= 30 ? 'G3b' : e >= 15 ? 'G4' : 'G5';
       return { value: e, unit: 'mL/min/1.73 m²', read: `KDIGO GFR category ${stage} (valid only in a steady state)` };
     },
-    show: (v) => `142 × f(${f(v.scr, 2)}) × 0.9938^${f(v.age)}${v.female ? ' × 1.012' : ''}`,
+    show: (v) => `142 × f(${f(v.scr)} µmol/L) × 0.9938^${f(v.age)}${v.female ? ' × 1.012' : ''}`,
     explain: 'The 2021 equation estimates GFR from creatinine, age and sex without a race coefficient. Like every creatinine equation, it assumes the creatinine is stable.',
     caveat: 'Not valid during acute kidney injury, when creatinine has not reached a steady state.',
     chapters: [2],
@@ -276,20 +278,20 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'fena',
     name: 'Fractional excretion of sodium',
-    formula: 'FENa (%) = (UNa × Pcr) ÷ (PNa × Ucr) × 100',
+    formula: 'FENa (%) = (UNa × Pcr) ÷ (PNa × Ucr × 1000) × 100   [Pcr µmol/L, Ucr mmol/L]',
     group: 'Filtration & clearance',
     vars: [
       { key: 'una', label: 'Urine Na⁺', unit: 'mmol/L', min: 1, max: 250, step: 1, value: 20 },
-      { key: 'pcr', label: 'Plasma creatinine', unit: 'mg/dL', min: 0.3, max: 15, step: 0.1, value: 3 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 265 },
       { key: 'pna', label: 'Plasma Na⁺', unit: 'mmol/L', min: 110, max: 170, step: 1, value: 140 },
-      { key: 'ucr', label: 'Urine creatinine', unit: 'mg/dL', min: 5, max: 400, step: 1, value: 80 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 7 },
     ],
     compute: (v) => {
-      const fe = ((v.una * v.pcr) / (v.pna * v.ucr)) * 100;
+      const fe = ((v.una * v.pcr) / (v.pna * v.ucr * 1000)) * 100;
       return { value: fe, unit: '%', digits: 2, read: fe < 1 ? '<1%: avid sodium retention (consistent with reduced effective volume)' : fe > 2 ? '>2%: tubular sodium wasting or a natriuretic stimulus' : 'Indeterminate (1–2%)' };
     },
-    show: (v) => `(${f(v.una)} × ${f(v.pcr, 1)}) ÷ (${f(v.pna)} × ${f(v.ucr)}) × 100`,
-    explain: 'The fraction of filtered sodium that escapes reabsorption. Creatinine corrects for urine concentration by water reabsorption, so FENa is independent of urine volume.',
+    show: (v) => `(${f(v.una)} × ${f(v.pcr)}) ÷ (${f(v.pna)} × ${f(v.ucr, 1)} × 1000) × 100`,
+    explain: 'The fraction of filtered sodium that escapes reabsorption. Creatinine corrects for urine concentration by water reabsorption, so FENa is independent of urine volume. The factor of 1000 reconciles µmol/L (plasma) with mmol/L (urine).',
     caveat: 'Diuretics, CKD, contrast, pigment injury, sepsis and early obstruction all break the rule. FENa supports a judgement about volume; it does not diagnose ATN.',
     chapters: [13, 14],
     route: '/fractional-excretion',
@@ -299,19 +301,19 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'feurea',
     name: 'Fractional excretion of urea',
-    formula: 'FEUrea (%) = (Uurea × Pcr) ÷ (BUN × Ucr) × 100',
+    formula: 'FEUrea (%) = (Uurea × Pcr) ÷ (Purea × Ucr × 1000) × 100   [urea mmol/L, Pcr µmol/L, Ucr mmol/L]',
     group: 'Filtration & clearance',
     vars: [
-      { key: 'uurea', label: 'Urine urea nitrogen', unit: 'mg/dL', min: 50, max: 2000, step: 10, value: 600 },
-      { key: 'pcr', label: 'Plasma creatinine', unit: 'mg/dL', min: 0.3, max: 15, step: 0.1, value: 3 },
-      { key: 'bun', label: 'BUN', unit: 'mg/dL', min: 5, max: 200, step: 1, value: 60 },
-      { key: 'ucr', label: 'Urine creatinine', unit: 'mg/dL', min: 5, max: 400, step: 1, value: 80 },
+      { key: 'uurea', label: 'Urine urea', unit: 'mmol/L', min: 20, max: 700, step: 5, value: 215 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 265 },
+      { key: 'purea', label: 'Plasma urea', unit: 'mmol/L', min: 2, max: 70, step: 0.5, value: 21.5 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 7 },
     ],
     compute: (v) => {
-      const fe = ((v.uurea * v.pcr) / (v.bun * v.ucr)) * 100;
+      const fe = ((v.uurea * v.pcr) / (v.purea * v.ucr * 1000)) * 100;
       return { value: fe, unit: '%', digits: 1, read: fe < 35 ? '<35%: consistent with reduced effective volume' : fe > 50 ? '>50%: more in keeping with tubular injury' : 'Indeterminate' };
     },
-    show: (v) => `(${f(v.uurea)} × ${f(v.pcr, 1)}) ÷ (${f(v.bun)} × ${f(v.ucr)}) × 100`,
+    show: (v) => `(${f(v.uurea)} × ${f(v.pcr)}) ÷ (${f(v.purea, 1)} × ${f(v.ucr, 1)} × 1000) × 100`,
     explain: 'Urea reabsorption is largely passive and follows water, so it is less directly affected by loop and thiazide diuretics than sodium is.',
     caveat: 'Performance in studies has been inconsistent; treat as supporting evidence only.',
     chapters: [13],
@@ -498,16 +500,16 @@ export const EQUATIONS: EquationDef[] = [
       { key: 'na', label: 'Na⁺', unit: 'mmol/L', min: 110, max: 170, step: 1, value: 140 },
       { key: 'cl', label: 'Cl⁻', unit: 'mmol/L', min: 70, max: 130, step: 1, value: 104 },
       { key: 'hco3', label: 'HCO₃⁻', unit: 'mmol/L', min: 2, max: 50, step: 1, value: 24 },
-      { key: 'alb', label: 'Albumin', unit: 'g/dL', min: 1, max: 5.5, step: 0.1, value: 4 },
+      { key: 'alb', label: 'Albumin', unit: 'g/L', min: 10, max: 55, step: 1, value: 40 },
     ],
     compute: (v) => {
       const ag = v.na - v.cl - v.hco3;
-      const corr = ag + 2.5 * (4 - v.alb);
+      const corr = ag + 0.25 * (40 - v.alb);
       return { value: ag, unit: 'mmol/L', read: `Albumin-corrected ≈ ${corr.toFixed(0)}. ${corr > 14 ? 'Raised: unmeasured anions (lactate, ketones, uraemic anions, toxins).' : 'Not raised.'}` };
     },
     show: (v) => `${f(v.na)} − (${f(v.cl)} + ${f(v.hco3)})`,
     explain: 'Plasma is electroneutral, so the gap between measured cations and measured anions represents unmeasured anions — mostly albumin normally. When an acid other than HCl is added, its anion replaces the bicarbonate consumed, so the gap widens.',
-    caveat: 'The normal range depends on the laboratory (about 3–10 with modern analysers vs 12 ± 2 in the textbook era). Correct for low albumin: each 1 g/dL fall lowers the gap by about 2.5.',
+    caveat: 'The normal range depends on the laboratory (about 3–10 with modern analysers vs 12 ± 2 in the textbook era). Correct for low albumin: each 10 g/L fall lowers the gap by about 2.5 mmol/L.',
     chapters: [17, 19],
     route: '/metabolic-acidosis',
     cite: { rose: [19], evidence: 'clinical', refs: ['kraut2007ag', 'figge1998'], update: 'Ion-selective electrodes have lowered the normal anion gap to around 3–10 mmol/L in many laboratories; the textbook’s 12 ± 2 reflects older methods.' },
@@ -640,11 +642,11 @@ export const EQUATIONS: EquationDef[] = [
     formula: 'NAE = titratable acid + NH₄⁺ − HCO₃⁻',
     group: 'Acid–base',
     vars: [
-      { key: 'ta', label: 'Titratable acid', unit: 'mEq/day', min: 0, max: 150, step: 1, value: 25 },
-      { key: 'nh4', label: 'NH₄⁺', unit: 'mEq/day', min: 0, max: 400, step: 1, value: 40 },
-      { key: 'hco3', label: 'Urine HCO₃⁻', unit: 'mEq/day', min: 0, max: 200, step: 1, value: 1 },
+      { key: 'ta', label: 'Titratable acid', unit: 'mmol/day', min: 0, max: 150, step: 1, value: 25 },
+      { key: 'nh4', label: 'NH₄⁺', unit: 'mmol/day', min: 0, max: 400, step: 1, value: 40 },
+      { key: 'hco3', label: 'Urine HCO₃⁻', unit: 'mmol/day', min: 0, max: 200, step: 1, value: 1 },
     ],
-    compute: (v) => ({ value: v.ta + v.nh4 - v.hco3, unit: 'mEq/day', read: 'Must equal net endogenous acid production (≈1 mEq/kg/day on a Western diet) for acid–base balance' }),
+    compute: (v) => ({ value: v.ta + v.nh4 - v.hco3, unit: 'mmol/day', read: 'Must equal net endogenous acid production (≈1 mmol/kg/day on a Western diet) for acid–base balance' }),
     show: (v) => `${f(v.ta)} + ${f(v.nh4)} − ${f(v.hco3)}`,
     explain: 'Each H⁺ excreted bound to a buffer, and each NH₄⁺, represents one new bicarbonate returned to the blood. Bicarbonate lost in the urine subtracts.',
     chapters: [11],
@@ -663,7 +665,7 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => {
       const space = v.hco3 < 10 ? 0.7 : 0.5;
-      return { value: space * v.wt * (v.target - v.hco3), unit: 'mEq', digits: 0, read: `Apparent space used: ${space} × body weight` };
+      return { value: space * v.wt * (v.target - v.hco3), unit: 'mmol', digits: 0, read: `Apparent space used: ${space} × body weight` };
     },
     show: (v) => `${v.hco3 < 10 ? '0.7' : '0.5'} × ${f(v.wt)} × (${f(v.target)} − ${f(v.hco3, 1)})`,
     explain: 'When bicarbonate is very low, cells and bone buffer almost all additional H⁺, so the apparent space in which administered bicarbonate distributes is large. Only a partial correction is aimed for.',
@@ -699,17 +701,17 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'ukcr',
     name: 'Urine K⁺/creatinine ratio',
-    formula: 'UK/Ucr (mmol/mmol) — creatinine in mmol = mg/dL × 0.0884',
+    formula: 'UK/Ucr (mmol/mmol)',
     group: 'Potassium',
     vars: [
       { key: 'uk', label: 'Urine K⁺', unit: 'mmol/L', min: 1, max: 200, step: 1, value: 30 },
-      { key: 'ucr', label: 'Urine creatinine', unit: 'mg/dL', min: 5, max: 400, step: 1, value: 100 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 8.8 },
     ],
     compute: (v) => {
-      const r = v.uk / (v.ucr * 0.0884);
+      const r = v.uk / v.ucr;
       return { value: r, digits: 1, unit: 'mmol/mmol', read: r < 1.5 ? 'Low: kidney conserving K⁺ — loss is extrarenal or intake is low' : r > 2.5 ? 'High: renal K⁺ wasting' : 'Intermediate' };
     },
-    show: (v) => `${f(v.uk)} ÷ (${f(v.ucr)} × 0.0884)`,
+    show: (v) => `${f(v.uk)} ÷ ${f(v.ucr, 1)}`,
     explain: 'Creatinine excretion is roughly constant, so the ratio in a spot urine tracks daily K⁺ excretion. In hypokalaemia a low ratio says the kidney is responding appropriately.',
     chapters: [27],
     route: '/hypokalemia',
@@ -720,14 +722,14 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'correctedCa',
     name: 'Calcium corrected for albumin',
-    formula: 'Corrected Ca = measured Ca + 0.8 × (4 − albumin)',
+    formula: 'Corrected Ca (mmol/L) = measured Ca + 0.02 × (40 − albumin in g/L)',
     group: 'Minerals',
     vars: [
-      { key: 'ca', label: 'Total calcium', unit: 'mg/dL', min: 5, max: 16, step: 0.1, value: 7.8 },
-      { key: 'alb', label: 'Albumin', unit: 'g/dL', min: 1, max: 5.5, step: 0.1, value: 2.2 },
+      { key: 'ca', label: 'Total calcium', unit: 'mmol/L', min: 1.2, max: 4, step: 0.01, value: 1.95 },
+      { key: 'alb', label: 'Albumin', unit: 'g/L', min: 10, max: 55, step: 1, value: 22 },
     ],
-    compute: (v) => ({ value: v.ca + 0.8 * (4 - v.alb), unit: 'mg/dL', digits: 1, read: 'Only an estimate: measure ionised calcium when it matters' }),
-    show: (v) => `${f(v.ca, 1)} + 0.8 × (4 − ${f(v.alb, 1)})`,
+    compute: (v) => ({ value: v.ca + 0.02 * (40 - v.alb), unit: 'mmol/L', digits: 2, read: 'Only an estimate: measure ionised calcium when it matters' }),
+    show: (v) => `${f(v.ca, 2)} + 0.02 × (40 − ${f(v.alb)})`,
     explain: 'About 40% of plasma calcium is bound to albumin. Low albumin lowers the total without changing the physiologically active ionised calcium.',
     chapters: [1, 30],
     route: '/minerals',

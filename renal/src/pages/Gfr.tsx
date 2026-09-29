@@ -65,7 +65,7 @@ const WHATIFS: { label: string; c: Partial<GlomControls>; explain: string }[] = 
   { label: 'Afferent constricts', c: { aff: 1.6 }, explain: 'Less of the arterial pressure reaches the glomerulus: Pgc, RPF and GFR all fall together. Filtration fraction barely changes.' },
   { label: 'Efferent constricts (moderate)', c: { eff: 1.8 }, explain: 'Pgc rises while plasma flow falls. GFR rises, so the filtration fraction rises steeply — and the blood leaving is more concentrated in protein.' },
   { label: 'Efferent constricts (severe)', c: { eff: 5 }, explain: 'Pgc keeps rising but plasma flow falls so far that oncotic pressure reaches equilibrium early: GFR stops rising and begins to fall.' },
-  { label: 'Plasma protein rises (haemoconcentration)', c: { protein: 8.5 }, explain: 'Starting oncotic pressure is higher, so equilibrium is reached sooner and GFR falls — one contributor to reduced GFR in vomiting or diarrhoea.' },
+  { label: 'Plasma protein rises (haemoconcentration)', c: { protein: 85 }, explain: 'Starting oncotic pressure is higher, so equilibrium is reached sooner and GFR falls — one contributor to reduced GFR in vomiting or diarrhoea.' },
   { label: 'Ureter obstructed', c: { pbs: 30 }, explain: "Bowman's space pressure opposes filtration directly: the net filtration pressure collapses." },
   { label: 'Glomerulonephritis (↓ surface area)', c: { area: 0.3 }, explain: 'A modest fall in Kf does little while equilibrium is still reached; a large fall prevents equilibrium, and then GFR falls in proportion.' },
   { label: 'Blood pressure falls to 65', c: { map: 65 }, explain: 'With the arterioles held fixed, GFR falls steeply. In the intact kidney autoregulation dilates the afferent arteriole — until it runs out below ~70 mmHg.' },
@@ -107,7 +107,7 @@ export default function Gfr() {
             <Slider label="Renal artery pressure" value={c.map} min={30} max={200} unit="mmHg" onInput={set('map')} normal={93} />
             <Slider label="Afferent resistance" value={c.aff} min={0.4} max={3} step={0.05} unit="× normal" onInput={set('aff')} normal={1} />
             <Slider label="Efferent resistance" value={c.eff} min={0.3} max={8} step={0.05} unit="× normal" onInput={set('eff')} normal={1} />
-            <Slider label="Plasma protein" value={c.protein} min={3} max={10} step={0.1} unit="g/dL" onInput={set('protein')} normal={7} hint={`Afferent oncotic pressure ≈ ${g.piAff.toFixed(0)} mmHg`} />
+            <Slider label="Plasma protein" value={c.protein} min={30} max={100} step={1} unit="g/L" onInput={set('protein')} normal={70} hint={`Afferent oncotic pressure ≈ ${g.piAff.toFixed(0)} mmHg`} />
             <Slider label="Bowman's space pressure" value={c.pbs} min={0} max={50} step={0.5} unit="mmHg" onInput={set('pbs')} normal={10} />
             <Slider label="Hydraulic conductivity (Lp)" value={c.lp} min={0.1} max={2} step={0.05} unit="× normal" onInput={set('lp')} />
             <Slider label="Filtration surface area (S)" value={c.area} min={0.1} max={2} step={0.05} unit="× normal" onInput={set('area')} />

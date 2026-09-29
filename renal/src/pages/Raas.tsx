@@ -1,3 +1,4 @@
+import { si } from '../units';
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Toggle, Busy } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, toneFor } from '../ui/kit';
@@ -187,7 +188,7 @@ export default function Raas() {
                   <Readout label="ECF" value={st.ev.plasma.ecf} digits={1} unit="L" />
                   <Readout label="Plasma K⁺" value={st.ev.plasma.K} digits={1} unit="mmol/L" tone={toneFor(st.ev.plasma.K, 3.5, 5.2, [2.5, 6.5])} />
                   <Readout label="HCO₃⁻" value={st.ev.body.hco3} unit="mmol/L" />
-                  <Readout label="Creatinine" value={st.ev.body.creat} digits={2} unit="mg/dL" />
+                  <Readout label="Creatinine" value={si.creat(st.ev.body.creat)} unit="µmol/L" />
                   <Readout label="Renin" value={st.ev.reg.hormones.renin} digits={1} unit="×" />
                 </div>
               ) : (

@@ -75,7 +75,7 @@ export const chapter: ChapterContent = {
     {
       heading: 'Urine has no normal composition',
       body: [
-        'Because urinary excretion follows intake in the steady state, there is no single normal value for urine sodium or volume — only a range reflecting diet (for example, 100–250 mEq/day of sodium on a Western diet). A urine sodium can only be judged against the patient’s intake and volume status.',
+        'Because urinary excretion follows intake in the steady state, there is no single normal value for urine sodium or volume — only a range reflecting diet (for example, 100–250 mmol/day of sodium on a Western diet). A urine sodium can only be judged against the patient’s intake and volume status.',
         'Urine also differs from plasma qualitatively: ions make up about 95% of extracellular solute, but urine carries large amounts of uncharged solute, especially urea. That is what allows nitrogenous waste to be excreted rather than accumulated.',
       ],
       route: '/urine-chemistry',
@@ -84,12 +84,12 @@ export const chapter: ChapterContent = {
     {
       heading: 'Units: moles, equivalents and osmoles',
       body: [
-        'The same amount of a substance can be written as mg/dL, mmol/L, mEq/L or mOsm/kg. For a monovalent ion such as sodium these are numerically the same apart from mg/dL. For divalent ions, 1 mmol = 2 mEq. Converting mg/dL to mmol/L means multiplying by 10 and dividing by the molecular weight — so glucose in mg/dL divided by 18, and blood urea nitrogen divided by 2.8, give mmol/L.',
+        'The same amount of a substance can be written as mg/dL, mmol/L, mEq/L or mOsm/kg. For a monovalent ion such as sodium these are numerically the same apart from mg/dL. For divalent ions, 1 mmol = 2 mEq. Converting mg/dL to mmol/L means multiplying by 10 and dividing by the molecular weight — so glucose in mg/dL divided by 18, and blood urea nitrogen divided by 2.8, give mmol/L. This site uses SI units throughout, as Canadian laboratories do (mmol/L for electrolytes, glucose and urea; µmol/L for creatinine; g/L for albumin); the book’s mg/dL values are converted.',
         'Equivalents matter because ions combine by charge, and every body fluid must be electroneutral: total cationic milliequivalents equal total anionic milliequivalents. That constraint shapes renal transport — sodium cannot be reabsorbed without either an anion following it or another cation moving the other way.',
         'Osmolality depends on the number of particles, not their size or charge. In body fluids NaCl behaves as if about 75% dissociated, so 1 mmol/L contributes ~1.75 mOsm/kg. Osmolality is measured by freezing-point depression: 1 Osm/kg lowers the freezing point by 1.86 °C, so plasma freezing at −0.521 °C is ~280 mOsm/kg.',
         'Only solutes that cannot cross a membrane exert an effective osmotic pressure across it. Urea crosses cell membranes freely: it contributes to measured osmolality but not to tonicity. This distinction — total versus effective osmolality — underlies the whole approach to hyponatraemia.',
       ],
-      points: ['Glucose: mg/dL ÷ 18 = mmol/L', 'BUN: mg/dL ÷ 2.8 = mmol/L urea', 'Phosphate average valence ≈ −1.8 (80% HPO₄²⁻)', 'Only ~45–50% of plasma calcium is ionised'],
+      points: ['Glucose: mg/dL ÷ 18 = mmol/L', 'BUN: mg/dL ÷ 2.8 = mmol/L urea', 'Creatinine: mg/dL × 88.4 = µmol/L', 'Albumin: g/dL × 10 = g/L; calcium: mg/dL × 0.25 = mmol/L', 'Phosphate average valence ≈ −1.8 (80% HPO₄²⁻)', 'Only ~45–50% of plasma calcium is ionised'],
       equation: 'posm',
       route: '/body-water',
       cite: { rose: [1], evidence: 'physiology' },
@@ -98,10 +98,10 @@ export const chapter: ChapterContent = {
   numbers: [
     { label: 'Nephrons per kidney', value: '≈1.0–1.3 million' },
     { label: 'GFR', value: '135–180 L/day', note: 'about 25% lower in women' },
-    { label: 'Filtered Na⁺', value: '≈26,000 mEq/day', note: 'excreted 100–250 (>99% reabsorbed)' },
-    { label: 'Filtered Cl⁻', value: '≈21,000 mEq/day', note: '>99% reabsorbed' },
-    { label: 'Filtered HCO₃⁻', value: '≈4,800 mEq/day', note: '≈100% reabsorbed' },
-    { label: 'Filtered K⁺', value: '≈800 mEq/day', note: 'excreted 40–120; urine K⁺ is set by distal secretion' },
+    { label: 'Filtered Na⁺', value: '≈26,000 mmol/day', note: 'excreted 100–250 (>99% reabsorbed)' },
+    { label: 'Filtered Cl⁻', value: '≈21,000 mmol/day', note: '>99% reabsorbed' },
+    { label: 'Filtered HCO₃⁻', value: '≈4,800 mmol/day', note: '≈100% reabsorbed' },
+    { label: 'Filtered K⁺', value: '≈800 mmol/day', note: 'excreted 40–120; urine K⁺ is set by distal secretion' },
     { label: 'Filtered urea', value: '≈54 g/day', note: '40–50% reabsorbed' },
     { label: 'Water', value: '180 L filtered', note: '0.5–3 L excreted (98–99% reabsorbed)' },
     { label: 'Proximal paracellular Na⁺', value: 'up to ⅓ of proximal reabsorption' },
@@ -129,7 +129,7 @@ export const chapter: ChapterContent = {
     },
     {
       q: 'A person doubles their salt intake and reaches a new steady state. What is the “normal” urine sodium?',
-      options: ['Still 100–150 mEq/day', 'About double the previous excretion — whatever matches intake', 'Near zero, because the kidney conserves sodium', 'It depends only on GFR'],
+      options: ['Still 100–150 mmol/day', 'About double the previous excretion — whatever matches intake', 'Near zero, because the kidney conserves sodium', 'It depends only on GFR'],
       answer: 1,
       explanation: 'In the steady state output equals intake. There is no fixed normal urine sodium, only one appropriate to intake and volume status.',
       route: '/sodium',
