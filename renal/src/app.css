@@ -244,6 +244,8 @@ figcaption { font-size: 0.8rem; color: var(--ink-dim); margin-top: 6px; }
 svg text { font-family: var(--sans); }
 .svg-label { font-size: 10px; fill: var(--ink-dim); }
 .svg-value { font-size: 11px; font-family: var(--mono); fill: var(--ink); }
+/* A table row the current simulation lands in. */
+tr.row-hit > td { background: #5ecfba18; box-shadow: inset 3px 0 0 #5ecfba; }
 .hit { cursor: pointer; }
 .hit:hover { filter: brightness(1.25); }
 

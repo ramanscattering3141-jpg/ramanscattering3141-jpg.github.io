@@ -132,7 +132,15 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     const cpInhibition = 0.5 * Math.pow(clamp(p.cardiacFunction, 0.2, 1), 3);
     const cardiopulmonary = cbv < 1 ? Math.exp(-2.5 * (cbv - 1)) : Math.exp(-cpInhibition * (cbv - 1));
     const arterial = eabv < 1 ? Math.exp(-3.2 * (eabv - 1)) : Math.exp(-1.0 * (eabv - 1));
-    const snsNew = clamp(arterial * cardiopulmonary, 0.4, 6) * p.snsOverride;
+    // Arterial underfilling that no pressure measurement shows. In cirrhosis the splanchnic bed
+    // is dilated and holds a large share of the blood volume, so the arterial side is under-filled
+    // while the mean pressure stays near normal — which is why these patients have high renin,
+    // high noradrenaline and high ADH despite a grossly expanded total volume (Rose ch. 16, 23).
+    // Heart failure reaches the same place by a different route, and is handled by the blunted
+    // cardiopulmonary reflex above, so it is not counted again here.
+    const splanchnicPooling = Math.exp(1.0 * clamp(p.vasodilation, 0, 0.7));
+    const underfill = clamp(arterial * cardiopulmonary * splanchnicPooling, 0.4, 6);
+    const snsNew = underfill * p.snsOverride;
     sns = 0.5 * sns + 0.5 * snsNew;
 
     // Renin–angiotensin–aldosterone
@@ -165,7 +173,17 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     // noradrenaline barely change it, and it becomes powerful once arterial pressure falls
     // (Rose ch. 6, 9). The cardiopulmonary (low-pressure) input is therefore weighted weakly.
     const volSignal = Math.min(eabv, Math.pow(cbv, 0.3));
-    const deficit = Math.max(0, 0.95 - volSignal);
+    // Non-osmotic release answers the same arterial underfilling the sympathetic nerves sense,
+    // not the mean pressure alone. That distinction is what makes heart failure and cirrhosis
+    // hyponatraemic: total volume is expanded and the pressure is often normal, yet the carotid
+    // sinus reports underfilling, so ADH stays high and water is retained in the face of a
+    // falling plasma sodium (Rose ch. 9, 16, 23). Perfusion is defended ahead of tonicity. The
+    // two signals are combined by taking the larger rather than by adding, so an ordinary
+    // hypovolaemia is not counted twice. The second term covers only the underfilling a pressure
+    // reading does not show — splanchnic pooling in cirrhosis, a low cardiac output in heart
+    // failure — because the pressure-driven part is already in the first.
+    const occultUnderfill = splanchnicPooling * Math.exp(0.9 * clamp(1 - p.cardiacFunction, 0, 0.7));
+    const deficit = Math.max(Math.max(0, 0.95 - volSignal), 0.1 * Math.max(0, occultUnderfill - 1.05));
     const threshold = 280 + p.osmostatShift - 25 * deficit;
     const slope = 0.38 * (1 + 3 * (deficit / 0.1));
     const adhOsm = slope * Math.max(0, inp.effOsm - threshold);

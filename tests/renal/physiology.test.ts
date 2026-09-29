@@ -1767,3 +1767,150 @@ describe('respiratory acid-base disorders (Rose ch. 20-21)', () => {
     expect(chronic(-24).plasma.HCO3).toBeGreaterThan(11);
   });
 });
+
+/**
+ * Hyponatraemia (Rose ch. 22-23). Two questions: how did the water get retained, and why is it
+ * still there. Almost everything diagnostic follows from the second.
+ */
+describe('hyponatraemia: water excretion and what limits it (Rose ch. 23)', () => {
+  const settledBody = runToSteadyState(DEFAULT_PARAMS, 60).state.body;
+  const at = (patch: ParamPatch, days = 25, dt = 0.5) => runToSteadyState(applyPatch(DEFAULT_PARAMS, patch), days, dt);
+  const from = (body: typeof settledBody, patch: ParamPatch, days: number) => simulate(applyPatch(DEFAULT_PARAMS, patch), days, 0.05, body);
+
+  test('a normal kidney excretes more than 10 L of water a day', () => {
+    // Rose ch. 23: with ADH suppressed the urine osmolality falls to 40-100 mmol/kg and the
+    // maximum water excretion exceeds 10 L/day, which is why hyponatraemia almost always means
+    // a defect in water excretion rather than too much drinking.
+    const loaded = at({ waterIntake: 14 }, 20).ev;
+    expect(loaded.kidney.urine.osm).toBeLessThan(110);
+    expect(loaded.kidney.urine.volumePerDay).toBeGreaterThan(10);
+    expect(loaded.reg.hormones.adh).toBeLessThan(0.3);
+    expect(loaded.plasma.Na).toBeGreaterThan(135);
+  });
+
+  test('a water load is excreted within hours, not days', () => {
+    const r = simulate(applyPatch(DEFAULT_PARAMS, { waterIntake: 20, thirstIntact: false }), 0.5, 0.01, settledBody);
+    const at3h = r.points.find((p) => p.day >= 0.12);
+    expect(at3h!.urineOsm).toBeLessThan(100);
+    expect(at3h!.adh).toBeLessThan(0.2);
+    expect(at3h!.urineVolume).toBeGreaterThan(12);
+  });
+
+  test('hypovolaemic hyponatraemia keeps its urine sodium low; SIADH does not', () => {
+    // Rose Table 23-5: the urine sodium is under 25 mmol/L in effective volume depletion and
+    // over 40 in SIADH, where sodium handling is intact and excretion equals intake.
+    const hypo = at({ diarrhea: 2, waterIntake: 3, naIntake: 20 }, 8, 0.25).ev;
+    expect(hypo.plasma.Na).toBeLessThan(134);
+    expect(hypo.kidney.urine.Na).toBeLessThan(25);
+    expect(hypo.kidney.urine.osm).toBeGreaterThan(300);
+
+    const siadh = at({ adhAutonomous: 5, waterIntake: 1.35, naIntake: 100 }).ev;
+    expect(siadh.plasma.Na).toBeLessThan(126);
+    expect(siadh.kidney.urine.Na).toBeGreaterThan(40);
+    expect(siadh.kidney.urine.osm).toBeGreaterThan(300);
+    expect(siadh.body.edema).toBeLessThan(0.5); // volume regulation is intact, so no oedema
+  });
+
+  test('isotonic saline lowers the sodium in SIADH (Rose Table 23-9)', () => {
+    // The steady-state effect of a fluid depends on its osmolality relative to the urine's, not
+    // to the plasma's. With a urine osmolality above 1000, isotonic saline delivers 308 mmol of
+    // solute that leaves in half a litre — so half the litre is retained as water.
+    const base: ParamPatch = { adhAutonomous: 5, waterIntake: 1.35, naIntake: 100 };
+    const sick = at(base);
+    expect(sick.ev.kidney.urine.osm).toBeGreaterThan(900);
+    const day1 = (patch: ParamPatch) => from(sick.state.body, { ...base, ...patch }, 2).points.find((p) => p.day >= 1)!.Na;
+    const start = sick.ev.plasma.Na;
+
+    expect(day1({ ivNS: 1 })).toBeLessThan(start - 1);
+    // even hypertonic saline barely helps while the urine is this concentrated
+    expect(day1({ ivHypertonic: 0.5 })).toBeLessThan(start + 1);
+    // water restriction and a solute load both work, because both act on the water side
+    expect(day1({ waterIntake: 0.6 })).toBeGreaterThan(start + 1);
+    expect(day1({ naIntake: 300, proteinIntake: 160 })).toBeGreaterThan(start + 0.8);
+  });
+
+  test('the sodium-deficit formula over-predicts in SIADH', () => {
+    // Rose is explicit that Eq. 23-3 applies only to sodium given without water: in SIADH the
+    // administered sodium is excreted, and it is the water that leaves with it that raises the
+    // plasma sodium. Giving nearly twice the calculated deficit moves it by under 1 mmol/L.
+    const base: ParamPatch = { adhAutonomous: 5, waterIntake: 1.35, naIntake: 100 };
+    const sick = at(base);
+    const predicted = sick.state.body.tbw * 6; // mmol to raise the sodium by 6
+    const given = 513; // 1 L of 3% saline
+    expect(given).toBeGreaterThan(predicted * 1.5);
+    const after = from(sick.state.body, { ...base, ivHypertonic: 1 }, 1).final;
+    expect(after.plasma.Na - sick.ev.plasma.Na).toBeLessThan(2);
+  });
+
+  test('a loop diuretic washes out the medulla; a thiazide does not', () => {
+    // Rose ch. 23: this is why thiazide-induced hyponatraemia is common and loop-induced
+    // hyponatraemia is rare. The thiazide acts in the cortex and leaves ADH able to concentrate.
+    const base: ParamPatch = { naIntake: 80, waterIntake: 2, adhAutonomous: 3 };
+    const thiazide = from(settledBody, { ...base, drugs: { thiazide: 0.8 } }, 6).final;
+    const loop = from(settledBody, { ...base, drugs: { furosemide: 0.8 } }, 6).final;
+    expect(thiazide.kidney.urine.osm).toBeGreaterThan(loop.kidney.urine.osm * 1.5);
+    expect(loop.kidney.urine.volumePerDay).toBeGreaterThan(thiazide.kidney.urine.volumePerDay * 1.5);
+  });
+
+  test('restricting water corrects polydipsia far faster than SIADH', () => {
+    // Rose warns that water restriction alone can overcorrect in primary polydipsia, because ADH
+    // is appropriately suppressed and the excess water leaves in a maximally dilute urine.
+    const poly = at({ waterIntake: 19 }, 20);
+    expect(poly.ev.kidney.urine.osm).toBeLessThan(100);
+    const polyFixed = from(poly.state.body, { waterIntake: 1.5 }, 2).points.find((p) => p.day >= 1)!;
+    expect(polyFixed.Na - poly.ev.plasma.Na).toBeGreaterThan(6);
+
+    const siadh = at({ adhAutonomous: 5, waterIntake: 1.35, naIntake: 100 });
+    const siadhFixed = from(siadh.state.body, { adhAutonomous: 5, waterIntake: 0.8, naIntake: 100 }, 2).points.find((p) => p.day >= 1)!;
+    expect(siadhFixed.Na - siadh.ev.plasma.Na).toBeLessThan(4);
+  });
+
+  test('arterial underfilling raises ADH where the pressure looks normal', () => {
+    // Rose ch. 23: almost all hyponatraemic patients with advanced heart failure or cirrhosis
+    // have raised ADH, and it is appropriate — the retained water is defending perfusion.
+    const cirrhosis = at({ vasodilation: 0.5, portalHypertension: 0.7, albumin: 2.6, waterIntake: 2.5 }).ev;
+    expect(cirrhosis.reg.MAP).toBeGreaterThan(85); // the pressure is not the signal
+    expect(cirrhosis.kidney.urine.Na).toBeLessThan(25);
+    expect(cirrhosis.kidney.urine.osm).toBeGreaterThan(400);
+    expect(cirrhosis.body.edema).toBeGreaterThan(5);
+
+    const failure = at({ cardiacFunction: 0.42, waterIntake: 2.5 }).ev;
+    expect(failure.plasma.Na).toBeLessThan(136);
+    expect(failure.kidney.urine.Na).toBeLessThan(25);
+  });
+});
+
+describe('hypernatraemia and the diabetes insipidus states (Rose ch. 24)', () => {
+  const at = (patch: ParamPatch, days = 14, dt = 0.25) => runToSteadyState(applyPatch(DEFAULT_PARAMS, patch), days, dt);
+
+  test('central diabetes insipidus: a huge dilute urine, but thirst holds the sodium', () => {
+    const di = at({ centralDI: 1 }).ev;
+    expect(di.kidney.urine.volumePerDay).toBeGreaterThan(10);
+    expect(di.kidney.urine.osm).toBeLessThan(120);
+    expect(di.reg.hormones.adh).toBeLessThan(0.1);
+  });
+
+  test('take away access to water and the sodium climbs', () => {
+    // Rose ch. 24: a plasma sodium above 150 is virtually never seen in an alert adult with a
+    // normal thirst mechanism and access to water. Hypernatraemia is a thirst problem.
+    const dry = at({ centralDI: 1, thirstIntact: false, waterIntake: 1.2 }, 6).ev;
+    expect(dry.plasma.Na).toBeGreaterThan(155);
+    expect(dry.plasma.effOsm).toBeGreaterThan(310);
+  });
+
+  test('nephrogenic diabetes insipidus: high ADH, dilute urine', () => {
+    const ndi = at({ drugs: { lithium: 1 } }).ev;
+    expect(ndi.kidney.urine.osm).toBeLessThan(200);
+    expect(ndi.reg.hormones.adh).toBeGreaterThan(3); // resistance, not deficiency
+    expect(ndi.plasma.Na).toBeGreaterThan(142);
+  });
+
+  test('desmopressin separates central from nephrogenic', () => {
+    const central = at({ centralDI: 1, thirstIntact: false, waterIntake: 1.2 }, 6).ev;
+    const centralTreated = at({ centralDI: 1, thirstIntact: false, waterIntake: 1.2, drugs: { desmopressin: 1 } }, 6).ev;
+    const nephrogenic = at({ drugs: { lithium: 1 } }).ev;
+    const nephrogenicTreated = at({ drugs: { lithium: 1, desmopressin: 1 } }).ev;
+    expect(centralTreated.kidney.urine.osm).toBeGreaterThan(central.kidney.urine.osm * 3);
+    expect(nephrogenicTreated.kidney.urine.osm).toBeLessThan(nephrogenic.kidney.urine.osm * 2);
+  });
+});

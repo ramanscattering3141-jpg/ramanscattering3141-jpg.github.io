@@ -300,6 +300,13 @@ export function describeAcidBase(hco3: number, pco2: number, pH: number, agCorre
  * (Rose ch. 6, 7, 24).
  */
 export function thirstDrive(ev: Evaluation) {
+  // Osmotic thirst plus a baroreceptor term. Angiotensin II is dipsogenic too, and it is the
+  // reason patients with heart failure and cirrhosis are intensely thirsty at a normal arterial
+  // pressure — which is what makes water restriction so hard to achieve in them (Rose ch. 6, 9,
+  // 23). It is deliberately not modelled: adding it takes the oedematous states past the point
+  // where water intake outruns excretion, and the model then has no steady state to show. What
+  // the drive does to a real patient is a matter of how much they actually drink, which is not
+  // something this model can know; the pages say so rather than inventing a number for it.
   return 1.2 * (clamp((ev.plasma.effOsm - 288) / 4, 0, 12) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2));
 }
 
