@@ -637,7 +637,16 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // Urea: ADH-stimulated UT-A1/A3 permeability in the inner medulla; reabsorbed urea is
   // recycled into the medullary interstitium (and is the "gUrea" gradient component).
   const ureaPerm = clamp(t.UTA * (0.25 + 0.75 * clamp(h.aqp2, 0, 1)), 0.05, 1.2);
-  const ureaReabIMCD = imcdIn.urea * clamp(0.55 * ureaPerm, 0, 0.8);
+  // Reabsorption here is passive, so it depends on how long the fluid takes to pass and on how
+  // concentrated the urea has become. Volume depletion moves both the same way: water reabsorbed
+  // upstream slows the flow and raises the luminal urea concentration, so proportionally more
+  // diffuses back. This is the main reason urea rises out of proportion to creatinine in
+  // pre-renal azotaemia (Rose ch. 13, 14, 16) — a ratio that is useful precisely because
+  // creatinine, being neither reabsorbed nor concentration-driven, does not behave this way.
+  // Normalised to the intact kidney's inner medullary collecting duct inflow, so a normal body
+  // is unchanged.
+  const slowFlow = clamp(Math.pow(clamp(imcdIn.water / 3.2, 0.05, 4), -0.3), 0.55, 1.9);
+  const ureaReabIMCD = imcdIn.urea * clamp(0.55 * ureaPerm * slowFlow, 0, 0.92);
   imcdOut.urea = imcdIn.urea - ureaReabIMCD;
   const imcdNaReab = takeDistal(imcdIn.Na * enacFrac(0.54));
   imcdOut.Na = Math.max(0, imcdIn.Na - imcdNaReab);

@@ -530,6 +530,8 @@ export interface TrajectoryPoint {
   urineCl: number;
   /** fractional excretion of Na+, per cent */
   fena: number;
+  /** fractional excretion of urea, per cent */
+  feurea: number;
   urinePH: number;
 }
 
@@ -567,6 +569,7 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       naBalance: state.body.naE - naE0,
       urineCl: ev.kidney.urine.exc.Cl,
       fena: ev.derived.FENa,
+      feurea: ev.derived.FEUrea,
       urinePH: ev.kidney.urine.pH,
     });
     if (i === steps || state.outOfRange) break;

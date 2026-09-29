@@ -1377,3 +1377,74 @@ describe('oedematous states: underfilling, overfilling and compensation (Rose ch
     });
   });
 });
+
+/**
+ * Hypovolaemic states (Rose ch. 14). What the kidney does about the volume is the same every time;
+ * what differs is the composition of what was lost, and that is what the pages teach.
+ */
+describe('hypovolaemia: composition, azotaemia and replacement (Rose ch. 14)', () => {
+  const settled = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 150 }), 60).state.body;
+  const after = (patch: ParamPatch, days: number, from: typeof settled = settled) =>
+    simulate(applyPatch(DEFAULT_PARAMS, { naIntake: 150, ...patch }), days, 0.05, from);
+
+  test('each source leaves its own signature', () => {
+    const vomiting = after({ vomiting: 1.5, waterIntake: 1, naIntake: 40 }, 3).final;
+    const diarrhoea = after({ diarrhea: 2.5, waterIntake: 1, naIntake: 40 }, 3).final;
+    const sweat = after({ insensible: 3.5, waterIntake: 1.2 }, 3).final;
+    // vomiting: alkalosis; diarrhoea: normal-gap acidosis
+    expect(vomiting.plasma.HCO3).toBeGreaterThan(30);
+    expect(diarrhoea.plasma.HCO3).toBeLessThan(21);
+    // both waste potassium
+    expect(vomiting.plasma.K).toBeLessThan(4);
+    expect(diarrhoea.plasma.K).toBeLessThan(4);
+    // pure water loss raises the plasma sodium instead of lowering it
+    expect(sweat.plasma.Na).toBeGreaterThan(143);
+    // and does not call for sodium conservation, so the urine sodium stays high
+    expect(sweat.kidney.urine.Na).toBeGreaterThan(60);
+    expect(diarrhoea.kidney.urine.Na).toBeLessThan(20);
+  });
+
+  test('third-spacing depletes the circulation without losing body sodium', () => {
+    const third = after({ capillaryLeak: 0.5, naIntake: 60, waterIntake: 1.2 }, 3).final;
+    expect(third.reg.hormones.renin).toBeGreaterThan(3);
+    expect(third.kidney.urine.Na).toBeLessThan(25);
+    // total extracellular volume is not reduced — the fluid is sequestered, not gone
+    expect(third.derived.ecfLiters).toBeGreaterThan(13);
+  });
+
+  test('urea rises out of proportion to creatinine in moderate volume depletion', () => {
+    // Rose ch. 13/14/16: reabsorption of urea is passive, so slow tubular flow and a concentrated
+    // lumen drive more of it back. Creatinine, neither reabsorbed nor concentration-driven, only
+    // follows the fall in filtration — which is why the ratio between them is informative.
+    const ratio = (ev: ReturnType<typeof evaluate>) => (ev.body.bun / 2.8) / (ev.body.creat * 0.0884);
+    const base = evaluate(settled, DEFAULT_PARAMS);
+    const mild = after({ diarrhea: 1, waterIntake: 1, naIntake: 60 }, 4).final;
+    expect(ratio(mild)).toBeGreaterThan(ratio(base) + 10);
+    expect(mild.body.bun).toBeGreaterThan(base.body.bun);
+  });
+
+  test('compensation is complete at small deficits and fails at large ones', () => {
+    const small = after({ diarrhea: 1, waterIntake: 1, naIntake: 60 }, 2).final;
+    const large = after({ diarrhea: 5, waterIntake: 1, naIntake: 60 }, 4).final;
+    expect(small.reg.MAP).toBeGreaterThan(90);
+    expect(large.reg.MAP).toBeLessThan(88);
+    expect(large.kidney.GFR).toBeLessThan(0.7 * small.kidney.GFR);
+    expect(si_creat(large)).toBeGreaterThan(1.5 * si_creat(small));
+  });
+
+  test('saline restores extracellular volume and dextrose does not', () => {
+    // The point of the replacement panel: sodium is what holds fluid extracellular.
+    const ill = after({ diarrhea: 2.5, waterIntake: 1, naIntake: 40 }, 3).state.body;
+    const withSaline = after({ diarrhea: 2.5, waterIntake: 1, naIntake: 40, ivNS: 3 }, 3, ill).final;
+    const withDextrose = after({ diarrhea: 2.5, waterIntake: 1, naIntake: 40, ivD5W: 3 }, 3, ill).final;
+    expect(withSaline.derived.ecfLiters).toBeGreaterThan(withDextrose.derived.ecfLiters + 1.5);
+    // and the kidney knows: renin falls with saline and stays up with dextrose
+    expect(withSaline.reg.hormones.renin).toBeLessThan(withDextrose.reg.hormones.renin);
+    // dextrose dilutes instead
+    expect(withDextrose.plasma.Na).toBeLessThan(withSaline.plasma.Na);
+  });
+});
+
+function si_creat(ev: ReturnType<typeof evaluate>) {
+  return ev.body.creat * 88.4;
+}
