@@ -5,7 +5,15 @@
 // gradually after a fall in GFR and what lets the sandbox reach a new steady state.
 
 import { clamp } from './math';
-import { acidBase, derivePlasma, ecfVolume, edelmanNa, initialBody, oncoticGradientRel, respiratoryPCO2, type BodyState, type PlasmaDerived } from './body';
+import {
+  derivePlasma,
+  ecfVolume,
+  edelmanNa,
+  initialBody,
+  oncoticGradientRel,
+  type BodyState,
+  type PlasmaDerived,
+} from './body';
 import { evaluateRegulation, type RegulationState } from './regulation';
 import { runKidney } from './kidney';
 import type { KidneyResult, Params } from './types';
@@ -64,6 +72,12 @@ export interface Evaluation {
 }
 
 const CREAT_VOL_FRACTION = 0.6; // creatinine distributes in total body water
+/** Renal clearance of the retained organic anions, L/day at a normal GFR. */
+const ORG_CLEARANCE_SLOW = 1.5; // lactate: reabsorbed by the proximal Na+-lactate cotransporter, and the
+//                                hypoperfusion that produces it leaves little urine to lose it in
+const ORG_CLEARANCE_KETO = 5; // ketoacid anions: filtered beyond the tubule's capacity and readily lost
+/** Rate at which an organic anion no longer being produced is metabolised back to bicarbonate. */
+const ORG_METABOLISM = 1.5; // per day
 const UREA_VOL_FRACTION = 1.0;
 
 /** Creatinine generation (mg/day) from age, sex and muscle mass (Cockcroft–Gault style). */
@@ -164,11 +178,18 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
   const stoolNa = p.diarrhea * 60;
   const stoolK = p.diarrhea * 35;
   const stoolCl = p.diarrhea * 45;
-  const stoolHCO3 = p.diarrhea * 35;
+  // Diarrhoeal fluid carries as much as 50 mmol/L of base (Rose ch. 19) — bicarbonate plus the
+  // organic anions that are metabolised back to it. That figure is also what makes the stool
+  // electroneutral against its cations (Na 60 + K 35 against Cl 45 + base 50), which is why the
+  // acidosis of diarrhoea comes out hyperchloraemic with a normal anion gap.
+  const stoolHCO3 = p.diarrhea * 50;
   const naOut = kidney.urine.exc.Na + gastricNa + stoolNa + 10;
   const kOut = kidney.urine.exc.K + gastricK + stoolK + 10;
   const waterOut = kidney.urine.exc.water + p.insensible + p.vomiting + p.diarrhea;
-  const clIn = p.naIntake + p.ivNS * 154 + p.ivHypertonic * 513 + d.potassiumChloride;
+  // An exogenous acid load is given as ammonium chloride or hydrochloric acid, so it brings its
+  // own chloride: that is why it is the archetypal normal-anion-gap (hyperchloraemic) acidosis
+  // (Rose Table 19-4). Organic acids bring an organic anion instead, and raise the gap.
+  const clIn = p.naIntake + p.ivNS * 154 + p.ivHypertonic * 513 + d.potassiumChloride + Math.max(0, p.extraAcid);
   const clOut = kidney.urine.exc.Cl + gastricCl + stoolCl + 10;
   const acidIn = acidProduction(p) + p.vomiting * -110 + stoolHCO3;
   const acidOut = kidney.urine.exc.NAE;
@@ -191,8 +212,8 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
       ? kidney.urine.K / Math.max(plasma.K, 0.5) / Math.max(kidney.urine.osm / plasma.osm, 0.5)
       : NaN;
 
-  const { pH } = acidBase(body.hco3, respiratoryPCO2(body.hco3, p));
-  const label = describeAcidBase(body.hco3, plasma.PCO2, pH, plasma.agCorrected);
+  // The interpretation is made on the numbers a blood gas reports, not on the metabolic pool.
+  const label = describeAcidBase(plasma.HCO3, plasma.PCO2, plasma.pH, plasma.agCorrected);
 
   return {
     params,
@@ -217,7 +238,7 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
       edemaLiters: body.edema,
       naDeficitOrExcess: body.naE - 41 * p.weightKg,
       waterDeficit: body.tbw * (plasma.Na / 140 - 1),
-      acidBase: { pH, PCO2: plasma.PCO2, HCO3: body.hco3, label: label.primary, compensation: label.compensation },
+      acidBase: { pH: plasma.pH, PCO2: plasma.PCO2, HCO3: plasma.HCO3, label: label.primary, compensation: label.compensation },
     },
   };
 }
@@ -232,8 +253,23 @@ export function describeAcidBase(hco3: number, pco2: number, pH: number, agCorre
   else if (alkalemic && pco2 < 35) primary = 'Respiratory alkalosis';
   else if (!acidemic && !alkalemic && (hco3 < 21 || hco3 > 28)) primary = 'Mixed disorder (normal pH with abnormal HCO₃⁻/PCO₂)';
 
+  // For a primary respiratory disturbance the question is whether the *bicarbonate* is where it
+  // should be, and the answer depends on how long it has been going on: 1 mmol/L per 10 mmHg
+  // acutely against 3.5 chronically for hypercapnia, 2 against 4 for hypocapnia (Rose ch. 20-21).
+  // A single set of numbers cannot say which, so both bands are quoted.
   let compensation = '';
-  if (hco3 < 22) {
+  if (primary === 'Respiratory acidosis' || primary === 'Respiratory alkalosis') {
+    const d = (pco2 - 40) / 10;
+    const [acute, chronic] = pco2 > 40 ? [24 + 1 * d, 24 + 3.5 * d] : [24 + 2 * d, 24 + 4 * d];
+    const lo = Math.min(acute, chronic);
+    const hi = Math.max(acute, chronic);
+    compensation =
+      hco3 > hi + 2
+        ? `HCO₃⁻ ${hco3.toFixed(0)} is above the ${lo.toFixed(0)}–${hi.toFixed(0)} expected at this PCO₂: superimposed metabolic alkalosis`
+        : hco3 < lo - 2
+          ? `HCO₃⁻ ${hco3.toFixed(0)} is below the ${lo.toFixed(0)}–${hi.toFixed(0)} expected at this PCO₂: superimposed metabolic acidosis`
+          : `HCO₃⁻ ${hco3.toFixed(0)} lies in the ${lo.toFixed(0)}–${hi.toFixed(0)} expected at this PCO₂ (acute to chronic)`;
+  } else if (hco3 < 22) {
     const expected = 40 + 1.2 * (hco3 - 24);
     compensation =
       pco2 > expected + 3
@@ -418,6 +454,36 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   const boneAlkali = clamp(3.5 * (22 - b.hco3), 0, 90);
   const netAcid = ev.balance.acidIn - ev.balance.acidOut - boneAlkali;
   b.hco3 = clamp(b.hco3 - (netAcid * dt) / Math.max(bufferVolume, 5), 3, 60);
+
+  // The organic anion left behind by an organic acid load (Rose ch. 19). Every acid arrives with
+  // an anion, and what happens to that anion is what decides whether the acidosis has a high or a
+  // normal anion gap. Chloride-borne acids are handled by the chloride balance above; this pool
+  // is for the anions the kidney clears slowly enough that they accumulate — lactate, ketoacid
+  // anions, formate, glycolate.
+  //
+  // How slowly differs between them, and that difference is what sets the Δ anion gap / Δ
+  // bicarbonate ratio. Ketoacid anions are filtered beyond the tubule's reabsorptive capacity and
+  // lost in the urine readily enough to keep the ratio near 1:1; lactate is reclaimed by a
+  // proximal Na+-lactate cotransporter, and the hypoperfusion that produces it leaves little
+  // urine to lose it in, so it accumulates and pushes the ratio toward 1.6:1.
+  const gfrRel = clamp(ev.kidney.GFR / 125, 0.02, 1.6);
+  const organicGenerated = (p.lacticAcid + p.ketoAcid + p.toxicAcid) * 24;
+  const organicClearance =
+    (organicGenerated > 0
+      ? (ORG_CLEARANCE_SLOW * (p.lacticAcid + p.toxicAcid) + ORG_CLEARANCE_KETO * p.ketoAcid) / (p.lacticAcid + p.ketoAcid + p.toxicAcid)
+      : ORG_CLEARANCE_SLOW) * gfrRel;
+  // Once production falls away, what the kidney has not excreted is metabolised back to
+  // bicarbonate — which is why lactic acidosis and ketoacidosis correct themselves when the
+  // underlying problem is treated, and why giving bicarbonate for them risks an overshoot.
+  const organicSustained = clamp(organicGenerated / Math.max(organicClearance, 0.5), 0, 60);
+  const organicMetabolised = Math.max(0, b.organicAnions - organicSustained) * ORG_METABOLISM;
+  b.organicAnions = clamp(
+    b.organicAnions + ((organicGenerated - b.organicAnions * organicClearance) / Math.max(ecfNow, 1) - organicMetabolised) * dt,
+    0,
+    60,
+  );
+  b.hco3 = clamp(b.hco3 + (organicMetabolised * ecfNow * dt) / Math.max(bufferVolume, 5), 3, 60);
+
   // Contraction alkalosis: losing Cl-rich, HCO3-poor fluid concentrates the bicarbonate pool.
   const ecfBefore = ev.plasma.ecf;
   const ecfAfter = ecfNow;
@@ -537,6 +603,14 @@ export interface TrajectoryPoint {
   PCO2: number;
   /** plasma chloride, mmol/L */
   Cl: number;
+  /** plasma anion gap, mmol/L */
+  anionGap: number;
+  /** urine anion gap Na+ + K+ - Cl-, mmol/L — a proxy for ammonium excretion (Rose Fig. 19-1) */
+  urineAnionGap: number;
+  /** urinary NH4+ excretion, mmol/day */
+  urineNH4: number;
+  /** net acid excretion, mmol/day */
+  nae: number;
 }
 
 export function simulate(params: Params, days: number, dt = 0.25, start?: BodyState): { points: TrajectoryPoint[]; final: Evaluation; state: SimState } {
@@ -552,7 +626,9 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       day: state.day,
       Na: ev.plasma.Na,
       K: ev.plasma.K,
-      HCO3: ev.body.hco3,
+      // the plasma bicarbonate a blood gas would report, which includes the immediate non-renal
+      // buffering of the prevailing PCO2 — not the metabolic pool the kidney adjusts
+      HCO3: ev.plasma.HCO3,
       pH: ev.plasma.pH,
       creat: ev.body.creat,
       eGFR: ev.derived.eGFR,
@@ -577,6 +653,10 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       urinePH: ev.kidney.urine.pH,
       PCO2: ev.plasma.PCO2,
       Cl: ev.plasma.Cl,
+      anionGap: ev.plasma.anionGap,
+      urineAnionGap: ev.derived.urineAnionGap,
+      urineNH4: ev.kidney.urine.exc.NH4,
+      nae: ev.kidney.urine.exc.NAE,
     });
     if (i === steps || state.outOfRange) break;
     const next = stepDay(state, params, dt, ev.reg, h);

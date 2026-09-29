@@ -192,7 +192,7 @@ export function runNephron(inp: NephronInput): NephronResult {
   // fall in PCO2 strips bicarbonate faster than any kidney does, because the filtered load is
   // enormous and a few per cent of it is hundreds of millimoles a day. The reabsorptive threshold
   // below is what sets where the plasma bicarbonate finally settles.
-  const hco3Fraction = clamp(0.9 * nheActivity * Math.pow(pco2Drive, 0.35) * Math.pow(caActivity, 0.6) * Math.pow(t.NBCe1, 0.8), 0, 0.985);
+  const hco3Fraction = clamp(0.9 * nheActivity * Math.pow(pco2Drive, 0.35) * Math.pow(caActivity, 0.6), 0, 0.995);
   // There is no fixed Tm for bicarbonate, but reabsorption does plateau: in the intact kidney it
   // levels off near a plasma concentration of 26 mmol/L, so anything above that is excreted
   // (Rose ch. 11, Fig. 11-14). That threshold is not fixed either — volume depletion (angiotensin
@@ -202,7 +202,14 @@ export function runNephron(inp: NephronInput): NephronResult {
   const volumeFactor = clamp(Math.pow(Math.max(h.at1, 0.05), 0.12), 0.85, 1.35);
   const threshold = 26 * volumeFactor * kOnHco3 * pco2Drive * clamp(Math.pow(Math.max(h.mr, 0.05), 0.05), 0.9, 1.2);
   const gfrLitresPerMin = inp.GFR / 1000;
-  const hco3Ceiling = threshold * gfrLitresPerMin * 0.93 * Math.pow(clamp(t.NBCe1, 0.05, 1.5), 0.5);
+  // A failure of the basolateral Na+-3HCO3- exit step — type 2 (proximal) RTA — lowers the
+  // threshold rather than taking a fixed fraction off reabsorption, and that distinction is the
+  // whole clinical picture (Rose Fig. 19-6). Below the reduced threshold the proximal tubule
+  // still reclaims everything and the urine can be made maximally acid; above it, bicarbonate
+  // pours out. That is why the disorder is self-limiting, settling at a plasma bicarbonate of
+  // 14-20 mmol/L rather than falling without limit as a distal RTA does, and why alkali given to
+  // a patient with it is promptly excreted again.
+  const hco3Ceiling = threshold * gfrLitresPerMin * 0.93 * Math.pow(clamp(t.NBCe1, 0.05, 1.5), 0.55);
   const hco3ReabPT = Math.min(f.HCO3, f.HCO3 * hco3Fraction, hco3Ceiling);
 
   // Non-reabsorbable solute in the lumen (spilled glucose, infused mannitol) retains water and
@@ -608,7 +615,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const cntOut = { ...dctOut };
   cntOut.Na = dctOut.Na - cntNaReab;
   cntOut.K = Math.max(0, dctOut.K + CNT_K_SHARE * kSecretion - kReabIntercalated);
-  cntOut.Cl = clAfter(dctOut.Cl, cntNaReab, 0.75, cntOut.Na + cntOut.K + cntOut.NH4);
+  cntOut.Cl = clAfter(dctOut.Cl, cntNaReab, 0.75, cntOut.Na + cntOut.K);
 
   // --- Water: ADH-dependent AQP2 in CNT/CCD/OMCD/IMCD equilibrates fluid with the
   //     cortical (290) then medullary interstitium.
@@ -628,7 +635,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const ccdNaReab = takeDistal(ccdIn.Na * enacFrac(0.25));
   ccdOut.Na = ccdIn.Na - ccdNaReab;
   ccdOut.K = ccdIn.K + (1 - CNT_K_SHARE) * kSecretion;
-  ccdOut.Cl = clAfter(ccdIn.Cl, ccdNaReab, 0.8, ccdOut.Na + ccdOut.K + ccdOut.NH4);
+  ccdOut.Cl = clAfter(ccdIn.Cl, ccdNaReab, 0.8, ccdOut.Na + ccdOut.K);
   ccdOut.water = equilibrate(ccdIn, 290, perm * 0.95);
 
   // --- Acid-base in the collecting duct: H-ATPase secretion titrates phosphate (titratable
@@ -654,10 +661,31 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
     (0.55 + 0.45 * voltage) *
     (1 - 0.4 * injury) *
     clamp(1 + 0.15 * (4.2 - pl.K), 0.7, 1.5);
-  // Type B intercalated cells secrete HCO3- (pendrin, in exchange for luminal Cl-) as plasma
-  // HCO3- rises. The response is graded, not a switch, and it needs luminal Cl- to exchange
-  // against: in chloride depletion it fails, which is one reason vomiting maintains alkalosis.
-  const hco3Excess = Math.log1p(Math.exp((pl.HCO3 - 26) / 1.2)) * 1.2;
+  // Type B intercalated cells secrete HCO3- (pendrin, in exchange for luminal Cl-) once the
+  // bicarbonate rises above the level the body is defending. The response is graded, not a
+  // switch, and it needs luminal Cl- to exchange against: in chloride depletion it fails, which
+  // is one reason vomiting maintains alkalosis.
+  //
+  // That level is not a fixed 26. It has to move with the PCO2, or the kidney is blind to the
+  // respiratory side: a patient with chronic hypercapnia has a bicarbonate of 35 because the
+  // kidney put it there to defend the pH, and a tubule reading the concentration alone would
+  // secrete it straight back out and undo its own compensation. Same correction the proximal acid
+  // stimulus needed (Rose ch. 11, 20). It moves less steeply than the reabsorptive threshold does
+  // — 0.009 against 0.015 per mmHg — and that difference is what makes the compensation partial
+  // rather than complete: as the bicarbonate climbs the two thresholds converge, secretion
+  // restarts, and it stalls short of a normal pH. Keying it to the arterial pH instead turns the
+  // kidney into a pH servo that restores the pH completely, which is not what a patient does.
+  //
+  // It moves with volume and with potassium too, for the same reasons the reabsorptive threshold
+  // does. A kidney defending its perfusion will not throw away sodium bicarbonate, which is what
+  // makes a chloride-depletion alkalosis self-sustaining; and potassium depletion drives H+
+  // secretion and suppresses HCO3- secretion, which is what holds up the alkalosis of primary
+  // aldosteronism in a patient whose volume is normal and whose renin is suppressed (Rose
+  // ch. 18). The angiotensin term is one-sided: angiotensin II inhibits bicarbonate secretion, so
+  // its absence means only that the inhibition is lifted.
+  const secretionThreshold =
+    26 * clamp(1 + 0.009 * (pl.PCO2 - 40), 0.78, 1.55) * clamp(Math.pow(Math.max(h.at1, 0.05), 0.12), 1, 1.35) * clamp(1 + 0.09 * (4.2 - pl.K), 0.9, 1.45);
+  const hco3Excess = Math.log1p(Math.exp((pl.HCO3 - secretionThreshold) / 1.2)) * 1.2;
   // The exchange runs on the inward chloride gradient, so when luminal chloride is very low it
   // essentially stops rather than merely slowing. That failure is what produces the paradoxical
   // aciduria of a chloride-depletion alkalosis: the urine is acid while the blood is alkalaemic,
@@ -673,7 +701,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   omcdOut.water = equilibrate(omcdIn, 290 + (medullaTarget - 290) * 0.4, perm * 0.9);
   const omcdNaReab = takeDistal(omcdIn.Na * enacFrac(0.185));
   omcdOut.Na = omcdIn.Na - omcdNaReab;
-  omcdOut.Cl = clAfter(omcdIn.Cl, omcdNaReab, 0.9, omcdOut.Na + omcdOut.K + omcdOut.NH4);
+  omcdOut.Cl = clAfter(omcdIn.Cl, omcdNaReab, 0.9, omcdOut.Na + omcdOut.K);
 
   const imcdIn = { ...omcdOut };
   const imcdOut = { ...imcdIn };
@@ -693,7 +721,24 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   imcdOut.urea = imcdIn.urea - ureaReabIMCD;
   const imcdNaReab = takeDistal(imcdIn.Na * enacFrac(0.54));
   imcdOut.Na = Math.max(0, imcdIn.Na - imcdNaReab);
-  imcdOut.Cl = clAfter(imcdIn.Cl, imcdNaReab, 0.9, imcdOut.Na + imcdOut.K + imcdOut.NH4);
+  imcdOut.Cl = clAfter(imcdIn.Cl, imcdNaReab, 0.9, imcdOut.Na + imcdOut.K);
+
+  // Ammonium chloride. NH4+ secreted into the collecting duct is a cation the tubule cannot take
+  // back; it blunts the lumen-negative voltage, so less chloride follows sodium across the
+  // paracellular path and the ammonium leaves paired with chloride. This is why urine chloride
+  // rises with ammonium excretion, and it is the whole basis of the urine anion gap: when the
+  // kidney answers an acid load properly, Na+ + K+ − Cl− turns negative because the missing
+  // cation is ammonium; when ammonium excretion is the defect (renal failure, type 1 and type 4
+  // renal tubular acidosis), it stays positive (Rose ch. 19, Fig. 19-1). It also decides the
+  // plasma anion gap: an acidosis whose acid is excreted as NH4Cl replaces bicarbonate with
+  // chloride, so the gap is normal.
+  // How much of it leaves as chloride is the share chloride holds of the urine's anions: in a
+  // normal urine the sulfate of the dietary acid load and the phosphate buffer take the rest.
+  const sulfateOut = (clamp(0.8 * p.proteinIntake - 10, 10, 160) * clamp(inp.GFR / 125, 0.02, 1)) / 1440; // mEq/min
+  const nonClAnions = imcdOut.HCO3 + 1.8 * imcdOut.Pi + sulfateOut;
+  const clShare = imcdOut.Cl / Math.max(imcdOut.Cl + nonClAnions, 1e-9);
+  const distalClReab = Math.max(0, dctOut.Cl - imcdOut.Cl);
+  imcdOut.Cl += Math.min(distalClReab, imcdOut.NH4 * clShare);
 
   // --- Distal acid excretion (before the final water equilibration, so that the osmoles left
   // in the lumen are the ones water equilibrates against).
@@ -725,7 +770,11 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // Titratable acid: phosphate (pKa 6.8) is the main urinary buffer.
   const piLoad = imcdOut.Pi;
   const flowL = Math.max(imcdOut.water, 0.05) / 1000;
-  const TA = Math.min(piLoad * 0.92, Math.max(0, hLeft));
+  // Phosphate can be titrated almost completely; what usually stops it is the H+ pump, not the
+  // buffer. Leaving the last 0.5% is what puts the floor under the urine pH at 4.4-4.5, the
+  // minimum Rose gives for the collecting tubule (ch. 19) and the value a normal subject reaches
+  // under an acid load — which is what makes a urine pH above 5.3 during acidaemia diagnostic.
+  const TA = Math.min(piLoad * 0.995, Math.max(0, hLeft));
   const titratedFraction = piLoad > 1e-9 ? clamp(TA / piLoad, 0, 0.999) : 0;
 
   // Urine pH: alkaline when HCO3 escapes, otherwise set by how far the phosphate buffer has

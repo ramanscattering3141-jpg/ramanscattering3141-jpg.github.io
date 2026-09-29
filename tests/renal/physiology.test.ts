@@ -1472,9 +1472,13 @@ describe('hypovolaemia: composition, azotaemia and replacement (Rose ch. 14)', (
     // vomiting: alkalosis; diarrhoea: normal-gap acidosis
     expect(vomiting.plasma.HCO3).toBeGreaterThan(30);
     expect(diarrhoea.plasma.HCO3).toBeLessThan(21);
-    // both waste potassium
+    // Both waste potassium, but the plasma level tells the truth about it only in the alkalotic
+    // one. Rose ch. 19: in diarrhoea the acidaemia moves K+ out of the cells, so the plasma
+    // concentration is "still higher than it would have been in the absence of acidemia" and can
+    // sit in the normal range on top of a large deficit. The store is where the loss shows.
     expect(vomiting.plasma.K).toBeLessThan(4);
-    expect(diarrhoea.plasma.K).toBeLessThan(4);
+    expect(diarrhoea.body.kE).toBeLessThan(0.9 * settled.kE);
+    expect(diarrhoea.plasma.K).toBeLessThan(4.2);
     // pure water loss raises the plasma sodium instead of lowering it
     expect(sweat.plasma.Na).toBeGreaterThan(143);
     // and does not call for sodium conservation, so the urine sodium stays high
@@ -1602,5 +1606,164 @@ describe('metabolic alkalosis: generation, maintenance and correction (Rose ch. 
     expect(v.plasma.PCO2).toBeGreaterThan(45);
     // Rose: about 0.7 mmHg per 1 mmol/L, so the pH is only partly protected
     expect(v.plasma.pH).toBeGreaterThan(7.45);
+  });
+});
+
+/**
+ * Metabolic acidosis, and the two disorders that are diagnosed by what is in the urine rather
+ * than by what is in the blood (Rose ch. 19-21).
+ */
+describe('metabolic acidosis: the anion gaps (Rose ch. 19)', () => {
+  const settledBody = runToSteadyState(DEFAULT_PARAMS, 60).state.body;
+  const at = (patch: ParamPatch = {}, days = 40) => runToSteadyState(applyPatch(DEFAULT_PARAMS, patch), days, 1).ev;
+  const acuteDays = (patch: ParamPatch, days: number) => simulate(applyPatch(DEFAULT_PARAMS, patch), days, 0.02, settledBody);
+
+  test('respiratory compensation follows the 1.2 rule down to its floor', () => {
+    // Rose ch. 19: the PCO2 falls 1.2 mmHg for every 1 mmol/L fall in bicarbonate, to a floor of
+    // 10-15 mmHg. The slope is a property of the ventilatory reflex, not a formula in the model.
+    for (const load of [40, 80, 150]) {
+      const e = at({ extraAcid: load });
+      const slope = (40 - e.plasma.PCO2) / (24 - e.plasma.HCO3);
+      expect(slope).toBeGreaterThan(1.0);
+      expect(slope).toBeLessThan(1.45);
+    }
+    expect(at({ extraAcid: 250 }).plasma.PCO2).toBeLessThan(16);
+  });
+
+  test('the urine anion gap separates a renal acidosis from a gut one (Fig. 19-1)', () => {
+    // Batlle 1988 / Rose Fig. 19-1: with acidification intact, ammonium (and the chloride that
+    // leaves with it) rises until Na + K − Cl is strongly negative. When ammonium excretion is
+    // the defect, the urine anion gap keeps its normal positive value however acidaemic the
+    // patient is.
+    const normal = at();
+    expect(normal.derived.urineAnionGap).toBeGreaterThan(0);
+
+    const acidLoad = at({ extraAcid: 150 });
+    expect(acidLoad.kidney.urine.exc.NH4).toBeGreaterThan(120);
+    expect(acidLoad.derived.urineAnionGap).toBeLessThan(-20);
+
+    const diarrhoea = at({ diarrhea: 3 });
+    expect(diarrhoea.plasma.HCO3).toBeLessThan(18);
+    expect(diarrhoea.derived.urineAnionGap).toBeLessThan(-20);
+
+    for (const renal of [at({ transporters: { HATPase: 0.15 } }), at({ aldoSynthesis: 0 }), at({ nephronFraction: 0.2 })]) {
+      expect(renal.plasma.HCO3).toBeLessThan(20);
+      expect(renal.kidney.urine.exc.NH4).toBeLessThan(40);
+      expect(renal.derived.urineAnionGap).toBeGreaterThan(0);
+    }
+  });
+
+  test('ammonium excretion can rise five-fold, titratable acidity cannot', () => {
+    // Rose ch. 19: NH4+ excretion can exceed 250 mmol/day, while titratable acidity is capped by
+    // the filtered phosphate, which does not change. This is why ammonium is the adaptive term.
+    const n = at();
+    const loaded = at({ extraAcid: 250 });
+    expect(loaded.kidney.urine.exc.NH4 / n.kidney.urine.exc.NH4).toBeGreaterThan(3);
+    expect(loaded.kidney.urine.exc.TA / Math.max(n.kidney.urine.exc.TA, 0.1)).toBeLessThan(2.5);
+  });
+
+  test('an organic acidosis raises the gap and resolves when the anion is metabolised', () => {
+    // Rose ch. 19: the anion stays extracellular while much of the H+ is buffered in cells, so
+    // the Δ gap / Δ bicarbonate ratio sits between 1 and 2; and metabolism of the anion
+    // regenerates the bicarbonate, which is why lactic acidosis corrects itself once perfusion
+    // is restored, and why giving alkali for it risks an overshoot (Case 19-2).
+    const sick = acuteDays({ lacticAcid: 8 }, 1);
+    expect(sick.final.plasma.HCO3).toBeLessThan(16);
+    expect(sick.final.plasma.deltaRatio).toBeGreaterThan(1);
+    expect(sick.final.plasma.deltaRatio).toBeLessThan(2);
+    expect(sick.final.body.organicAnions).toBeGreaterThan(8);
+
+    const recovered = simulate(DEFAULT_PARAMS, 3, 0.02, sick.state.body).final;
+    expect(recovered.body.organicAnions).toBeLessThan(1);
+    expect(recovered.plasma.HCO3).toBeGreaterThan(22);
+  });
+
+  test('renal failure retains the acid and its anion; tubular acidosis retains only the acid', () => {
+    // Rose ch. 19 ("Anion gap in renal failure"): sulfate needs filtration to be excreted, so it
+    // is retained when the GFR falls but not when the defect is tubular.
+    const uraemic = at({ nephronFraction: 0.2 });
+    const proximal = at({ transporters: { NBCe1: 0.25 } });
+    expect(uraemic.plasma.anionGap).toBeGreaterThan(uraemic.plasma.normalAnionGap + 6);
+    expect(proximal.plasma.anionGap).toBeLessThan(proximal.plasma.normalAnionGap + 3);
+    expect(proximal.plasma.Cl).toBeGreaterThan(110);
+  });
+
+  test('the three renal tubular acidoses separate on urine pH and plasma potassium (Table 19-6)', () => {
+    const distal = at({ transporters: { HATPase: 0.15 } });
+    const proximal = at({ transporters: { NBCe1: 0.25 } });
+    const type4 = at({ aldoSynthesis: 0 });
+    // type 1: cannot lower the urine pH however acidaemic
+    expect(distal.kidney.urine.pH).toBeGreaterThan(5.3);
+    expect(distal.plasma.HCO3).toBeLessThan(14);
+    // type 2: self-limiting — the bicarbonate settles where the reduced threshold is, 14-20, well
+    // above the level a distal defect reaches, because the distal nephron mops up what escapes
+    expect(proximal.plasma.HCO3).toBeGreaterThan(14);
+    expect(proximal.plasma.HCO3).toBeLessThan(20);
+    // type 4: hyperkalaemic, the acidosis stays mild, and the urine can still be acidified —
+    // the defect is ammonium production, not acidification (Rose Table 19-6)
+    expect(type4.plasma.K).toBeGreaterThan(5.5);
+    expect(type4.plasma.HCO3).toBeGreaterThan(15);
+    expect(type4.kidney.urine.pH).toBeLessThan(5.3);
+    // and a normal subject under the same acid load goes below 5.3, which is what makes the
+    // distal defect visible at all
+    expect(at({ extraAcid: 150 }).kidney.urine.pH).toBeLessThan(5.3);
+  });
+
+  test('bicarbonate titration separates type 2 from type 1 (Fig. 19-6)', () => {
+    // Below the reduced threshold a proximal RTA reclaims everything and the urine is acid; above
+    // it, bicarbonate pours out and the plasma level barely moves. A distal RTA has no threshold
+    // defect, so the same alkali raises the plasma bicarbonate toward normal.
+    const feHco3 = (e: ReturnType<typeof evaluate>) => e.kidney.urine.exc.HCO3 / Math.max((e.kidney.GFR * 1440 * e.plasma.HCO3) / 1000, 1);
+    const proximalOff = at({ transporters: { NBCe1: 0.25 } });
+    const proximalOn = at({ transporters: { NBCe1: 0.25 }, drugs: { sodiumBicarbonate: 400 } });
+    const distalOn = at({ transporters: { HATPase: 0.15 }, drugs: { sodiumBicarbonate: 400 } });
+    expect(proximalOff.kidney.urine.pH).toBeLessThan(7.2);
+    expect(feHco3(proximalOff)).toBeLessThan(0.01);
+    expect(feHco3(proximalOn)).toBeGreaterThan(0.07);
+    expect(proximalOn.plasma.HCO3).toBeLessThan(proximalOff.plasma.HCO3 + 3);
+    expect(distalOn.plasma.HCO3).toBeGreaterThan(at({ transporters: { HATPase: 0.15 } }).plasma.HCO3 + 8);
+  });
+});
+
+describe('respiratory acid-base disorders (Rose ch. 20-21)', () => {
+  const chronic = (offset: number) => runToSteadyState(applyPatch(DEFAULT_PARAMS, { paco2Offset: offset }), 40, 1).ev;
+  const acute = (offset: number) => {
+    const p = applyPatch(DEFAULT_PARAMS, { paco2Offset: offset });
+    return simulate(p, 0.02, 0.01, initialBody(p)).final;
+  };
+  const per10 = (e: ReturnType<typeof evaluate>) => (e.plasma.HCO3 - 24) / ((e.plasma.PCO2 - 40) / 10);
+
+  test('acute hypercapnia is buffered only by the cells (~1 mmol/L per 10 mmHg)', () => {
+    for (const off of [20, 40, 60]) {
+      const r = per10(acute(off));
+      expect(r).toBeGreaterThan(0.4);
+      expect(r).toBeLessThan(1.4);
+    }
+    expect(acute(40).plasma.pH).toBeLessThan(7.3);
+  });
+
+  test('chronic hypercapnia recruits the kidney and protects the pH', () => {
+    // Rose ch. 20: roughly 3.5 mmol/L per 10 mmHg after 3-5 days, enough that a PCO2 of 80 leaves
+    // the pH near 7.30 instead of 7.17. The model reaches 2.5-3.5, falling short at the extremes
+    // because its acid-excretion feedback fades as the pH is restored.
+    for (const off of [20, 40, 60]) {
+      const r = per10(chronic(off));
+      expect(r).toBeGreaterThan(2.2);
+      expect(r).toBeLessThan(4.2);
+      expect(chronic(off).plasma.pH).toBeGreaterThan(acute(off).plasma.pH);
+    }
+  });
+
+  test('hypocapnia: cells first, then the kidney stops reclaiming bicarbonate', () => {
+    // Rose ch. 21: about 2 mmol/L per 10 mmHg acutely, 4 mmol/L per 10 mmHg once renal acid
+    // excretion has fallen, which is why chronic hypocapnia is so nearly pH-neutral.
+    for (const off of [-12, -20]) {
+      expect(per10(acute(off))).toBeGreaterThan(1.6);
+      expect(per10(acute(off))).toBeLessThan(3.2);
+      expect(per10(chronic(off))).toBeGreaterThan(3.5);
+      expect(chronic(off).plasma.pH).toBeLessThan(acute(off).plasma.pH);
+    }
+    // and it never produces the bicarbonate of 10 or less that marks a metabolic acidosis
+    expect(chronic(-24).plasma.HCO3).toBeGreaterThan(11);
   });
 });

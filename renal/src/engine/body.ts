@@ -48,7 +48,7 @@ export interface BodyState {
   ecfFraction: number;
   /** total body bicarbonate stores expressed as ECF [HCO3], mmol/L */
   hco3: number;
-  /** unmeasured organic anions (lactate, ketones, toxins), mmol/L of ECF */
+  /** retained organic anions (lactate, ketoacid anions, formate, glycolate), mEq/L of ECF */
   organicAnions: number;
   /** total body chloride, mmol */
   clE: number;
@@ -191,8 +191,12 @@ export function respiratoryPCO2(hco3Stored: number, p: Params) {
   return clamp(0.5 * (lo + hi), 8, 130);
 }
 
+/** Negative charge on albumin, mEq/L per g/dL — most of the normal anion gap (Rose ch. 19). */
+export const NORMAL_GAP_PER_ALBUMIN = 2.43;
+
 export interface PlasmaDerived extends Plasma {
   anionGap: number;
+  normalAnionGap: number;
   agCorrected: number;
   deltaRatio: number;
   osmolalGap: number;
@@ -218,11 +222,32 @@ export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
   // Total ECF includes any oedema; what supports the circulation is the rest of it.
   const ecf = ecfVolume(b, p.weightKg);
   const circulatingEcf = Math.max(ecf - b.edema, 0.3 * ecf);
-  const cl = clamp(b.clE / Math.max(ecf, 1), 60, 130);
-  const anionGap = na - cl - b.hco3;
   const albumin = clamp(p.albumin - 0.8 * clamp(p.proteinuria / 8, 0, 1), 1, 5.5);
+  // Plasma chloride. This model tracks chloride by mass balance — intake, gastrointestinal loss
+  // and what the kidney excretes — rather than deriving it from extracellular electroneutrality,
+  // because chloride has to be free to be a cause: it is the chloride, not the volume, that a
+  // chloride-depletion alkalosis needs back (Rose ch. 18). The price is that the model's plasma
+  // chloride is stiffer than a patient's. Where a retained acid has no anion of its own to leave
+  // behind — distal and type 4 renal tubular acidosis, an ammonium chloride load, diarrhoea — a
+  // real patient replaces the lost bicarbonate with chloride and keeps a normal anion gap; here
+  // chloride moves only part of the way, so the calculated gap runs several mEq/L high. The urine
+  // anion gap, which is the test the chapter actually teaches for these disorders, is reproduced.
+  //
+  // An organic anion that has accumulated occupies part of the extracellular
+  // anion space and displaces chloride from it charge for charge — the kidney and the cells make
+  // room for it. That displacement is what makes the anion gap rise by more than the bicarbonate
+  // falls in lactic acidosis, and it is why chloride comes back as a hyperchloraemic acidosis
+  // once the anions are cleared or metabolised (Rose ch. 19).
+  const cl = clamp(b.clE / Math.max(ecf, 1) - clamp(b.organicAnions, 0, 45), 60, 130);
+  // Computed on the reported plasma bicarbonate, as a laboratory would.
+  const anionGap = na - cl - hco3Plasma;
   const agCorrected = anionGap + 2.5 * (4 - albumin);
-  const deltaRatio = b.hco3 < 23 ? (agCorrected - 12) / Math.max(24 - b.hco3, 0.1) : 0;
+  // Rose ch. 19: the Δ anion gap / Δ bicarbonate ratio needs a baseline gap, and that baseline
+  // has to be adjusted downwards in hypoalbuminaemia — about 2.5 mEq/L for every 1 g/dL — or the
+  // rise in the gap is underestimated. Stating the normal gap as the albumin charge does both at
+  // once, and lands on this model's own normal gap of 9.7 at an albumin of 4.0 g/dL.
+  const normalAnionGap = clamp(NORMAL_GAP_PER_ALBUMIN * albumin, 2, 16);
+  const deltaRatio = hco3Plasma < 23 ? (anionGap - normalAnionGap) / Math.max(24 - hco3Plasma, 0.1) : 0;
   const calcOsm = 2 * na + glucose / 18 + b.bun / 2.8;
   const plasmaVolumeNormal = p.weightKg * 0.043;
   const oncoticHold = oncoticGradientRel(albumin);
@@ -248,6 +273,7 @@ export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
     effOsm,
     mannitol: 0,
     anionGap,
+    normalAnionGap,
     agCorrected,
     deltaRatio,
     osmolalGap: osm - calcOsm,

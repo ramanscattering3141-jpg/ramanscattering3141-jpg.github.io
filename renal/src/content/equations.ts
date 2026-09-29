@@ -690,7 +690,7 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'hco3deficit',
     name: 'Bicarbonate deficit (severe acidosis)',
-    formula: 'HCO₃⁻ deficit ≈ space × lean weight × (target − current HCO₃⁻); space 0.5 (HCO₃⁻ > 10) to 0.7+ (HCO₃⁻ < 10)',
+    formula: 'HCO₃⁻ deficit ≈ (0.4 + 2.6 ÷ [HCO₃⁻]) × lean weight × (target − current HCO₃⁻)',
     group: 'Acid–base',
     vars: [
       { key: 'wt', label: 'Lean weight', unit: 'kg', min: 30, max: 150, step: 1, value: 70 },
@@ -698,11 +698,17 @@ export const EQUATIONS: EquationDef[] = [
       { key: 'target', label: 'Target HCO₃⁻', unit: 'mmol/L', min: 8, max: 24, step: 1, value: 10 },
     ],
     compute: (v) => {
-      const space = v.hco3 < 10 ? 0.7 : 0.5;
-      return { value: space * v.wt * (v.target - v.hco3), unit: 'mmol', digits: 0, read: `Apparent space used: ${space} × body weight` };
+      const space = 0.4 + 2.6 / Math.max(v.hco3, 1);
+      return {
+        value: space * v.wt * (v.target - v.hco3),
+        unit: 'mmol',
+        digits: 0,
+        read: `Apparent space ${space.toFixed(2)} × body weight (${(space * v.wt).toFixed(0)} L)`,
+      };
     },
-    show: (v) => `${v.hco3 < 10 ? '0.7' : '0.5'} × ${f(v.wt)} × (${f(v.target)} − ${f(v.hco3, 1)})`,
-    explain: 'When bicarbonate is very low, cells and bone buffer almost all additional H⁺, so the apparent space in which administered bicarbonate distributes is large. Only a partial correction is aimed for.',
+    show: (v) => `(0.4 + 2.6 ÷ ${f(v.hco3, 1)}) × ${f(v.wt)} × (${f(v.target)} − ${f(v.hco3, 1)})`,
+    explain:
+      'The space bicarbonate distributes into is not the extracellular fluid. It is about 50% of lean body weight at a normal plasma bicarbonate and grows as the bicarbonate falls, because an ever greater share of the buffering is being done by cells and bone — above 70% of body weight below a bicarbonate of 8–10. Only a partial correction, to a pH of about 7.20, is aimed for.',
     chapters: [19, 30],
     route: '/metabolic-acidosis',
     cite: { rose: [19, 30], evidence: 'physiology' },
