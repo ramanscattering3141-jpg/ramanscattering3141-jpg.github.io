@@ -16,7 +16,7 @@ export const chapter: ChapterContent = {
       points: ['Normal [H⁺] ≈ 40 nmol/L; life spans 16–160', '[H⁺] = 24 × PCO₂ ÷ [HCO₃⁻]', 'From pH 7.40: ×0.8 per +0.10, ×1.25 per −0.10'],
       equation: 'hplus',
       cite: { rose: [17, 10, 11], evidence: 'physiology' },
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       heading: 'The four disorders, and why the bicarbonate alone tells you nothing',
@@ -33,7 +33,7 @@ export const chapter: ChapterContent = {
         'Never completely — which is what makes the residual measurable',
       ],
       cite: { rose: [17], evidence: 'physiology' },
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       heading: 'The expected compensations',
@@ -52,7 +52,7 @@ export const chapter: ChapterContent = {
       ],
       equation: 'winters',
       cite: { rose: [17], evidence: 'clinical' },
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       heading: 'Finding the second disorder',
@@ -69,7 +69,7 @@ export const chapter: ChapterContent = {
         'A difference is a second disorder',
       ],
       cite: { rose: [17, 19], evidence: 'clinical' },
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       heading: 'Potassium moves with acid–base, but not always',
@@ -96,7 +96,7 @@ export const chapter: ChapterContent = {
         'Most importantly, arterial values do not always reflect the tissues. In severe circulatory failure or cardiac arrest, pulmonary blood flow is low, so the blood that does reach the lungs is well cleared of CO₂ while venous return is slow. In one study, patients undergoing cardiopulmonary resuscitation with a mean arterial pH of 7.42 and PCO₂ of 32 had mixed venous values of 7.14 and 74. If the venous values are closer to the cellular truth, the arterial gas is actively misleading.',
       ],
       cite: { rose: [17], evidence: 'clinical' },
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
   ],
   numbers: [
@@ -128,11 +128,11 @@ export const chapter: ChapterContent = {
     'In cardiac arrest or severe shock, an arterial gas can look acceptable while the tissues are profoundly acidotic. Consider a mixed venous sample.',
   ],
   pathology: [
-    { name: 'Salicylate poisoning', broken: 'Respiratory centre stimulated and metabolism deranged', consequence: 'Respiratory alkalosis and metabolic acidosis together; bicarbonate far below the predicted compensation', route: '/mixed-disorders' },
-    { name: 'COPD on a diuretic', broken: 'Ventilation, plus chloride and potassium depletion', consequence: 'Respiratory acidosis with metabolic alkalosis — pH can be normal', route: '/mixed-disorders' },
-    { name: 'Shock with sepsis', broken: 'Tissue perfusion and the respiratory centre', consequence: 'Lactic acidosis with respiratory alkalosis', route: '/mixed-disorders' },
-    { name: 'Cardiac arrest', broken: 'Pulmonary blood flow', consequence: 'Arterial gas near normal while mixed venous pH is 7.14 — the arterial sample misleads', route: '/mixed-disorders' },
-    { name: 'Vomiting with renal failure', broken: 'Acid loss and acid excretion together', consequence: 'Metabolic alkalosis and metabolic acidosis — bicarbonate may be normal, the anion gap is not', route: '/mixed-disorders' },
+    { name: 'Salicylate poisoning', broken: 'Respiratory centre stimulated and metabolism deranged', consequence: 'Respiratory alkalosis and metabolic acidosis together; bicarbonate far below the predicted compensation', route: '/mixed' },
+    { name: 'COPD on a diuretic', broken: 'Ventilation, plus chloride and potassium depletion', consequence: 'Respiratory acidosis with metabolic alkalosis — pH can be normal', route: '/mixed' },
+    { name: 'Shock with sepsis', broken: 'Tissue perfusion and the respiratory centre', consequence: 'Lactic acidosis with respiratory alkalosis', route: '/mixed' },
+    { name: 'Cardiac arrest', broken: 'Pulmonary blood flow', consequence: 'Arterial gas near normal while mixed venous pH is 7.14 — the arterial sample misleads', route: '/mixed' },
+    { name: 'Vomiting with renal failure', broken: 'Acid loss and acid excretion together', consequence: 'Metabolic alkalosis and metabolic acidosis — bicarbonate may be normal, the anion gap is not', route: '/mixed' },
     { name: 'Hypoaldosteronism', broken: 'Aldosterone, hence K⁺ and H⁺ secretion', consequence: 'Hyperkalaemia with a mild metabolic acidosis, largely caused by the hyperkalaemia', route: '/rta' },
   ],
   questions: [
@@ -142,7 +142,7 @@ export const chapter: ChapterContent = {
       answer: 1,
       explanation:
         'The high pH must come from the low PCO₂, so the primary disorder is respiratory alkalosis. Acutely a fall of 20 mmHg should drop the bicarbonate by 4, to 20. It is 13, so something else is consuming bicarbonate. This is the classical salicylate pattern.',
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       q: 'pH 7.40, PCO₂ 60 mmHg, HCO₃⁻ 37 mmol/L. A normal pH — is anything wrong?',
@@ -150,7 +150,7 @@ export const chapter: ChapterContent = {
       answer: 1,
       explanation:
         'Compensation returns the pH towards normal but rarely to it. A normal pH with a PCO₂ of 60 and a bicarbonate of 37 means two disorders pulling in opposite directions — classically a diuretic given to someone with chronic lung disease.',
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       q: 'A patient’s bicarbonate has fallen to 8 mmol/L and the PCO₂ is 40 mmHg. Comment.',
@@ -158,7 +158,7 @@ export const chapter: ChapterContent = {
       answer: 1,
       explanation:
         'A 16 mmol/L fall in bicarbonate should lower the PCO₂ by about 19 mmHg, to 21. Staying at 40 makes the acidaemia far worse than the bicarbonate alone predicts. A normal-looking number is not a normal finding.',
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       q: 'A PCO₂ of 60 mmHg is found in two patients. In one the bicarbonate is 26, in the other 45. What does the difference tell you?',
@@ -183,7 +183,7 @@ export const chapter: ChapterContent = {
       ],
       answer: 1,
       explanation: 'The compensation always moves in the same direction as the primary change, so the bicarbonate alone cannot say which is which.',
-      route: '/mixed-disorders',
+      route: '/mixed',
     },
     {
       q: 'A patient in metabolic acidosis has a plasma potassium of 4.0 mmol/L. What happens when the acidaemia is corrected?',
@@ -206,5 +206,5 @@ export const chapter: ChapterContent = {
       cite: { rose: [17, 19], evidence: 'clinical', update: 'Not in the chapter; now standard practice.' },
     },
   ],
-  modules: ['/mixed-disorders', '/acid-base', '/bicarbonate', '/respiratory'],
+  modules: ['/mixed', '/acid-base', '/bicarbonate', '/respiratory'],
 };
