@@ -63,6 +63,9 @@ export interface GraphNode {
   cite?: Citation;
 }
 
+/** A citation on an edge inherits the edge's evidence grade. */
+export type EdgeCitation = Omit<Citation, 'evidence'> & { evidence?: Evidence };
+
 export interface GraphEdge {
   from: string;
   to: string;
@@ -71,7 +74,7 @@ export interface GraphEdge {
   /** the mechanism, in one clause: reads as "<from> ... <to>" */
   mechanism: string;
   evidence: Evidence;
-  cite?: Citation;
+  cite?: EdgeCitation;
 }
 
 export const NODES: GraphNode[] = [
