@@ -77,7 +77,8 @@ function sideResult(
   // A stenosis drops the pressure delivered to the glomeruli; flow-dependent so we use a
   // fixed-point on the resulting RBF.
   const stenosisDropHere = MAP * 0.62 * Math.pow(clamp(stenosis, 0, 0.95), 2.2);
-  const { Ra, Re } = arteriolarTone(p, h, Math.max(15, MAP - stenosisDropHere), mdSignal);
+  const servo = (x: number) => (p.renalPressureClamp > 0 ? Math.min(x, p.renalPressureClamp) : x);
+  const { Ra, Re } = arteriolarTone(p, h, servo(Math.max(15, MAP - stenosisDropHere)), mdSignal);
   const nephrons = clamp(share, 0.01, 1);
   // Remnant-nephron adaptation: surviving nephrons hyperfiltrate through afferent dilation
   // (Brenner 1982, Hostetter 1981). Single-nephron GFR rises, so whole-kidney GFR falls less
@@ -99,7 +100,7 @@ function sideResult(
   const PbsFlow = 6 / (130 * nephrons);
   const chronicLoss = p.obstructionChronic ? 1 - 0.45 * obstruction : 1;
   const stenosisDrop = MAP * 0.62 * Math.pow(clamp(stenosis, 0, 0.95), 2.2);
-  const Pa = Math.max(15, MAP - stenosisDrop);
+  const Pa = servo(Math.max(15, MAP - stenosisDrop));
 
   const g = solveGlomerulus({
     Pa,

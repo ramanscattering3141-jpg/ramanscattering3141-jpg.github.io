@@ -861,7 +861,10 @@ describe('the model is in balance and stays there', () => {
     // Serum sodium is defended by water balance; it is the volume that changes.
     expect(last.Na).toBeGreaterThan(137);
     expect(last.Na).toBeLessThan(143);
-    expect(last.ecf).toBeGreaterThan(points[0].ecf + 2);
+    // Rose ch. 8: a modest, self-limited expansion is the persistent signal that keeps excretion
+    // matched to the higher intake — neither none nor a runaway.
+    expect(last.ecf).toBeGreaterThan(points[0].ecf + 0.5);
+    expect(last.ecf).toBeLessThan(points[0].ecf + 4);
     // Sodium balance is restored: output has caught up with the higher intake.
     const fin = evaluate(state.body, applyPatch(DEFAULT_PARAMS, { naIntake: 350 }));
     expect(fin.balance.naOut).toBeGreaterThan(fin.balance.naIn * 0.85);
@@ -894,7 +897,66 @@ describe('the model is in balance and stays there', () => {
     // Before it gets there it behaves like heart failure: avid sodium retention and oedema.
     const mid = points[Math.floor(points.length / 2)];
     expect(mid.edema).toBeGreaterThan(0.5);
-    expect(mid.aldo).toBeGreaterThan(points[0].aldo * 0.8);
+    // Aldosterone falls from its acute peak as fluid is retained, but stays far above normal (1).
+    expect(mid.aldo).toBeGreaterThan(2);
     expect(mid.Na).toBeLessThan(points[0].Na);
+  });
+});
+
+describe('volume regulation and the independence of Na+ and K+ (Rose ch. 6, 8)', () => {
+  const steadyAt = (patch: ParamPatch) => runToSteadyState(applyPatch(DEFAULT_PARAMS, patch), 60).ev;
+  const low = steadyAt({ naIntake: 20 });
+  const mid = steadyAt({});
+  const high = steadyAt({ naIntake: 400 });
+
+  test('changing Na+ intake alone leaves plasma K+ essentially unchanged (Table 6-3)', () => {
+    expect(Math.abs(low.plasma.K - mid.plasma.K)).toBeLessThan(0.3);
+    expect(Math.abs(high.plasma.K - mid.plasma.K)).toBeLessThan(0.3);
+  });
+
+  test('a low-salt diet is met by a modest volume contraction and a rise in aldosterone', () => {
+    const drop = mid.derived.ecfLiters - low.derived.ecfLiters;
+    expect(drop).toBeGreaterThan(0.8);
+    expect(drop).toBeLessThan(3);
+    expect(low.reg.hormones.aldo).toBeGreaterThan(2 * mid.reg.hormones.aldo);
+    expect(low.kidney.urine.exc.Na).toBeLessThan(20);
+    expect(low.body.hco3).toBeGreaterThan(22);
+  });
+
+  test('a 20-fold range of salt intake barely moves blood pressure when the RAAS can adjust', () => {
+    expect(Math.abs(high.reg.MAP - low.reg.MAP)).toBeLessThan(6);
+    expect(high.derived.ecfLiters).toBeGreaterThan(mid.derived.ecfLiters);
+    expect(high.derived.edemaLiters).toBeLessThan(0.1);
+    expect(high.reg.hormones.renin).toBeLessThan(mid.reg.hormones.renin);
+  });
+
+  test('primary aldosteronism: hypertension, hypokalaemia, suppressed renin, no oedema', () => {
+    const pa = steadyAt({ aldoAutonomous: 3 });
+    expect(pa.reg.MAP).toBeGreaterThan(mid.reg.MAP + 5);
+    expect(pa.plasma.K).toBeLessThan(3.6);
+    expect(pa.reg.hormones.renin).toBeLessThan(0.5 * mid.reg.hormones.renin);
+    expect(pa.derived.edemaLiters).toBeLessThan(0.3);
+    expect(pa.derived.ecfLiters - mid.derived.ecfLiters).toBeLessThan(4.5);
+  });
+
+  test('escape needs pressure natriuresis: clamping renal perfusion pressure prevents it (Hall 1984)', () => {
+    const free = steadyAt({ aldoAutonomous: 3 });
+    const clamped = steadyAt({ aldoAutonomous: 3, renalPressureClamp: 92 });
+    expect(clamped.derived.ecfLiters).toBeGreaterThan(free.derived.ecfLiters + 3);
+    expect(clamped.reg.MAP).toBeGreaterThan(free.reg.MAP + 10);
+  });
+
+  test('K+ loading and K+ restriction move plasma K+ in the expected direction without extremes', () => {
+    const kLoad = steadyAt({ kIntake: 200 });
+    const kLow = steadyAt({ kIntake: 20 });
+    expect(kLoad.plasma.K).toBeGreaterThan(mid.plasma.K);
+    expect(kLoad.plasma.K).toBeLessThan(5.3);
+    expect(kLoad.reg.hormones.aldo).toBeGreaterThan(mid.reg.hormones.aldo);
+    expect(kLow.plasma.K).toBeLessThan(mid.plasma.K);
+    expect(kLow.plasma.K).toBeGreaterThan(2.5);
+  });
+
+  test('most urinary K+ comes from regulated distal secretion', () => {
+    expect(mid.kidney.kSecretion * 1440).toBeGreaterThan(0.5 * mid.kidney.urine.exc.K);
   });
 });

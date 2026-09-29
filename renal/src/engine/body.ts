@@ -42,8 +42,10 @@ export const EDELMAN_INTERCEPT = -25.6;
 
 /** Normal starting state for a 70 kg adult. */
 export function initialBody(p: Params): BodyState {
-  const tbw = p.weightKg * (p.female ? 0.5 : 0.6);
-  const naE = 44 * p.weightKg; // exchangeable Na, mmol
+  // Exchangeable Na+ and total body water are set to the point at which the model is in balance
+  // on a 150 mmol/day diet, with the plasma Na+ (their ratio, via Edelman) unchanged.
+  const naE = 43.4 * p.weightKg; // exchangeable Na, mmol
+  const tbw = p.weightKg * (p.female ? 0.5 : 0.6) * 0.9933;
   const kE = 45 * p.weightKg;
   return {
     naE,

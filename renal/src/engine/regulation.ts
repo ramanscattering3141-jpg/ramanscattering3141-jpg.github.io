@@ -50,7 +50,7 @@ export function cardiacOutput(cardiacFunction: number, cbv: number) {
   // Below normal filling the curve is steep (stroke volume falls almost in proportion to
   // venous return); above it the curve flattens, which is why a failing heart gains little from
   // further volume expansion.
-  const filling = cbv >= 1 ? (1.4 * cbv) / (0.4 + cbv) : Math.pow(Math.max(cbv, 0.05), 0.9);
+  const filling = cbv >= 1 ? 1 + (0.9 * (cbv - 1)) / (1 + 1.5 * (cbv - 1)) : Math.pow(Math.max(cbv, 0.05), 0.9);
   return clamp(cardiacFunction * filling, 0.05, 2);
 }
 
@@ -58,7 +58,7 @@ export function cardiacOutput(cardiacFunction: number, cbv: number) {
 export function reninRelease(p: Params, pressure: number, md: number, sns: number, at1: number, anp: number) {
   const nsaid = p.drugs.nsaid;
   const baro = Math.pow(curves.expo(-9, 1, 0.1, 20)(pressure / MAP_REF), 1 - 0.4 * nsaid);
-  const macula = Math.pow(curves.expo(-2.8, 1, 0.15, 10)(md), 1 - 0.6 * nsaid);
+  const macula = Math.pow(curves.expo(-3.6, 1, 0.15, 10)(md), 1 - 0.6 * nsaid);
   const beta1 = (0.4 + 0.6 * Math.pow(sns, 0.8)) * (1 - 0.5 * p.drugs.betaBlocker);
   const feedback = Math.pow(Math.max(at1, 0.05), -0.25);
   return baro * macula * beta1 * feedback * Math.pow(anp, -0.2);
@@ -83,9 +83,15 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     // is largely buffered by the baroreflex, so even the very high levels of severe hypovolaemia
     // raise systemic resistance only modestly (Rose ch. 9).
     const v1 = 1 + 0.1 * (1 - Math.exp(-Math.max(0, adh - 4) / 12));
+    // Whole-body autoregulation (Guyton): when volume expansion raises the cardiac output above
+    // what the tissues need, their arterioles constrict, so a sustained rise in output becomes a
+    // rise in resistance and pressure. This is the arm that makes pressure natriuresis the
+    // final defence of the extracellular volume (Rose ch. 8).
+    const tissueAutoregulation = CO > 1 ? Math.pow(CO, 1.6) : 1;
     const SVR =
       Math.pow(at1, 0.12) *
       Math.pow(sns, 0.22) *
+      tissueAutoregulation *
       (1 - p.vasodilation) *
       (1 - 0.12 * d.ccb) *
       v1 *
@@ -97,27 +103,42 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     // Arterial baroreceptors plus the low-pressure cardiopulmonary receptors, which sense central
     // blood volume: sympathetic outflow to the kidney rises with volume depletion even before the
     // arterial pressure falls (Rose ch. 8).
-    const cardiopulmonary = cbv < 1 ? Math.exp(-2.5 * (cbv - 1)) : Math.exp(-0.8 * (cbv - 1));
-    const snsNew = clamp(Math.exp(-3.2 * (eabv - 1)) * cardiopulmonary, 0.4, 6) * p.snsOverride;
+    // Arterial baroreceptors reset within days when pressure stays high, so sustained
+    // hypertension suppresses sympathetic outflow only a little; hypotension, by contrast,
+    // drives it hard (Rose ch. 8).
+    const cardiopulmonary = cbv < 1 ? Math.exp(-2.5 * (cbv - 1)) : Math.exp(-0.5 * (cbv - 1));
+    const arterial = eabv < 1 ? Math.exp(-3.2 * (eabv - 1)) : Math.exp(-1.0 * (eabv - 1));
+    const snsNew = clamp(arterial * cardiopulmonary, 0.4, 6) * p.snsOverride;
     sns = 0.5 * sns + 0.5 * snsNew;
 
     // Renin–angiotensin–aldosterone
-    const pL = Math.max(10, MAP - inp.stenosisDrop[0]);
-    const pR = Math.max(10, MAP - inp.stenosisDrop[1]);
+    const servo = (x: number) => (p.renalPressureClamp > 0 ? Math.min(x, p.renalPressureClamp) : x);
+    const pL = servo(Math.max(10, MAP - inp.stenosisDrop[0]));
+    const pR = servo(Math.max(10, MAP - inp.stenosisDrop[1]));
     const rL = reninRelease(p, pL, inp.mdSignal, sns, at1, anp);
     const rR = reninRelease(p, pR, inp.mdSignal, sns, at1, anp);
     const renin = Math.max(p.reninAutonomous, 0.5 * (rL + rR));
     const pra = renin * (1 - 0.9 * d.aliskiren);
     const angI = pra;
-    const angII = angI * (0.97 * (1 - 0.9 * d.acei) + 0.03);
+    // Chronic ACE inhibition is incomplete: chymase and other non-ACE pathways keep generating
+    // some angiotensin II (the basis of "aldosterone breakthrough"), so AII falls by roughly
+    // three-quarters rather than completely.
+    const angII = angI * (0.97 * (1 - 0.78 * d.acei) + 0.03);
     const at1New = angII * (1 - 0.9 * d.arb);
     at1 = 0.5 * at1 + 0.5 * at1New;
-    const aldoDriven = Math.pow(Math.max(at1, 0.02), 1.15) * clamp(Math.exp(0.8 * (inp.K - 4.2)), 0.25, 8) * Math.pow(anp, -0.2);
+    // Sustained angiotensin II also induces aldosterone synthase in the zona glomerulosa (about
+    // ten-fold with chronic sodium restriction, Rose ch. 6), so the adrenal response to AII is
+    // steeper than linear. This is what lets a low-salt diet raise aldosterone enough to
+    // conserve Na+ without first having to raise the plasma K+ (Table 6-3).
+    const aldoDriven = Math.pow(Math.max(at1, 0.02), 1.6) * clamp(Math.exp(0.8 * (inp.K - 4.2)), 0.25, 8) * Math.pow(anp, -0.2);
     const aldo = p.aldoSynthesis * Math.max(p.aldoAutonomous, aldoDriven);
     const mr = aldo * (1 - 0.9 * d.spironolactone) + d.fludrocortisone + 3 * p.cortisolMR;
 
     // Vasopressin: osmotic control with nonosmotic (baroreceptor) potentiation (Rose ch. 9)
-    const volSignal = Math.min(eabv, Math.sqrt(cbv));
+    // The volume stimulus to ADH is insensitive: small losses that already raise renin and
+    // noradrenaline barely change it, and it becomes powerful once arterial pressure falls
+    // (Rose ch. 6, 9). The cardiopulmonary (low-pressure) input is therefore weighted weakly.
+    const volSignal = Math.min(eabv, Math.pow(cbv, 0.3));
     const deficit = Math.max(0, 0.95 - volSignal);
     const threshold = 280 + p.osmostatShift - 25 * deficit;
     const slope = 0.38 * (1 + 3 * (deficit / 0.1));
@@ -129,7 +150,9 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
 
     // Collecting-duct V2 signalling -> aquaporin-2 insertion
     const v2Stim = adh + d.desmopressin;
-    const kFactor = inp.K < 3.2 ? clamp(0.55 + 0.45 * (inp.K - 2.2), 0.4, 1) : 1;
+    // Hypokalaemia down-regulates aquaporin-2: a modest, reversible concentrating defect
+    // (maximal urine osmolality falls toward ~300–500), not complete diabetes insipidus.
+    const kFactor = inp.K < 3.2 ? clamp(0.75 + 0.25 * (inp.K - 2.2), 0.6, 1) : 1;
     const caFactor = inp.ionizedCa > 1.4 ? clamp(1 - 1.2 * (inp.ionizedCa - 1.4), 0.4, 1) : 1;
     const aqp2 =
       p.transporters.AQP2 *

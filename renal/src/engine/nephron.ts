@@ -137,9 +137,17 @@ export function runNephron(inp: NephronInput): NephronResult {
 
   // Proximal Na: Na-H exchange (angiotensin II, sympathetic) + cotransport with glucose/AA/Pi +
   // paracellular NaCl driven by the lumen-negative-to-positive Cl gradient.
+  // Angiotensin II and renal nerves stimulate proximal NHE3 when they rise above normal, which is
+  // a major part of Na+ retention in volume depletion. Suppressing them below normal does much
+  // less: with renal perfusion pressure held constant, aldosterone escape fails even though
+  // renin is suppressed (Hall 1984; Rose Fig. 8-9) — the escape is carried by pressure natriuresis.
+  const lnAt1 = Math.log(Math.max(h.at1, 0.05));
+  const lnSns = Math.log(Math.max(h.sns, 0.1));
+  const at1Pt = lnAt1 > 0 ? 0.17 * lnAt1 : 0.04 * lnAt1;
+  const snsPt = lnSns > 0 ? 0.08 * lnSns : 0.02 * lnSns;
   const nheActivity =
     t.NHE3 *
-    clamp(1 + 0.17 * Math.log(Math.max(h.at1, 0.05)) + 0.08 * Math.log(Math.max(h.sns, 0.1)), 0.45, 1.5) *
+    clamp(1 + at1Pt + snsPt, 0.45, 1.5) *
     (1 - 0.75 * d.acetazolamide) *
     (1 - 0.6 * injury);
   const caActivity = t.CA * (1 - 0.9 * d.acetazolamide);
@@ -167,7 +175,7 @@ export function runNephron(inp: NephronInput): NephronResult {
       ptOsmoticBrake *
       pressureNatriuresis *
       (1 - 0.18 * injury) *
-      (1 + 0.06 * Math.log(Math.max(h.at1, 0.05))) *
+      (1 + (lnAt1 > 0 ? 0.06 : 0.015) * lnAt1) *
       Math.pow(t.NaKATPase, 0.5),
     0.15,
     0.82,
@@ -238,8 +246,13 @@ export function runNephron(inp: NephronInput): NephronResult {
 
   const loopLoadFactor = clamp(ptOut.water / (gfr * (1 - PT_BASE)), 0.3, 3);
   // Flow dependence: the loop reabsorbs a roughly constant fraction of what it receives.
+  // Pressure natriuresis also acts in the loop: a higher renal perfusion pressure is transmitted
+  // through the vasa recta to the medullary interstitium, which pushes fluid back into the
+  // descending limb and blunts the rise in luminal NaCl that drives passive thin-limb NaCl
+  // exit (Rose ch. 8). A fall in pressure does the reverse.
+  const loopPressure = clamp(1 - 0.9 * (inp.perfusionPressure / 93 - 1), 0.7, 1.15);
   const loopNaFraction = clamp(
-    0.75 * nkcc * (1 + 0.05 * Math.log(loopLoadFactor)) * clamp(1 + 0.07 * Math.log(Math.max(h.at1, 0.05)), 0.85, 1.2),
+    0.75 * nkcc * loopPressure * (1 + 0.05 * Math.log(loopLoadFactor)) * clamp(1 + 0.07 * Math.log(Math.max(h.at1, 0.05)), 0.85, 1.2),
     0.05,
     0.92,
   );
@@ -305,7 +318,7 @@ export function runNephron(inp: NephronInput): NephronResult {
     // transport is ~1:1 NaCl), and by an absolute transport capacity. The capacity limit is what
     // makes a high delivered load raise distal delivery instead of being fully reclaimed.
     const talNaWanted = atlOut.Na * clamp(loopNaFraction * 1.05, 0.02, 0.92);
-    const talCapacity = 5.2 * clamp(inp.nephronFraction, 0.05, 1) * clamp(nkcc, 0, 1.6);
+    const talCapacity = 5.2 * clamp(inp.nephronFraction, 0.05, 1) * clamp(nkcc, 0, 1.6) * loopPressure;
     const talNaReab = Math.min(talNaWanted, atlOut.Cl * 0.93, talCapacity);
     talVoltage = clamp(nkcc * Math.pow(clamp(t.ROMK, 0.05, 2), 0.5), 0, 1.6);
     const caReabTAL = atlOut.Ca * clamp(0.68 * talVoltage * t.claudin16 * clamp(1 - 0.35 * (t.CaSR - 1), 0.4, 1.2), 0, 0.85);
@@ -313,7 +326,10 @@ export function runNephron(inp: NephronInput): NephronResult {
     // TAL also reabsorbs HCO3 (Na-H exchange) and NH4 on NKCC2 (the medullary recycling step).
     const hco3ReabTAL = atlOut.HCO3 * clamp(0.4 * nheActivity, 0, 0.7);
     const nh4ReabTAL = atlOut.NH4 * clamp(0.6 * nkcc, 0, 0.8);
-    const kReabTAL = atlOut.K * clamp(0.75 * nkcc, 0, 0.88);
+    // Most filtered K+ is gone by the end of the loop; what is excreted is chiefly what the
+    // connecting tubule and collecting duct then secrete, which is why K+ excretion is regulated
+    // there (Rose ch. 12).
+    const kReabTAL = atlOut.K * clamp(0.88 * nkcc, 0, 0.94);
     talOut = { ...atlOut };
     talOut.Na = atlOut.Na - talNaReab;
     talOut.Cl = Math.max(0, atlOut.Cl - talNaReab - kReabTAL * 0.5);
@@ -398,6 +414,11 @@ interface DistalResult {
   TA: number;
 }
 
+/** Calibrates distal K+ secretion so that plasma K+ sits near 4.2 mmol/L on a normal diet. */
+const KSEC_GAIN = 0.026;
+/** Share of principal-cell K+ secretion in the connecting tubule; the rest is in the CCD. */
+const CNT_K_SHARE = 0.6;
+
 /** Distal convoluted tubule -> connecting tubule -> collecting duct. */
 function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaTarget: number): DistalResult {
   const p = inp.params;
@@ -453,7 +474,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const anpBrake = clamp(Math.pow(Math.max(h.anp, 0.1), -0.55), 0.3, 2);
   const enac =
     t.ENaC *
-    clamp(Math.pow(Math.max(mr, 0.02), 0.45), 0.15, 3) *
+    clamp(Math.pow(Math.max(mr, 0.02), 0.7), 0.1, 4) *
     anpBrake *
     (1 - 0.78 * d.amiloride) *
     (1 - 0.55 * d.trimethoprim) *
@@ -477,9 +498,14 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const voltage = clamp(cntNaReab * (1.3 - 0.3 * clFollow), 0, 3.2);
 
   // K secretion: voltage x luminal flow x apical K channels (ROMK constitutive, BK flow-activated)
-  const kChannels = clamp(t.ROMK * Math.pow(Math.max(mr, 0.02), 0.3) + 0.5 * t.BK * clamp(flow / 6, 0, 3.5), 0, 7);
+  // Aldosterone and distal flow act in opposite directions in volume depletion (aldosterone up,
+  // flow down) and in volume expansion (aldosterone down, flow up), so K+ excretion stays roughly
+  // constant when only Na+ intake changes (Rose ch. 6, Table 6-3; ch. 12). Neither dependence
+  // may therefore dominate the other.
+  const flowRel = Math.max(flow, 0.1) / 6;
+  const kChannels = clamp(t.ROMK * Math.pow(Math.max(mr, 0.02), 0.6) + 0.35 * t.BK * clamp(Math.pow(flowRel, 0.8), 0, 3), 0, 7);
   const kSecretion = clamp(
-    0.0032 * kChannels * (0.4 + 0.9 * voltage) * clamp(flow / 6, 0.15, 4) * clamp(1 + 0.9 * (pl.K - 4.2), 0.12, 3.5) * (pl.pH > 7.45 ? 1.2 : pl.pH < 7.3 ? 0.8 : 1),
+    KSEC_GAIN * kChannels * (0.4 + 0.9 * voltage) * clamp(Math.pow(flowRel, 0.55), 0.25, 2.5) * (pl.K >= 4.2 ? clamp(1 + 0.9 * (pl.K - 4.2), 1, 3.5) : Math.max(0.02, Math.pow(pl.K / 4.2, 5))) /* K+ depletion withdraws ROMK and lowers cell K+ */ * (pl.pH > 7.45 ? 1.2 : pl.pH < 7.3 ? 0.8 : 1),
     0,
     2.5,
   );
@@ -499,7 +525,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
 
   const cntOut = { ...dctOut };
   cntOut.Na = dctOut.Na - cntNaReab;
-  cntOut.K = Math.max(0, dctOut.K + kSecretion - kReabIntercalated);
+  cntOut.K = Math.max(0, dctOut.K + CNT_K_SHARE * kSecretion - kReabIntercalated);
   cntOut.Cl = clAfter(dctOut.Cl, cntNaReab, 0.75, cntOut.Na + cntOut.K + cntOut.NH4);
 
   // --- Water: ADH-dependent AQP2 in CNT/CCD/OMCD/IMCD equilibrates fluid with the
@@ -519,6 +545,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const ccdOut = { ...ccdIn };
   const ccdNaReab = takeDistal(ccdIn.Na * enacFrac(0.25));
   ccdOut.Na = ccdIn.Na - ccdNaReab;
+  ccdOut.K = ccdIn.K + (1 - CNT_K_SHARE) * kSecretion;
   ccdOut.Cl = clAfter(ccdIn.Cl, ccdNaReab, 0.8, ccdOut.Na + ccdOut.K + ccdOut.NH4);
   ccdOut.water = equilibrate(ccdIn, 290, perm * 0.95);
 
@@ -531,10 +558,15 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
     (0.55 + 0.45 * voltage) *
     (1 - 0.4 * injury) *
     clamp(1 + 0.15 * (4.2 - pl.K), 0.7, 1.5);
-  const alkalotic = pl.HCO3 > 26 || pl.pH > 7.45;
-  const pendrinSecretion = alkalotic
-    ? clamp(0.02 * t.pendrin * (pl.HCO3 - 25) * clamp(ccdOut.Cl / Math.max(ccdOut.water / 1000 * 30, 1e-6), 0.2, 2), 0, 0.6)
-    : 0;
+  // Type B intercalated cells secrete HCO3- (pendrin, in exchange for luminal Cl-) as plasma
+  // HCO3- rises. The response is graded, not a switch, and it needs luminal Cl- to exchange
+  // against: in chloride depletion it fails, which is one reason vomiting maintains alkalosis.
+  const hco3Excess = Math.log1p(Math.exp((pl.HCO3 - 26) / 1.2)) * 1.2;
+  const pendrinSecretion = clamp(
+    0.02 * t.pendrin * hco3Excess * clamp(ccdOut.Cl / Math.max((ccdOut.water / 1000) * 30, 1e-6), 0.2, 2),
+    0,
+    0.6,
+  );
 
   const omcdIn = { ...ccdOut };
   const omcdOut = { ...omcdIn };

@@ -307,7 +307,10 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   // Water: intake minus renal + extrarenal losses; thirst defends tonicity when intact.
   let waterIn = ev.balance.waterIn;
   if (p.thirstIntact) {
-    const thirstDrive = clamp((ev.plasma.effOsm - 288) / 5, 0, 3) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2);
+    // Thirst rises steeply above its threshold and, with access to water, can match almost any
+    // loss — which is why hypernatraemia is uncommon unless thirst or access is impaired
+    // (Rose ch. 7, 24).
+    const thirstDrive = clamp((ev.plasma.effOsm - 288) / 4, 0, 12) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2);
     waterIn += thirstDrive * 1.2;
   }
   const tbwWanted = b.tbw + (waterIn - ev.balance.waterOut) * dt;
@@ -325,17 +328,23 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
     outOfRange = 'Water losses outstrip intake: total body water has fallen to the limit of what the model can represent.';
   }
 
-  // Oedema: ECF expansion beyond ~3 L above normal, or altered Starling forces, moves fluid
-  // into the interstitium instead of the plasma (Rose ch. 16).
+  // Oedema (Rose ch. 7, 16): with normal Starling forces the safety factors — lymph flow, a
+  // falling interstitial oncotic pressure and a rising interstitial hydraulic pressure — absorb
+  // the first ~3 L of extracellular expansion, which stays part of the circulating ECF and so
+  // keeps signalling the volume sensors. Raised venous pressure (heart failure), portal
+  // hypertension, leaky capillaries or hypoalbuminaemia erode that margin and send more of any
+  // excess into the interstitium, where it no longer supports the circulation.
   const ecfNormal = p.weightKg * (p.female ? 0.5 : 0.6) / 3;
   const ecfNow = ecfVolume(b, p.weightKg);
   const excessEcf = Math.max(0, ecfNow - ecfNormal);
-  const leakTendency = clamp(
-    0.35 + 0.5 * clamp(1 - p.cardiacFunction, 0, 1) + 0.4 * p.portalHypertension + 0.5 * p.capillaryLeak + 0.4 * clamp((3.5 - p.albumin) / 2, 0, 1) + 0.02 * p.venousCongestion,
+  const starlingStress = clamp(
+    0.6 * clamp(1 - p.cardiacFunction, 0, 1) + 0.5 * p.portalHypertension + 0.6 * p.capillaryLeak + 0.45 * clamp((3.5 - p.albumin) / 2, 0, 1) + 0.025 * p.venousCongestion,
     0,
     0.95,
   );
-  b.edema = clamp(excessEcf * leakTendency, 0, 40);
+  const safetyMargin = 3 * (1 - starlingStress);
+  const leakTendency = clamp(0.45 + starlingStress, 0.45, 0.95);
+  b.edema = clamp(Math.max(0, excessEcf - safetyMargin) * leakTendency, 0, 40);
 
   // Acid-base: net acid balance changes the bicarbonate pool (ECF + cell buffering).
   // Bone is a large, slowly exchangeable alkali reservoir: in chronic acidosis it releases

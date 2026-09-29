@@ -141,6 +141,8 @@ export interface Params {
   obstructionL: number; // 0..1
   obstructionR: number;
   obstructionChronic: boolean;
+  /** mmHg; 0 = off. A servo-controlled aortic occluder that stops renal perfusion pressure rising above this (Hall 1984; Rose Fig. 8-9) */
+  renalPressureClamp: number;
   tubularInjury: number; // 0..1 (ATN)
   kfFactor: number; // glomerular surface area / permeability (GN < 1)
   proteinuria: number; // g/day
@@ -267,6 +269,7 @@ export const DEFAULT_PARAMS: Params = {
   myogenic: 1,
   tgf: 1,
   distalAdaptation: 1,
+  renalPressureClamp: 0,
   transporters: { ...DEFAULT_TRANSPORTERS },
   drugs: { ...DEFAULT_DRUGS },
 };
