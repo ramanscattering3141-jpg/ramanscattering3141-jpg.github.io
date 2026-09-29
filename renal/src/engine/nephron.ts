@@ -80,7 +80,7 @@ export interface NephronResult {
 }
 
 const PT_BASE = 0.63; // reference fractional proximal reabsorption before modulation
-const MD_REF = 0.575; // normal macula densa NaCl uptake signal (dimensionless)
+const MD_REF = 0.609; // normal macula densa NaCl uptake signal (dimensionless)
 const MD_DELIVERY_REF = 1.09; // mmol/min of Cl delivered past the macula densa when normal
 
 export function runNephron(inp: NephronInput): NephronResult {
@@ -441,9 +441,17 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // --- CNT + CCD principal cells: ENaC-mediated Na entry creates the lumen-negative voltage
   //     that drives K secretion (ROMK/BK) and favours H+ secretion.
   const mr = h.mr;
+  // Atrial natriuretic peptide is released when the atria are stretched and acts through cGMP
+  // to close the cyclic-nucleotide-gated sodium channel and inhibit ENaC, mainly in the inner
+  // medullary collecting duct. This is the limb of volume control that acts on the tubule
+  // rather than on the vasculature, and it is why sodium excretion keeps rising as the
+  // extracellular volume expands even once aldosterone is already fully suppressed - the same
+  // mechanism that produces aldosterone escape (Rose ch. 8).
+  const anpBrake = clamp(Math.pow(Math.max(h.anp, 0.1), -0.55), 0.3, 2);
   const enac =
     t.ENaC *
     clamp(Math.pow(Math.max(mr, 0.02), 0.45), 0.15, 3) *
+    anpBrake *
     (1 - 0.78 * d.amiloride) *
     (1 - 0.55 * d.trimethoprim) *
     (1 - 0.35 * injury) *
@@ -460,7 +468,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
     distalBudget -= taken;
     return taken;
   };
-  const cntNaReab = takeDistal(naAvail * enacFrac(1.05));
+  const cntNaReab = takeDistal(naAvail * enacFrac(0.465));
   // Voltage depends on Na entry rate and on whether Cl can follow paracellularly.
   const clFollow = clamp(dctOut.Cl / Math.max(dctOut.Na, 1e-9), 0.3, 1.6);
   const voltage = clamp(cntNaReab * (1.3 - 0.3 * clFollow), 0, 3.2);
@@ -475,10 +483,21 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // H-K-ATPase reabsorbs K during K depletion (and secretes H+).
   const kReabIntercalated = clamp(0.35 * t.HKATPase * Math.max(0, 4.0 - pl.K), 0, 1) * 0.02;
 
+  // Chloride follows the reabsorbed sodium down the paracellular path, but only in part - the
+  // shortfall is what sustains the lumen-negative voltage that drives K+ and H+ secretion.
+  // Tubular fluid also has to stay electroneutral: chloride cannot be stripped out below the
+  // point where it no longer balances the cations still in the lumen. That floor is what the
+  // kidney runs up against when it drives urine chloride below 10 mmol/L in chloride
+  // depletion, and it is why urine chloride normally tracks urine sodium.
+  const clAfter = (luminalCl: number, naReab: number, coupling: number, cationsOut: number) => {
+    const floor = Math.min(luminalCl, 0.55 * cationsOut);
+    return Math.max(floor, luminalCl - naReab * coupling);
+  };
+
   const cntOut = { ...dctOut };
   cntOut.Na = dctOut.Na - cntNaReab;
-  cntOut.Cl = Math.max(0, dctOut.Cl - cntNaReab * 0.75);
   cntOut.K = Math.max(0, dctOut.K + kSecretion - kReabIntercalated);
+  cntOut.Cl = clAfter(dctOut.Cl, cntNaReab, 0.75, cntOut.Na + cntOut.K + cntOut.NH4);
 
   // --- Water: ADH-dependent AQP2 in CNT/CCD/OMCD/IMCD equilibrates fluid with the
   //     cortical (290) then medullary interstitium.
@@ -495,9 +514,9 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
 
   const ccdIn = { ...cntOut };
   const ccdOut = { ...ccdIn };
-  const ccdNaReab = takeDistal(ccdIn.Na * enacFrac(0.6));
+  const ccdNaReab = takeDistal(ccdIn.Na * enacFrac(0.25));
   ccdOut.Na = ccdIn.Na - ccdNaReab;
-  ccdOut.Cl = Math.max(0, ccdIn.Cl - ccdNaReab * 0.8);
+  ccdOut.Cl = clAfter(ccdIn.Cl, ccdNaReab, 0.8, ccdOut.Na + ccdOut.K + ccdOut.NH4);
   ccdOut.water = equilibrate(ccdIn, 290, perm * 0.95);
 
   // --- Acid-base in the collecting duct: H-ATPase secretion titrates phosphate (titratable
@@ -517,9 +536,9 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const omcdIn = { ...ccdOut };
   const omcdOut = { ...omcdIn };
   omcdOut.water = equilibrate(omcdIn, 290 + (medullaTarget - 290) * 0.4, perm * 0.9);
-  const omcdNaReab = takeDistal(omcdIn.Na * enacFrac(0.43));
+  const omcdNaReab = takeDistal(omcdIn.Na * enacFrac(0.185));
   omcdOut.Na = omcdIn.Na - omcdNaReab;
-  omcdOut.Cl = Math.max(0, omcdIn.Cl - omcdNaReab);
+  omcdOut.Cl = clAfter(omcdIn.Cl, omcdNaReab, 0.9, omcdOut.Na + omcdOut.K + omcdOut.NH4);
 
   const imcdIn = { ...omcdOut };
   const imcdOut = { ...imcdIn };
@@ -528,9 +547,9 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const ureaPerm = clamp(t.UTA * (0.25 + 0.75 * clamp(h.aqp2, 0, 1)), 0.05, 1.2);
   const ureaReabIMCD = imcdIn.urea * clamp(0.55 * ureaPerm, 0, 0.8);
   imcdOut.urea = imcdIn.urea - ureaReabIMCD;
-  const imcdNaReab = takeDistal(imcdIn.Na * enacFrac(0.69));
+  const imcdNaReab = takeDistal(imcdIn.Na * enacFrac(0.54));
   imcdOut.Na = Math.max(0, imcdIn.Na - imcdNaReab);
-  imcdOut.Cl = Math.max(0, imcdIn.Cl - imcdNaReab);
+  imcdOut.Cl = clAfter(imcdIn.Cl, imcdNaReab, 0.9, imcdOut.Na + imcdOut.K + imcdOut.NH4);
 
   // --- Distal acid excretion (before the final water equilibration, so that the osmoles left
   // in the lumen are the ones water equilibrates against).

@@ -75,7 +75,10 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
 
   for (let iter = 0; iter < 30; iter++) {
     // Arterial tone
-    const v1 = 1 + 0.02 * Math.max(0, adh - 5);
+    // Vasopressin is a vasoconstrictor at V1 receptors, but the pressor response saturates and
+    // is largely buffered by the baroreflex, so even the very high levels of severe hypovolaemia
+    // raise systemic resistance only modestly (Rose ch. 9).
+    const v1 = 1 + 0.1 * (1 - Math.exp(-Math.max(0, adh - 4) / 12));
     const SVR =
       Math.pow(at1, 0.12) *
       Math.pow(sns, 0.22) *
@@ -127,8 +130,12 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
       (1 - 0.7 * d.lithium) *
       kFactor *
       caFactor *
-      curves.hill(0.42, 1.4)(v2Stim) *
-      1.05;
+      // The dose-response between plasma vasopressin and collecting-duct water permeability is
+      // half-maximal near 2 pg/mL and close to maximal by 5 pg/mL (Rose ch. 9, Fig. 9-3):
+      // a normally hydrated person sits on the steep part of this curve, which is why small
+      // changes in plasma osmolality translate into large changes in urine osmolality.
+      curves.hill(0.666, 1.4)(v2Stim) *
+      1.12;
 
     // Renal vasodilator prostaglandins rise with vasoconstrictor activity (Rose ch. 2)
     const pg = (1 - d.nsaid) * (0.2 + 0.4 * (Math.max(0, at1 - 1) + Math.max(0, sns - 1)) + 0.2 * d.furosemide);

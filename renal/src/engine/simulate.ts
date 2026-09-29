@@ -5,7 +5,7 @@
 // gradually after a fall in GFR and what lets the sandbox reach a new steady state.
 
 import { clamp } from './math';
-import { acidBase, derivePlasma, initialBody, respiratoryPCO2, type BodyState, type PlasmaDerived } from './body';
+import { acidBase, derivePlasma, edelmanNa, initialBody, respiratoryPCO2, type BodyState, type PlasmaDerived } from './body';
 import { evaluateRegulation, type RegulationState } from './regulation';
 import { runKidney } from './kidney';
 import type { KidneyResult, Params } from './types';
@@ -14,6 +14,13 @@ export interface SimState {
   body: BodyState;
   /** simulated time in days since the scenario started */
   day: number;
+  /**
+   * Set when the body composition has run into one of the model's limits (for example total
+   * body water at the ceiling). Beyond that point the equations no longer describe a living
+   * patient, so the simulation is held there and the interface says so rather than reporting
+   * numbers that look precise and are meaningless.
+   */
+  outOfRange?: string;
 }
 
 export interface Evaluation {
@@ -245,22 +252,48 @@ export function describeAcidBase(hco3: number, pco2: number, pH: number, agCorre
  * Advance the body state by dt days. The balance equations are stiff (urine output can change
  * several-fold within hours), so the caller's step is broken into short sub-steps.
  */
-export function stepDay(state: SimState, params: Params, dt = 1, prevReg?: RegulationState): { state: SimState; ev: Evaluation } {
-  const MAX_SUBSTEP = 0.05; // days (~72 min)
-  const n = Math.max(1, Math.ceil(dt / MAX_SUBSTEP));
+export function stepDay(
+  state: SimState,
+  params: Params,
+  dt = 1,
+  prevReg?: RegulationState,
+  /** sub-step size the previous call ended on, so a long run does not restart the ramp */
+  h0?: number,
+): { state: SimState; ev: Evaluation; rate: number; h: number } {
+  const MIN_SUBSTEP = 0.005; // days (~7 min): the shortest step the fast responses need
+  const MAX_SUBSTEP = 0.2; // days: safe once nothing is moving quickly any more
   let cur = state;
   let reg = prevReg;
   let ev!: Evaluation;
-  for (let i = 0; i < n; i++) {
-    const r = substep(cur, params, dt / n, reg);
+  let rate = 0;
+  let remaining = dt;
+  // The stores move at very different speeds depending on the disturbance: minutes-to-hours
+  // after a diuretic, days once the new steady state is approached. Sizing each sub-step from
+  // how fast the fastest store is actually changing keeps the integrator stable during the
+  // transient without paying for tiny steps for the rest of the run.
+  let h = Math.min(remaining, h0 ?? MIN_SUBSTEP * 4);
+  let guard = 0;
+  while (remaining > 1e-9 && guard++ < 400) {
+    h = Math.min(h, remaining);
+    const r = substep(cur, params, h, reg);
     cur = r.state;
     ev = r.ev;
     reg = r.ev.reg;
+    rate = r.rate;
+    remaining -= h;
+    if (cur.outOfRange) break;
+    // Aim for at most a 1.5% relative change in any store per sub-step, and never grow the step
+    // by more than 60% at a time so a sudden change cannot be stepped over.
+    const wanted = r.rate > 1e-9 ? 0.015 / r.rate : MAX_SUBSTEP;
+    h = clamp(Math.min(wanted, h * 1.6), MIN_SUBSTEP, MAX_SUBSTEP);
   }
-  return { state: cur, ev };
+  if (!ev) {
+    ev = evaluate(cur.body, params, prevReg);
+  }
+  return { state: cur, ev, rate, h };
 }
 
-function substep(state: SimState, params: Params, dt: number, prevReg?: RegulationState): { state: SimState; ev: Evaluation } {
+function substep(state: SimState, params: Params, dt: number, prevReg?: RegulationState): { state: SimState; ev: Evaluation; rate: number } {
   const ev = evaluate(state.body, params, prevReg);
   const b = { ...state.body };
   const p = params;
@@ -277,8 +310,20 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
     const thirstDrive = clamp((ev.plasma.effOsm - 288) / 5, 0, 3) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2);
     waterIn += thirstDrive * 1.2;
   }
-  b.tbw += (waterIn - ev.balance.waterOut) * dt;
-  b.tbw = clamp(b.tbw, p.weightKg * 0.25, p.weightKg * 1.1);
+  const tbwWanted = b.tbw + (waterIn - ev.balance.waterOut) * dt;
+  const tbwFloor = p.weightKg * 0.32;
+  const tbwCeiling = p.weightKg * 1.05;
+  b.tbw = clamp(tbwWanted, tbwFloor, tbwCeiling);
+  // Running into the water limits means the disturbance has no steady state: water is being
+  // retained (or lost) faster than the kidney can compensate, and a real patient would have
+  // been treated or died before this point. Record it instead of letting the sodium store go on
+  // accumulating in a body of fixed size, which would produce a spurious rise in serum sodium.
+  let outOfRange = state.outOfRange;
+  if (!outOfRange && tbwWanted > tbwCeiling) {
+    outOfRange = 'Water retention outstrips excretion: total body water has reached the limit of what the model can represent.';
+  } else if (!outOfRange && tbwWanted < tbwFloor) {
+    outOfRange = 'Water losses outstrip intake: total body water has fallen to the limit of what the model can represent.';
+  }
 
   // Oedema: ECF expansion beyond ~3 L above normal, or altered Starling forces, moves fluid
   // into the interstitium instead of the plasma (Rose ch. 16).
@@ -334,17 +379,48 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   const mgIntake = 12;
   b.mg = clamp(b.mg + ((mgIntake - k.urine.exc.Mg) / 200) * dt, 0.2, 2.5);
 
-  return { state: { body: b, day: state.day + dt }, ev };
+  // How fast is the fastest store moving, as a fraction of itself per day? The integrator uses
+  // this to choose its next step, and `runToSteadyState` uses it to know when to stop.
+  const rate = Math.max(
+    Math.abs(ev.balance.naIn - ev.balance.naOut) / Math.max(b.naE, 1),
+    Math.abs(ev.balance.kIn - ev.balance.kOut) / Math.max(b.kE, 1),
+    Math.abs(ev.balance.clIn - ev.balance.clOut) / Math.max(b.clE, 1),
+    Math.abs(waterIn - ev.balance.waterOut) / Math.max(b.tbw, 1),
+    Math.abs(netAcid) / Math.max(bufferVolume * b.hco3, 1),
+    Math.abs(creatGen - creatExcreted) / Math.max(vdCreatDl * b.creat, 1),
+    Math.abs(bunDelta) / Math.max(b.bun, 1),
+  );
+
+  // A disturbance with no steady state eventually takes the body somewhere no patient survives.
+  // The equations keep producing numbers there, so the limits are stated explicitly: past them
+  // the trajectory is held and the interface says the disturbance is lethal rather than
+  // reporting a serum sodium of 57 as though it were a finding.
+  if (!outOfRange) {
+    const naNext = edelmanNa(b.naE, b.kE, b.tbw);
+    if (naNext < 100) outOfRange = 'Serum sodium has fallen below 100 mmol/L, which is not survivable: the disturbance has no steady state and would have been treated long before this.';
+    else if (naNext > 185) outOfRange = 'Serum sodium has risen above 185 mmol/L, which is not survivable: the disturbance has no steady state.';
+    else if (b.hco3 <= 4) outOfRange = 'Bicarbonate has been consumed almost completely: the acid load exceeds anything the kidney and buffers can offset.';
+    else if (b.hco3 >= 55) outOfRange = 'Bicarbonate has risen beyond what the model can represent.';
+  }
+
+  return { state: { body: b, day: state.day + dt, outOfRange }, ev, rate };
 }
 
 /** Run to (approximate) steady state: used for "what does this state look like at equilibrium". */
 export function runToSteadyState(params: Params, days = 40, dt = 0.5, start?: BodyState) {
   let state: SimState = { body: start ? { ...start } : initialBody(params), day: 0 };
   let ev = evaluate(state.body, params);
-  for (let i = 0; i < Math.round(days / dt); i++) {
-    const next = stepDay(state, params, dt, ev.reg);
+  const steps = Math.round(days / dt);
+  let h: number | undefined;
+  for (let i = 0; i < steps; i++) {
+    const next = stepDay(state, params, dt, ev.reg, h);
     state = next.state;
     ev = next.ev;
+    h = next.h;
+    // Stop once every store is within a thousandth of a per cent of balance. Ongoing losses
+    // (a diuretic, diarrhoea) hold the rate above this, so those runs still use the full time.
+    if (next.rate < 1e-5 && i > 4) break;
+    if (state.outOfRange) break;
   }
   return { state, ev };
 }
@@ -377,6 +453,7 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
   const tbw0 = state.body.tbw;
   const points: TrajectoryPoint[] = [];
   const steps = Math.max(1, Math.round(days / dt));
+  let h: number | undefined;
   for (let i = 0; i <= steps; i++) {
     points.push({
       day: state.day,
@@ -398,10 +475,11 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       adh: ev.reg.hormones.adh,
       renin: ev.reg.hormones.renin,
     });
-    if (i === steps) break;
-    const next = stepDay(state, params, dt, ev.reg);
+    if (i === steps || state.outOfRange) break;
+    const next = stepDay(state, params, dt, ev.reg, h);
     state = next.state;
     ev = next.ev;
+    h = next.h;
   }
   return { points, final: ev, state };
 }

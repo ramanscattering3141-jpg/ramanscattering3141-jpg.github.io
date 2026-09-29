@@ -7,7 +7,7 @@
 import { describe, expect, test } from 'vitest';
 import { DEFAULT_PARAMS, applyPatch, type ParamPatch } from '../../renal/src/engine/types';
 import { GLOM_REF, solveGlomerulus, oncotic } from '../../renal/src/engine/glomerulus';
-import { evaluate, runToSteadyState } from '../../renal/src/engine/simulate';
+import { evaluate, runToSteadyState, simulate } from '../../renal/src/engine/simulate';
 import { runKidney } from '../../renal/src/engine/kidney';
 import { runNephron } from '../../renal/src/engine/nephron';
 import { initialBody, edelmanNa, respiratoryPCO2, acidBase } from '../../renal/src/engine/body';
@@ -784,5 +784,117 @@ describe('clearance relationships', () => {
     const base = snap();
     const depleted = snap({ cardiacFunction: 0.5 });
     expect(depleted.kidney.FE.urea).toBeLessThan(base.kidney.FE.urea);
+  });
+});
+
+describe('the model is in balance and stays there', () => {
+  // A model whose normal state drifts teaches nothing: every scenario would carry the drift on
+  // top of the effect being studied. These tests pin the baseline as a genuine steady state.
+  const n = snap();
+
+  test('the normal kidney excretes what is taken in', () => {
+    // Sodium: intake 150 mmol/day, of which ~10 leaves in sweat and stool.
+    expect(n.balance.naOut).toBeGreaterThan(n.balance.naIn * 0.9);
+    expect(n.balance.naOut).toBeLessThan(n.balance.naIn * 1.1);
+    expect(n.balance.kOut).toBeGreaterThan(n.balance.kIn * 0.85);
+    expect(n.balance.kOut).toBeLessThan(n.balance.kIn * 1.15);
+    expect(n.balance.waterOut).toBeGreaterThan(n.balance.waterIn * 0.85);
+    expect(n.balance.waterOut).toBeLessThan(n.balance.waterIn * 1.15);
+  });
+
+  test('normal urine composition', () => {
+    const u = n.kidney.urine;
+    expect(u.volumePerDay).toBeGreaterThan(1);
+    expect(u.volumePerDay).toBeLessThan(2);
+    expect(u.osm).toBeGreaterThan(400);
+    expect(u.osm).toBeLessThan(800);
+    expect(u.exc.osm).toBeGreaterThan(550); // 600-900 mOsm/day on a normal diet
+    expect(u.exc.osm).toBeLessThan(950);
+    // Urine chloride tracks urine sodium: the two are excreted together as their salt.
+    expect(u.Cl).toBeGreaterThan(u.Na * 0.6);
+    expect(u.Cl).toBeLessThan(u.Na * 1.4);
+    // Fractional sodium excretion is well under 1% even in a person in sodium balance.
+    expect(n.derived.FENa).toBeGreaterThan(0.2);
+    expect(n.derived.FENa).toBeLessThan(1);
+  });
+
+  test('the macula densa signal is normalised to 1 at the normal state', () => {
+    expect(n.kidney.maculaDensa).toBeGreaterThan(0.95);
+    expect(n.kidney.maculaDensa).toBeLessThan(1.05);
+  });
+
+  test('a normal person holds a steady state for two months', () => {
+    const { points } = simulate(DEFAULT_PARAMS, 60, 2);
+    const last = points[points.length - 1];
+    const first = points[0];
+    expect(last.Na).toBeGreaterThan(136);
+    expect(last.Na).toBeLessThan(143);
+    expect(Math.abs(last.ecf - first.ecf)).toBeLessThan(1.5);
+    expect(last.HCO3).toBeGreaterThan(22);
+    expect(last.HCO3).toBeLessThan(27);
+    expect(last.urineVolume).toBeGreaterThan(1);
+    expect(last.urineVolume).toBeLessThan(2.2);
+    expect(last.edema).toBeLessThan(0.5);
+  });
+
+  test('sodium excretion rises steeply with extracellular volume (the renal function curve)', () => {
+    const b0 = initialBody(DEFAULT_PARAMS);
+    const at = (scale: number) => {
+      const b = { ...b0, naE: b0.naE * scale, clE: b0.clE * scale, tbw: b0.tbw + (b0.naE * (scale - 1)) / 140 };
+      return evaluate(b, DEFAULT_PARAMS);
+    };
+    const contracted = at(0.9);
+    const normal = at(1);
+    const expanded = at(1.15);
+    // Monotonic, and steep enough that a modest volume change restores balance.
+    expect(contracted.kidney.urine.exc.Na).toBeLessThan(normal.kidney.urine.exc.Na * 0.6);
+    expect(expanded.kidney.urine.exc.Na).toBeGreaterThan(normal.kidney.urine.exc.Na * 1.4);
+    // Aldosterone moves the other way, as the volume signal requires.
+    expect(contracted.reg.hormones.aldo).toBeGreaterThan(normal.reg.hormones.aldo);
+    expect(expanded.reg.hormones.aldo).toBeLessThan(normal.reg.hormones.aldo);
+  });
+
+  test('a high salt intake reaches a new steady state: expanded volume, normal serum sodium', () => {
+    const { points, state } = simulate(applyPatch(DEFAULT_PARAMS, { naIntake: 350 }), 45, 2);
+    const last = points[points.length - 1];
+    expect(state.outOfRange).toBeUndefined();
+    // Serum sodium is defended by water balance; it is the volume that changes.
+    expect(last.Na).toBeGreaterThan(137);
+    expect(last.Na).toBeLessThan(143);
+    expect(last.ecf).toBeGreaterThan(points[0].ecf + 2);
+    // Sodium balance is restored: output has caught up with the higher intake.
+    const fin = evaluate(state.body, applyPatch(DEFAULT_PARAMS, { naIntake: 350 }));
+    expect(fin.balance.naOut).toBeGreaterThan(fin.balance.naIn * 0.85);
+    // Aldosterone is suppressed, which is how the new steady state is held.
+    expect(last.aldo).toBeLessThan(points[0].aldo);
+  });
+
+  test('mineralocorticoid excess escapes: sodium retention is self-limiting, without oedema', () => {
+    // Rose ch. 16: primary aldosteronism expands volume by a few litres and then escapes, which
+    // is why these patients are hypertensive and hypokalaemic but not oedematous.
+    const p = applyPatch(DEFAULT_PARAMS, { aldoAutonomous: 8 });
+    const { points, state } = simulate(p, 45, 2);
+    const last = points[points.length - 1];
+    expect(state.outOfRange).toBeUndefined();
+    const fin = evaluate(state.body, p);
+    expect(fin.balance.naOut).toBeGreaterThan(fin.balance.naIn * 0.8);
+    expect(last.Na).toBeGreaterThan(136);
+    expect(fin.plasma.K).toBeLessThan(snap().plasma.K);
+  });
+
+  test('a disturbance with no steady state is reported as such, not given false numbers', () => {
+    // Untreated severe heart failure retains water indefinitely. The model says so instead of
+    // producing an impossible serum sodium once the body composition leaves the valid range.
+    const { state, points } = simulate(applyPatch(DEFAULT_PARAMS, { cardiacFunction: 0.45 }), 60, 2);
+    expect(state.outOfRange).toBeTruthy();
+    for (const q of points) {
+      expect(q.Na).toBeGreaterThan(95);
+      expect(q.Na).toBeLessThan(180);
+    }
+    // Before it gets there it behaves like heart failure: avid sodium retention and oedema.
+    const mid = points[Math.floor(points.length / 2)];
+    expect(mid.edema).toBeGreaterThan(0.5);
+    expect(mid.aldo).toBeGreaterThan(points[0].aldo * 0.8);
+    expect(mid.Na).toBeLessThan(points[0].Na);
   });
 });

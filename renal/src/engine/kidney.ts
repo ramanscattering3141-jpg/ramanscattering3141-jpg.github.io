@@ -95,7 +95,10 @@ function sideResult(
     Kf: KfSide * chronicLoss * (1 - 0.33 * clamp(p.tubularInjury, 0, 1)),
     Pbs,
     Cp: clamp(pl.albumin * 1.75, 2, 12),
-    Hct: clamp(0.45 * (1 - 0.35 * (1 - Math.pow(nephrons, 0.35))), 0.15, 0.52),
+    // Renal anaemia: erythropoietin production falls with functioning renal mass, so the
+    // haematocrit falls as chronic kidney disease progresses (Rose ch. 1). This depends on
+    // whole-body renal mass, not on this one kidney's share of it.
+    Hct: clamp(0.45 * (1 - 0.35 * (1 - Math.pow(clamp(massFraction, 0.02, 1), 0.35))), 0.15, 0.52),
   });
 
   return {
@@ -123,9 +126,17 @@ export function runKidney(inp: KidneyInput): KidneyResult {
   const h = inp.hormones;
   const nephronFraction = clamp(p.nephronFraction, 0.02, 1);
 
+  // Both kidneys see the same blood and the same hormones, so unless one of them is stenosed
+  // or obstructed the two solutions are identical and only one needs solving.
+  const symmetric = p.stenosisL === p.stenosisR && p.obstructionL === p.obstructionR;
+  const bothSides = (md: number): [KidneySide, KidneySide] => {
+    const l = sideResult(p, h, pl, inp.MAP, p.stenosisL, p.obstructionL, nephronFraction * 0.5, nephronFraction, md);
+    const r = symmetric ? { ...l } : sideResult(p, h, pl, inp.MAP, p.stenosisR, p.obstructionR, nephronFraction * 0.5, nephronFraction, md);
+    return [l, r];
+  };
+
   let mdSignal = 1;
-  let left = sideResult(p, h, pl, inp.MAP, p.stenosisL, p.obstructionL, nephronFraction * 0.5, nephronFraction, mdSignal);
-  let right = sideResult(p, h, pl, inp.MAP, p.stenosisR, p.obstructionR, nephronFraction * 0.5, nephronFraction, mdSignal);
+  let [left, right] = bothSides(mdSignal);
   let nephron = runNephron({
     params: p,
     plasma: pl,
@@ -142,8 +153,7 @@ export function runKidney(inp: KidneyInput): KidneyResult {
 
   // Fixed point: GFR -> macula densa Cl delivery -> afferent tone -> GFR.
   for (let i = 0; i < 14; i++) {
-    left = sideResult(p, h, pl, inp.MAP, p.stenosisL, p.obstructionL, nephronFraction * 0.5, nephronFraction, mdSignal);
-    right = sideResult(p, h, pl, inp.MAP, p.stenosisR, p.obstructionR, nephronFraction * 0.5, nephronFraction, mdSignal);
+    [left, right] = bothSides(mdSignal);
     const GFR = left.GFR + right.GFR;
     const RPF = left.RPF + right.RPF;
     const RBF = left.RBF + right.RBF;

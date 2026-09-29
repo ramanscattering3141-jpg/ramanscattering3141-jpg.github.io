@@ -46,40 +46,42 @@ export interface RoseChapter {
   n: number;
   title: string;
   part: string;
-  /** true when the supplied copy gave us the full chapter text */
-  textAvailable: boolean;
 }
 
 export const ROSE_CHAPTERS: RoseChapter[] = [
-  { n: 1, title: 'Introduction to renal function', part: 'Renal physiology', textAvailable: true },
-  { n: 2, title: 'Renal circulation and glomerular filtration rate', part: 'Renal physiology', textAvailable: true },
-  { n: 3, title: 'Proximal tubule', part: 'Renal physiology', textAvailable: true },
-  { n: 4, title: 'Loop of Henle and the countercurrent mechanism', part: 'Renal physiology', textAvailable: false },
-  { n: 5, title: 'Functions of the distal nephron', part: 'Renal physiology', textAvailable: false },
-  { n: 6, title: 'Effects of hormones on renal function', part: 'Renal physiology', textAvailable: false },
-  { n: 7, title: 'Total body water and the plasma sodium concentration', part: 'Regulation', textAvailable: false },
-  { n: 8, title: 'Regulation of the effective circulating volume', part: 'Regulation', textAvailable: false },
-  { n: 9, title: 'Regulation of plasma osmolality', part: 'Regulation', textAvailable: false },
-  { n: 10, title: 'Acid-base physiology', part: 'Regulation', textAvailable: false },
-  { n: 11, title: 'Regulation of acid-base balance', part: 'Regulation', textAvailable: false },
-  { n: 12, title: 'Potassium homeostasis', part: 'Regulation', textAvailable: false },
-  { n: 13, title: 'Meaning and application of urine chemistries', part: 'Clinical disorders', textAvailable: false },
-  { n: 14, title: 'Hypovolaemic states', part: 'Clinical disorders', textAvailable: false },
-  { n: 15, title: 'Clinical use of diuretics', part: 'Clinical disorders', textAvailable: true },
-  { n: 16, title: 'Oedematous states', part: 'Clinical disorders', textAvailable: true },
-  { n: 17, title: 'Introduction to simple and mixed acid-base disorders', part: 'Clinical disorders', textAvailable: true },
-  { n: 18, title: 'Metabolic alkalosis', part: 'Clinical disorders', textAvailable: true },
-  { n: 19, title: 'Metabolic acidosis', part: 'Clinical disorders', textAvailable: false },
-  { n: 20, title: 'Respiratory acidosis', part: 'Clinical disorders', textAvailable: false },
-  { n: 21, title: 'Respiratory alkalosis', part: 'Clinical disorders', textAvailable: false },
-  { n: 22, title: 'Introduction to disorders of osmolality', part: 'Clinical disorders', textAvailable: false },
-  { n: 23, title: 'Hyponatraemia', part: 'Clinical disorders', textAvailable: false },
-  { n: 24, title: 'Hypernatraemia', part: 'Clinical disorders', textAvailable: false },
-  { n: 25, title: 'Hyperglycaemia', part: 'Clinical disorders', textAvailable: false },
-  { n: 26, title: 'Introduction to disorders of potassium balance', part: 'Clinical disorders', textAvailable: false },
-  { n: 27, title: 'Hypokalaemia', part: 'Clinical disorders', textAvailable: false },
-  { n: 28, title: 'Hyperkalaemia', part: 'Clinical disorders', textAvailable: false },
+  { n: 1, title: 'Introduction to renal function', part: 'Renal physiology' },
+  { n: 2, title: 'Renal circulation and glomerular filtration rate', part: 'Renal physiology' },
+  { n: 3, title: 'Proximal tubule', part: 'Renal physiology' },
+  { n: 4, title: 'Loop of Henle and the countercurrent mechanism', part: 'Renal physiology' },
+  { n: 5, title: 'Functions of the distal nephron', part: 'Renal physiology' },
+  { n: 6, title: 'Effects of hormones on renal function', part: 'Renal physiology' },
+  { n: 7, title: 'Total body water and the plasma sodium concentration', part: 'Regulation of volume and osmolality' },
+  { n: 8, title: 'Regulation of the effective circulating volume', part: 'Regulation of volume and osmolality' },
+  { n: 9, title: 'Regulation of plasma osmolality', part: 'Regulation of volume and osmolality' },
+  { n: 10, title: 'Acid-base physiology', part: 'Acid-base regulation' },
+  { n: 11, title: 'Regulation of acid-base balance', part: 'Acid-base regulation' },
+  { n: 12, title: 'Potassium homeostasis', part: 'Potassium regulation' },
+  { n: 13, title: 'Meaning and application of urine chemistries', part: 'Clinical evaluation' },
+  { n: 14, title: 'Hypovolemic states', part: 'Volume disorders' },
+  { n: 15, title: 'Clinical use of diuretics', part: 'Volume disorders' },
+  { n: 16, title: 'Edematous states', part: 'Volume disorders' },
+  { n: 17, title: 'Introduction to simple and mixed acid-base disorders', part: 'Acid-base disorders' },
+  { n: 18, title: 'Metabolic alkalosis', part: 'Acid-base disorders' },
+  { n: 19, title: 'Metabolic acidosis', part: 'Acid-base disorders' },
+  { n: 20, title: 'Respiratory acidosis', part: 'Acid-base disorders' },
+  { n: 21, title: 'Respiratory alkalosis', part: 'Acid-base disorders' },
+  { n: 22, title: 'Introduction to disorders of osmolality', part: 'Osmolality disorders' },
+  { n: 23, title: 'Hypoosmolal states \u2014 hyponatremia', part: 'Osmolality disorders' },
+  { n: 24, title: 'Hyperosmolal states \u2014 hypernatremia', part: 'Osmolality disorders' },
+  { n: 25, title: 'Hyperosmolal states \u2014 hyperglycemia', part: 'Osmolality disorders' },
+  { n: 26, title: 'Introduction to disorders of potassium balance', part: 'Potassium disorders' },
+  { n: 27, title: 'Hypokalemia', part: 'Potassium disorders' },
+  { n: 28, title: 'Hyperkalemia', part: 'Potassium disorders' },
+  { n: 29, title: 'Answers to the problems', part: 'End matter' },
+  { n: 30, title: 'Summary of equations and formulas', part: 'End matter' },
 ];
+
+export const roseChapter = (n: number) => ROSE_CHAPTERS.find((c) => c.n === n);
 
 const byId = new Map<string, PubmedRef>(PUBMED_REFS.map((r) => [r.id, r]));
 

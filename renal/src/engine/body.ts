@@ -53,7 +53,9 @@ export function initialBody(p: Params): BodyState {
     hco3: 24,
     organicAnions: 0,
     clE: 104 * (tbw / 3),
-    creat: p.female ? 0.8 : 1.0,
+    // The starting creatinine is the level this model settles at for a normal adult, so a
+    // scenario does not open with a spurious creatinine transient of its own.
+    creat: p.female ? 0.58 : 0.68,
     bun: 14,
     pi: 1.15,
     ca: 2.35,
