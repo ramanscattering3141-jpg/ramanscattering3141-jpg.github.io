@@ -12,6 +12,7 @@ import { runKidney } from '../../renal/src/engine/kidney';
 import { runNephron } from '../../renal/src/engine/nephron';
 import { initialBody, edelmanNa, respiratoryPCO2, acidBase, oncoticGradientRel } from '../../renal/src/engine/body';
 import { withIsotonicChange } from '../../renal/src/engine/scenarios';
+import { waterDeprivationTest, DEPRIVATION_PATIENTS } from '../../renal/src/sim/deprivation';
 
 /**
  * One evaluation from the normal body state: the immediate ("before anything has had time to
@@ -1468,7 +1469,9 @@ describe('hypovolaemia: composition, azotaemia and replacement (Rose ch. 14)', (
   test('each source leaves its own signature', () => {
     const vomiting = after({ vomiting: 1.5, waterIntake: 1, naIntake: 40 }, 3).final;
     const diarrhoea = after({ diarrhea: 2.5, waterIntake: 1, naIntake: 40 }, 3).final;
-    const sweat = after({ insensible: 3.5, waterIntake: 1.2 }, 3).final;
+    // Sweating without water to drink: with thirst answered, the loss is simply drunk back and
+    // the sodium barely moves (Rose ch. 24), so the scenario has to take the water away.
+    const sweat = after({ insensible: 3.5, waterIntake: 1.2, thirstIntact: false }, 3).final;
     // vomiting: alkalosis; diarrhoea: normal-gap acidosis
     expect(vomiting.plasma.HCO3).toBeGreaterThan(30);
     expect(diarrhoea.plasma.HCO3).toBeLessThan(21);
@@ -1481,8 +1484,12 @@ describe('hypovolaemia: composition, azotaemia and replacement (Rose ch. 14)', (
     expect(diarrhoea.plasma.K).toBeLessThan(4.2);
     // pure water loss raises the plasma sodium instead of lowering it
     expect(sweat.plasma.Na).toBeGreaterThan(143);
-    // and does not call for sodium conservation, so the urine sodium stays high
-    expect(sweat.kidney.urine.Na).toBeGreaterThan(60);
+    // Such patients are hypovolaemic too, and conserve sodium: Rose ch. 24 gives the urine
+    // sodium after water loss as generally below 25 mmol/L (against > 100 after sodium overload).
+    expect(sweat.kidney.urine.Na).toBeLessThan(25);
+    // and with water to drink, thirst prevents the negative balance altogether (Rose ch. 14)
+    const sweatDrinking = after({ insensible: 3.5 }, 3).final;
+    expect(sweatDrinking.plasma.Na).toBeLessThan(sweat.plasma.Na - 5);
     expect(diarrhoea.kidney.urine.Na).toBeLessThan(20);
   });
 
@@ -1912,5 +1919,67 @@ describe('hypernatraemia and the diabetes insipidus states (Rose ch. 24)', () =>
     const nephrogenicTreated = at({ drugs: { lithium: 1, desmopressin: 1 } }).ev;
     expect(centralTreated.kidney.urine.osm).toBeGreaterThan(central.kidney.urine.osm * 3);
     expect(nephrogenicTreated.kidney.urine.osm).toBeLessThan(nephrogenic.kidney.urine.osm * 2);
+  });
+
+  test('with thirst intact the sodium is high-normal in DI and low-normal in primary polydipsia', () => {
+    // Rose ch. 24: most patients with diabetes insipidus keep water balance because thirst matches
+    // the urine output; the sodium sits at 140-145 in DI and 135-140 in primary polydipsia.
+    const cdi = at({ centralDI: 1 }).ev;
+    const ndi = at({ drugs: { lithium: 1 } }).ev;
+    const polydipsia = at({ waterIntake: 12 }).ev;
+    expect(cdi.kidney.urine.volumePerDay).toBeGreaterThan(12);
+    for (const e of [cdi, ndi]) {
+      expect(e.plasma.Na).toBeGreaterThan(140);
+      expect(e.plasma.Na).toBeLessThan(146);
+    }
+    expect(polydipsia.plasma.Na).toBeGreaterThan(134);
+    expect(polydipsia.plasma.Na).toBeLessThan(139);
+  });
+
+  describe('the water-restriction test (Fig. 24-6, Table 24-4)', () => {
+    const run = (id: string) => waterDeprivationTest(DEPRIVATION_PATIENTS.find((p) => p.id === id)!.patch);
+    const normal = run('normal');
+    const cdi = run('cdi');
+    const pcdi = run('pcdi');
+    const ndi = run('ndi');
+    const pndi = run('pndi');
+    const polydipsia = run('polydipsia');
+
+    test('normal: maximal concentration, and desmopressin adds nothing', () => {
+      expect(normal.deprived.uosm).toBeGreaterThan(800);
+      expect(normal.deprived.uflow).toBeLessThan(30); // < 0.5 mL/min
+      expect(normal.riseWithDDAVP).toBeLessThan(10);
+    });
+
+    test('complete central DI: dilute urine, then a 100-800% rise with desmopressin', () => {
+      expect(cdi.deprived.uosm).toBeLessThan(300);
+      expect(cdi.riseWithDDAVP).toBeGreaterThan(100);
+      expect(cdi.afterDDAVP.uflow).toBeLessThan(cdi.deprived.uflow / 3);
+      // the stopping rules end restriction early, before the volume depletion Rose warns of
+      expect(cdi.deprived.hour).toBeLessThanOrEqual(4);
+      expect(cdi.deprived.weightLoss).toBeLessThan(5);
+    });
+
+    test('partial central DI: intermediate urine that desmopressin raises further', () => {
+      expect(pcdi.deprived.uosm).toBeGreaterThan(300);
+      expect(pcdi.deprived.uosm).toBeLessThan(800);
+      expect(pcdi.riseWithDDAVP).toBeGreaterThan(15);
+      expect(pcdi.afterDDAVP.uosm - pcdi.deprived.uosm).toBeGreaterThan(60);
+    });
+
+    test('nephrogenic DI: dilute urine that desmopressin cannot concentrate', () => {
+      expect(ndi.deprived.uosm).toBeLessThan(300);
+      expect(ndi.riseWithDDAVP).toBeLessThan(15);
+      expect(ndi.afterDDAVP.uosm).toBeLessThan(250); // well below isosmotic
+      expect(pndi.riseWithDDAVP).toBeLessThan(45);
+    });
+
+    test('primary polydipsia: a normal kidney once the water stops', () => {
+      expect(polydipsia.samples[0].uosm).toBeLessThan(100);
+      expect(polydipsia.deprived.uosm).toBeGreaterThan(800);
+      expect(polydipsia.riseWithDDAVP).toBeLessThan(10);
+      // it takes longer: the patient starts water-loaded
+      expect(polydipsia.deprived.hour).toBeGreaterThan(cdi.deprived.hour);
+    });
   });
 });

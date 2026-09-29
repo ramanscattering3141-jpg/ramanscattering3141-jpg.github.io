@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { evaluate, runToSteadyState, simulate, stepCourse, type Evaluation, type SimState, type TrajectoryPoint } from '../engine/simulate';
 import { initialBody, type BodyState } from '../engine/body';
 import type { Job } from './worker';
+import { waterDeprivationTest, type DeprivationResult } from './deprivation';
 import { applyPatch, DEFAULT_PARAMS, type ParamPatch, type Params } from '../engine/types';
 
 export const paramsKey = (p: Params, extra = '') => JSON.stringify(p) + extra;
@@ -42,7 +43,8 @@ export function useAcute(p: Params, body?: BodyState): Evaluation {
 type JobSpec =
   | { kind: 'steady'; params: Params; days: number; start?: BodyState }
   | { kind: 'trajectory'; params: Params; days: number; dt: number; start?: BodyState }
-  | { kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number };
+  | { kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number }
+  | { kind: 'deprivation'; patch: ParamPatch };
 
 type SteadyResult = { state: SimState; ev: Evaluation };
 type CourseResult = { points: TrajectoryPoint[]; final: Evaluation; state: SimState };
@@ -90,6 +92,7 @@ function run<T>(job: JobSpec): Promise<T> {
       setTimeout(() => {
         if (job.kind === 'steady') resolve(runToSteadyState(job.params, job.days, 0.5, job.start) as T);
         else if (job.kind === 'trajectory') resolve(simulate(job.params, job.days, job.dt, job.start) as T);
+        else if (job.kind === 'deprivation') resolve(waterDeprivationTest(job.patch) as T);
         else resolve(stepCourse(job.from, job.to, job.days, job.dt, job.settleDays, job.fineDays, job.coarseDt) as T);
       }, 0),
     );
@@ -181,6 +184,22 @@ export function useStep(from: Params, to: Params, days: number, dt = 0.25, settl
     });
   }, 120);
   return { points: r.value?.points, before: r.value?.before, final: r.value?.final, state: r.value?.state, busy: r.busy };
+}
+
+const deprivationCache = new Map<string, DeprivationResult>();
+
+/** Rose's water-restriction test (Fig. 24-6) on one patient, run in a worker. */
+export function useDeprivation(patch: ParamPatch) {
+  const key = JSON.stringify(patch);
+  const r = useAsync(key, () => {
+    const hit = deprivationCache.get(key);
+    if (hit) return Promise.resolve(hit);
+    return run<DeprivationResult>({ kind: 'deprivation', patch }).then((v) => {
+      deprivationCache.set(key, v);
+      return v;
+    });
+  }, 60);
+  return { result: r.value, busy: r.busy };
 }
 
 export function useCourse(p: Params, days: number, dt = 0.25, start?: BodyState) {

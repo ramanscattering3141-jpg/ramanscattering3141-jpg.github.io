@@ -3,7 +3,8 @@
 
 import { runToSteadyState, simulate, stepCourse } from '../engine/simulate';
 import type { BodyState } from '../engine/body';
-import type { Params } from '../engine/types';
+import type { ParamPatch, Params } from '../engine/types';
+import { waterDeprivationTest } from './deprivation';
 
 export type Job =
   | { id: number; kind: 'steady'; params: Params; days: number; start?: BodyState }
@@ -17,7 +18,9 @@ export type Job =
    * drifts towards a new steady state. Recording the whole run at the fine interval costs several
    * seconds because the integrator cannot take a substep longer than the recording interval.
    */
-  | { id: number; kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number };
+  | { id: number; kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number }
+  /** the water-restriction test on one patient */
+  | { id: number; kind: 'deprivation'; patch: ParamPatch };
 
 self.onmessage = (e: MessageEvent<Job>) => {
   const job = e.data;
@@ -28,6 +31,8 @@ self.onmessage = (e: MessageEvent<Job>) => {
     } else if (job.kind === 'trajectory') {
       const r = simulate(job.params, job.days, job.dt, job.start);
       (self as unknown as Worker).postMessage({ id: job.id, result: r });
+    } else if (job.kind === 'deprivation') {
+      (self as unknown as Worker).postMessage({ id: job.id, result: waterDeprivationTest(job.patch) });
     } else {
       const r = stepCourse(job.from, job.to, job.days, job.dt, job.settleDays, job.fineDays, job.coarseDt);
       (self as unknown as Worker).postMessage({ id: job.id, result: r });

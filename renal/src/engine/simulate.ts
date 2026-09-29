@@ -307,7 +307,16 @@ export function thirstDrive(ev: Evaluation) {
   // where water intake outruns excretion, and the model then has no steady state to show. What
   // the drive does to a real patient is a matter of how much they actually drink, which is not
   // something this model can know; the pages say so rather than inventing a number for it.
-  return 1.2 * (clamp((ev.plasma.effOsm - 288) / 4, 0, 12) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2));
+  //
+  // The osmotic term is steep. Thirst begins a few mOsm/kg above the ADH threshold and, once
+  // crossed, drives whatever intake it takes: a patient with complete central diabetes insipidus
+  // passes 10-15 L/day or more and still holds the plasma sodium in the high-normal range, 140-145
+  // (Rose ch. 24). About 3 L/day for each mOsm/kg above threshold lets 15 L/day of extra intake
+  // arrive at an effective osmolality near 293. A shallow gain here produced sodium near 185 in
+  // untreated diabetes insipidus with thirst intact, which is the opposite of the book's point that
+  // hypernatraemia is a disorder of thirst or access to water.
+  const osmotic = clamp((ev.plasma.effOsm - 288) * 3, 0, 40);
+  return osmotic + 1.2 * clamp((0.95 - ev.reg.eabv) * 6, 0, 2);
 }
 
 /**

@@ -89,12 +89,12 @@ export default function Adh() {
           </Panel>
         </div>
         <div>
-          <Panel title="The two response curves" note="ADH rises linearly above its threshold; thirst has a threshold a few mOsm/kg higher. The vertical line is the current osmolality. Volume depletion shifts both curves left and steepens them.">
+          <Panel title="The two response curves" note="ADH rises linearly above its threshold; thirst has a threshold a few mOsm/kg higher and then climbs steeply, which is why it, not ADH, is the final defence against hypernatraemia. The vertical line is the current osmolality. Volume depletion shifts both curves left and steepens them.">
             <LineChart
               xLabel="effective plasma osmolality (mOsm/kg)"
               series={[
                 { label: 'ADH (pmol/L)', points: curves.adh.map((p) => ({ x: p.x, y: si.adh(p.y) })), color: '#5ecfba' },
-                { label: 'Thirst (L/day)', points: curves.thirst, color: '#f2b134' },
+                { label: 'Thirst (L/day ÷ 4)', points: curves.thirst.map((p) => ({ x: p.x, y: p.y / 4 })), color: '#f2b134' },
                 { label: 'Urine osmolality ÷ 100', points: curves.uosm, color: '#6aa9e8', dashed: true },
               ]}
               yMin={0}

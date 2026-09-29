@@ -67,9 +67,12 @@ export function osmoregulation(i: OsmoInput): OsmoResult {
   const adh = Math.max(i.autonomous, (1 - i.centralDI) * (osmotic + baro + other));
   // Collecting-duct permeability saturates: half-maximal near 2 pg/mL, near-maximal by 5.
   const aqp2 = clamp((Math.pow(adh, 1.4) / (Math.pow(adh, 1.4) + Math.pow(0.666, 1.4))) * 1.12, 0, 1);
-  // Thirst has a threshold a few mOsm/kg above ADH's, and a volume limb of its own.
+  // Thirst has a threshold a few mOsm/kg above ADH's, and a volume limb of its own. Past its
+  // threshold it is steep, about 3 L/day for each mOsm/kg, which is what lets a patient with
+  // complete diabetes insipidus drink 15 L/day and keep the sodium high-normal (Rose ch. 24). This
+  // matches the engine's thirstDrive.
   const thirstThreshold = threshold + 5;
-  const thirst = 1.2 * (clamp((i.effOsm - thirstThreshold - 3) / 4, 0, 12) + clamp(deficit * 12, 0, 2));
+  const thirst = clamp((i.effOsm - thirstThreshold - 3) * 3, 0, 40) + 1.2 * clamp(deficit * 12, 0, 2);
   return { adh, osmotic, baro, other, threshold, thirstThreshold, aqp2, thirst };
 }
 

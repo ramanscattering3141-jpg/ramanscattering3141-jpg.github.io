@@ -61,10 +61,13 @@ Rose's criteria: a 100–800% rise in complete central DI, 15–50% in partial c
 **Correcting hypernatraemia.** A run starting from Na 185 (central DI, no thirst, 1.2 L/day intake; TBW 32 L; Rose water deficit = TBW × (Na/140 − 1) ≈ 10 L) now works, after commit 4f8209c fixed the survivability guard. With desmopressin + quarter-isotonic saline 4 L/day, the sodium fell 15 mmol/L/day. That is faster than Rose's maximum safe rate of 0.5 mmol/L/h (12 mmol/L/day). The page should let the reader choose a regimen and see whether it breaches that limit.
 
 ### Next steps for chapter 24
-1. Add the water-deprivation table above as regression tests (`describe('hypernatraemia and the diabetes insipidus states (Rose ch. 24)')` already exists with 4 tests).
-2. Write `renal/src/content/chapters/ch24.ts`, following `ch23.ts` for shape. Themes: thirst, not ADH, is the final defence (Na > 150 is almost never seen in an alert adult with access to water); obligatory urine volume = solute excretion ÷ Umax (750 mOsm/day at Umax 300 → 2.5 L; at 100 → 7.5 L); causes (Table 24-1); urine osmolality + desmopressin response (Table 24-4); brain osmotic adaptation and why chronic hypernatraemia must be corrected slowly; the water deficit formula and its limits; treatment of central DI (desmopressin, risk of hyponatraemia) and nephrogenic DI (thiazide + low-solute diet, and amiloride in lithium); polyuria: solute vs water diuresis (Table 24-5).
-3. Build `WaterDisorders.tsx` with tabs: `thirst` (why thirst protects, obligatory urine volume vs Umax and solute), `deprivation` (an interactive water-deprivation test on the six patients), `correct` (a regimen chooser with the 12 mmol/L/day limit), `polyuria` (solute vs water diuresis).
-4. Verify every new reference on PubMed before citing it.
+1. ~~Regression tests for the water-restriction test~~ Done: `tests/renal/physiology.test.ts`, "the water-restriction test (Fig. 24-6, Table 24-4)". The protocol lives in `renal/src/sim/deprivation.ts` (`waterDeprivationTest`, `DEPRIVATION_PATIENTS`) and runs in the worker through `useDeprivation(patch)` in `sim/hooks.ts`.
+2. ~~Thirst~~ Fixed: the engine's thirst gain was too shallow, so untreated central DI *with thirst* reached Na 185. It is now about 3 L/day per mOsm/kg above threshold (`thirstDrive` in `engine/simulate.ts`, mirrored in `sim/osmoregulation.ts`). DI now sits at Na 142–144 and primary polydipsia at 137.5, as Rose says.
+3. ~~`ch24.ts`~~ Done, with three verified modern updates (copeptin, `fenske2018copeptin`; the AVP-D/AVP-R renaming, `arima2022rename`; the correction rate in adults, `chauhan2019hypernat`).
+4. **Next: build `renal/src/pages/WaterDisorders.tsx`** with tabs `thirst`, `deprivation`, `correct`, `polyuria`.
+   - `deprivation`: `useDeprivation(DEPRIVATION_PATIENTS[i].patch)` gives hourly samples (Posm, Uosm, flow, Na, weight loss), the stop reason and the % rise with desmopressin.
+   - `correct`: complete central DI with no thirst has **no steady state**, so it cannot be the start. Build the start by withholding water (`thirstIntact: false, waterIntake: 0`) from a settled patient until Na ≈ 165, then treat for 72 h. Fluids available as params: `ivD5W`, `ivNS` (L/day); quarter-isotonic saline = 0.75 D5W + 0.25 NS. Show the Na trajectory against the 12 mmol/L/day line, and Rose's deficit estimate.
+   - `polyuria`: water vs solute diuresis from steady states of `{centralDI: 1}`, `{waterIntake: 12}`, `{ivNS: 6}`, `{proteinIntake: 260}`, `{glucose: 30}`.
 
 ### After chapter 24
 - ch25 hyperglycaemia / DKA / HHS → `/hyperglycemia`
