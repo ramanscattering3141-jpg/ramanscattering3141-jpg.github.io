@@ -206,7 +206,11 @@ export function niceTicks(lo: number, hi: number, count = 4): number[] {
   return out;
 }
 
-const fmtTick = (v: number) => (Math.abs(v) >= 100 || Number.isInteger(v) ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(Math.abs(v) < 1 ? 2 : 1));
+const tickDigits = (ticks: number[]) => {
+  if (ticks.length < 2) return 1;
+  const step = Math.abs(ticks[1] - ticks[0]);
+  return Math.max(0, Math.min(3, -Math.floor(Math.log10(step) + 1e-9) + (step / Math.pow(10, Math.floor(Math.log10(step))) === 2.5 ? 1 : 0)));
+};
 
 export function LineChart(props: {
   series: Series[];
@@ -224,7 +228,7 @@ export function LineChart(props: {
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const h = props.height ?? 200;
-  const pad = { l: 44, r: 12, t: 10, b: props.xLabel ? 38 : 22 };
+  const pad = { l: 44, r: 20, t: 10, b: props.xLabel ? 38 : 22 };
   const all = props.series.flatMap((s) => s.points).filter((p) => Number.isFinite(p.y));
   if (all.length === 0) return <div ref={ref} />;
   const xs = all.map((p) => p.x);
@@ -243,6 +247,8 @@ export function LineChart(props: {
   const palette = ['#5ecfba', '#f2b134', '#6aa9e8', '#b08ee0', '#7bc47f', '#e4696b'];
   const yt = niceTicks(y0, y1, 4);
   const xt = niceTicks(x0, x1, Math.max(3, Math.floor(w / 110)));
+  const yd = tickDigits(yt);
+  const xd = tickDigits(xt);
   return (
     <figure ref={ref}>
       <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" aria-label={`${props.yLabel ?? 'value'} against ${props.xLabel ?? 'x'}`}>
@@ -253,13 +259,13 @@ export function LineChart(props: {
           <g key={`y${y}`}>
             <line x1={pad.l} x2={w - pad.r} y1={sy(y)} y2={sy(y)} stroke="#ffffff12" />
             <text class="svg-label" x={pad.l - 6} y={sy(y) + 3} textAnchor="end">
-              {fmtTick(y)}
+              {y.toFixed(yd)}
             </text>
           </g>
         ))}
         {xt.map((x) => (
           <text key={`x${x}`} class="svg-label" x={sx(x)} y={h - pad.b + 14} textAnchor="middle">
-            {props.xFormat ? props.xFormat(x) : fmtTick(x)}
+            {props.xFormat ? props.xFormat(x) : x.toFixed(xd)}
           </text>
         ))}
         {props.marker !== undefined && <line x1={sx(props.marker)} x2={sx(props.marker)} y1={pad.t} y2={h - pad.b} stroke="#ffffff55" strokeDasharray="3 3" />}
