@@ -14,7 +14,7 @@ export const TUBE_PATHS: { id: StructureId; d: string; label: string; lx: number
   { id: 'DTL', d: 'M246,300 L246,600', label: 'Thin descending limb', lx: 236, ly: 450, anchor: 'middle', rotate: true, nx: 226, ny: 620, nAnchor: 'end' },
   { id: 'ATL', d: 'M246,600 C246,652 300,652 300,600 L300,430', label: 'Thin ascending limb', lx: 316, ly: 520, anchor: 'middle', rotate: true, nx: 312, ny: 668 },
   { id: 'TAL', d: 'M300,430 L300,150 C300,110 250,88 204,94', label: 'Thick ascending limb', lx: 316, ly: 300, anchor: 'middle', rotate: true, nx: 322, ny: 160 },
-  { id: 'DCT', d: 'M204,94 C232,46 322,36 348,70 C368,100 396,62 420,96', label: 'Distal convoluted tubule', lx: 300, ly: 26, anchor: 'middle', nx: 372, ny: 118, nAnchor: 'end' },
+  { id: 'DCT', d: 'M204,94 C232,46 322,36 348,70 C368,100 396,62 420,96', label: 'Distal convoluted tubule', lx: 300, ly: 16, anchor: 'middle', nx: 268, ny: 30 },
   { id: 'CNT', d: 'M420,96 C442,116 462,122 462,152', label: 'Connecting tubule', lx: 474, ly: 112, nx: 474, ny: 125 },
   { id: 'CCD', d: 'M462,152 L462,228', label: 'Cortical collecting duct', lx: 474, ly: 190, nx: 474, ny: 203 },
   { id: 'OMCD', d: 'M462,228 L462,430', label: 'Outer medullary CD', lx: 474, ly: 330, nx: 474, ny: 343 },

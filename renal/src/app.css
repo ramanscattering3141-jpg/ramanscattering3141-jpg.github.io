@@ -373,3 +373,5 @@ a.btn.primary-link { background: var(--accent-dim); border-color: var(--accent-d
 .handling-row { display: grid; grid-template-columns: 90px 1fr 110px; gap: 10px; align-items: center; font-size: 0.86rem; }
 .handling-bar { height: 12px; background: #ffffff10; border-radius: 6px; overflow: hidden; }
 .handling-bar i { display: block; height: 100%; border-radius: 6px; transition: width 0.25s; }
+.seg-detail h4 { margin-top: 12px; color: var(--accent); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.seg-detail p, .seg-detail li { font-size: 0.88rem; }
