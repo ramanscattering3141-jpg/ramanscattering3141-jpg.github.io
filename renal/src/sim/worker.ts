@@ -5,6 +5,7 @@ import { runToSteadyState, simulate, stepCourse } from '../engine/simulate';
 import type { BodyState } from '../engine/body';
 import type { ParamPatch, Params } from '../engine/types';
 import { hypernatraemiaCorrection, waterDeprivationTest, type Regimen } from './deprivation';
+import { hyperglycemicCrisis, treatCrisis, type CrisisSpec, type Rx } from './hyperglycemia';
 
 export type Job =
   | { id: number; kind: 'steady'; params: Params; days: number; start?: BodyState }
@@ -22,7 +23,9 @@ export type Job =
   /** the water-restriction test on one patient */
   | { id: number; kind: 'deprivation'; patch: ParamPatch }
   /** withhold water to a sodium of ~165, then treat */
-  | { id: number; kind: 'correction'; rx: Regimen };
+  | { id: number; kind: 'correction'; rx: Regimen }
+  /** a hyperglycaemic crisis developing, and optionally its treatment */
+  | { id: number; kind: 'crisis'; spec: CrisisSpec; treat?: Rx };
 
 self.onmessage = (e: MessageEvent<Job>) => {
   const job = e.data;
@@ -35,6 +38,8 @@ self.onmessage = (e: MessageEvent<Job>) => {
       (self as unknown as Worker).postMessage({ id: job.id, result: r });
     } else if (job.kind === 'correction') {
       (self as unknown as Worker).postMessage({ id: job.id, result: hypernatraemiaCorrection(job.rx) });
+    } else if (job.kind === 'crisis') {
+      (self as unknown as Worker).postMessage({ id: job.id, result: job.treat ? treatCrisis(job.spec, job.treat) : hyperglycemicCrisis(job.spec) });
     } else if (job.kind === 'deprivation') {
       (self as unknown as Worker).postMessage({ id: job.id, result: waterDeprivationTest(job.patch) });
     } else {

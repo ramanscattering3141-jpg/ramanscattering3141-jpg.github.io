@@ -13,6 +13,7 @@ import { evaluate, runToSteadyState, simulate, stepCourse, type Evaluation, type
 import { initialBody, type BodyState } from '../engine/body';
 import type { Job } from './worker';
 import { hypernatraemiaCorrection, waterDeprivationTest, type CorrectionResult, type DeprivationResult, type Regimen } from './deprivation';
+import { hyperglycemicCrisis, treatCrisis, type CrisisResult, type CrisisSpec, type Rx } from './hyperglycemia';
 import { applyPatch, DEFAULT_PARAMS, type ParamPatch, type Params } from '../engine/types';
 
 export const paramsKey = (p: Params, extra = '') => JSON.stringify(p) + extra;
@@ -45,7 +46,8 @@ type JobSpec =
   | { kind: 'trajectory'; params: Params; days: number; dt: number; start?: BodyState }
   | { kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number }
   | { kind: 'deprivation'; patch: ParamPatch }
-  | { kind: 'correction'; rx: Regimen };
+  | { kind: 'correction'; rx: Regimen }
+  | { kind: 'crisis'; spec: CrisisSpec; treat?: Rx };
 
 type SteadyResult = { state: SimState; ev: Evaluation };
 type CourseResult = { points: TrajectoryPoint[]; final: Evaluation; state: SimState };
@@ -95,6 +97,7 @@ function run<T>(job: JobSpec): Promise<T> {
         else if (job.kind === 'trajectory') resolve(simulate(job.params, job.days, job.dt, job.start) as T);
         else if (job.kind === 'deprivation') resolve(waterDeprivationTest(job.patch) as T);
         else if (job.kind === 'correction') resolve(hypernatraemiaCorrection(job.rx) as T);
+        else if (job.kind === 'crisis') resolve((job.treat ? treatCrisis(job.spec, job.treat) : hyperglycemicCrisis(job.spec)) as T);
         else resolve(stepCourse(job.from, job.to, job.days, job.dt, job.settleDays, job.fineDays, job.coarseDt) as T);
       }, 0),
     );
@@ -218,6 +221,23 @@ export function useCorrection(rx: Regimen) {
       return v;
     });
   }, 150);
+  return { result: r.value, busy: r.busy };
+}
+
+const crisisCache = new Map<string, CrisisResult>();
+
+/** A hyperglycaemic crisis developing (no `treat`) or being treated, run in a worker. */
+export function useCrisis(spec: CrisisSpec, treat?: Rx) {
+  const key = JSON.stringify([spec, treat ?? null]);
+  const r = useAsync(key, () => {
+    const hit = crisisCache.get(key);
+    if (hit) return Promise.resolve(hit);
+    return run<CrisisResult>({ kind: 'crisis', spec, treat }).then((v) => {
+      if (crisisCache.size > 60) crisisCache.clear();
+      crisisCache.set(key, v);
+      return v;
+    });
+  }, 120);
   return { result: r.value, busy: r.busy };
 }
 

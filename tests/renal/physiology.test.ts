@@ -1788,11 +1788,16 @@ describe('hyponatraemia: water excretion and what limits it (Rose ch. 23)', () =
     // Rose ch. 23: with ADH suppressed the urine osmolality falls to 40-100 mmol/kg and the
     // maximum water excretion exceeds 10 L/day, which is why hyponatraemia almost always means
     // a defect in water excretion rather than too much drinking.
-    const loaded = at({ waterIntake: 14 }, 20).ev;
-    expect(loaded.kidney.urine.osm).toBeLessThan(110);
-    expect(loaded.kidney.urine.volumePerDay).toBeGreaterThan(10);
-    expect(loaded.reg.hormones.adh).toBeLessThan(0.3);
-    expect(loaded.plasma.Na).toBeGreaterThan(135);
+    // Near the osmotic threshold the loop is so sensitive that a fraction of a mmol/L of sodium
+    // moves the urine output by several litres, and the integrated model rings around its steady
+    // state; the day-averaged values are the ones that mean anything.
+    const r = simulate(applyPatch(DEFAULT_PARAMS, { waterIntake: 14 }), 4, 0.05, settledBody);
+    const lastDay = r.points.filter((p) => p.day >= 3);
+    const avg = (f: (p: (typeof lastDay)[number]) => number) => lastDay.reduce((s, p) => s + f(p), 0) / lastDay.length;
+    expect(avg((p) => p.urineOsm)).toBeLessThan(110);
+    expect(avg((p) => p.urineVolume)).toBeGreaterThan(10);
+    expect(avg((p) => p.adh)).toBeLessThan(0.3);
+    expect(avg((p) => p.Na)).toBeGreaterThan(135);
   });
 
   test('a water load is excreted within hours, not days', () => {

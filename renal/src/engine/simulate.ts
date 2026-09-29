@@ -8,7 +8,8 @@ import { clamp } from './math';
 import {
   derivePlasma,
   ecfVolume,
-  edelmanNa,
+  extracellular,
+  normalKStore,
   initialBody,
   oncoticGradientRel,
   type BodyState,
@@ -447,7 +448,7 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   // hypertension, leaky capillaries or hypoalbuminaemia erode that margin and send more of any
   // excess into the interstitium, where it no longer supports the circulation.
   const ecfNormal = p.weightKg * (p.female ? 0.5 : 0.6) / 3;
-  const ecfNow = ecfVolume(b, p.weightKg);
+  const ecfNow = ecfVolume(b, p);
   const excessEcf = Math.max(0, ecfNow - ecfNormal);
   // The albumin term is the loss of transcapillary oncotic gradient, not the fall in plasma
   // albumin: interstitial oncotic pressure falls in parallel and largely preserves the gradient,
@@ -470,6 +471,16 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   const boneAlkali = clamp(3.5 * (22 - b.hco3), 0, 90);
   const netAcid = ev.balance.acidIn - ev.balance.acidOut - boneAlkali;
   b.hco3 = clamp(b.hco3 - (netAcid * dt) / Math.max(bufferVolume, 5), 3, 60);
+  // As cells give up K⁺ to replete the extracellular stores, Na⁺ and H⁺ enter in its place to keep
+  // them electroneutral: an intracellular acidosis and an extracellular alkalosis (Rose ch. 18,
+  // 27). This is one reason K⁺ depletion generates and maintains a metabolic alkalosis, and why
+  // KCl helps to correct one. The book gives no ratio; a fifth of the lost K⁺ replaced by H⁺ puts
+  // the rise in bicarbonate at about 1 mmol/L per 100 mmol of deficit, the mild alkalosis K⁺
+  // depletion produces on its own. Applied only below the normal store: this is the cellular
+  // response to depletion, not a general K⁺/H⁺ exchanger.
+  const deficitBefore = Math.max(0, normalKStore(p) - state.body.kE);
+  const deficitAfter = Math.max(0, normalKStore(p) - b.kE);
+  b.hco3 = clamp(b.hco3 + (0.2 * (deficitAfter - deficitBefore)) / Math.max(bufferVolume, 5), 3, 60);
 
   // The organic anion left behind by an organic acid load (Rose ch. 19). Every acid arrives with
   // an anion, and what happens to that anion is what decides whether the acidosis has a high or a
@@ -558,8 +569,8 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   // normal. Stopping such a run at its first step would report a successful treatment as a lethal
   // disturbance. Only a body still moving away from life is out of range.
   if (!outOfRange) {
-    const naPrev = edelmanNa(state.body.naE, state.body.kE, state.body.tbw);
-    const naNext = edelmanNa(b.naE, b.kE, b.tbw);
+    const naPrev = extracellular(state.body, p).na;
+    const naNext = extracellular(b, p).na;
     if (naNext < 100 && naNext <= naPrev) outOfRange = 'Serum sodium has fallen below 100 mmol/L, which is not survivable: the disturbance has no steady state and would have been treated long before this.';
     else if (naNext > 185 && naNext >= naPrev) outOfRange = 'Serum sodium has risen above 185 mmol/L, which is not survivable: the disturbance has no steady state.';
     else if (b.hco3 <= 4 && b.hco3 <= state.body.hco3) outOfRange = 'Bicarbonate has been consumed almost completely: the acid load exceeds anything the kidney and buffers can offset.';

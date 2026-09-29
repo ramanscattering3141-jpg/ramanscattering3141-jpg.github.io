@@ -111,9 +111,68 @@ export const NA_NON_ECF_PER_KG = 16;
  * (Rose ch. 7–8). This is why losing isotonic fluid shrinks the ECF litre for litre, while
  * losing pure water shrinks it only by the ECF's share of body water.
  */
-export function ecfVolume(b: BodyState, weightKg: number) {
-  const na = edelmanNa(b.naE, b.kE, b.tbw);
-  return clamp((b.naE - NA_NON_ECF_PER_KG * weightKg) / Math.max(na, 80), 0.08 * b.tbw, 0.75 * b.tbw);
+export function ecfVolume(b: BodyState, p: CompartmentParams) {
+  return extracellular(b, p).ecf;
+}
+
+/** What the compartment calculation needs to know about the patient. */
+export type CompartmentParams = Pick<Params, 'weightKg' | 'female' | 'glucose'>;
+
+/** Exchangeable K⁺ of a normal body, mmol: about 45 mmol/kg in men, less in women (less water). */
+export function normalKStore(p: Pick<Params, 'weightKg' | 'female'>) {
+  return 44.85 * p.weightKg * (p.female ? 0.5 / 0.6 : 1);
+}
+
+/**
+ * Sodium that has moved into cells in place of lost potassium, mmol.
+ *
+ * Cells losing K⁺ do not simply shrink their cation content: Na⁺ and H⁺ enter in its place
+ * (Rose ch. 18, 27). The book gives no ratio; a third of the deficit replaced by Na⁺ is used here,
+ * alongside a fifth by H⁺ (see the integrator). The sodium that enters is sodium the
+ * extracellular fluid no longer has, so a K⁺ deficit contracts the ECF a little and the kidney
+ * retains dietary NaCl to restore it. Leaving this out made every K⁺ loss — which the urine
+ * carries largely as KCl — a pure chloride loss from the ECF, with nothing to replace it. The H⁺
+ * third is applied to the bicarbonate pool in the integrator (it is the reason K⁺ depletion
+ * generates and maintains a metabolic alkalosis).
+ */
+export const CELL_NA_PER_K = 1 / 3;
+export function cellSodiumForPotassium(b: BodyState, p: Pick<Params, 'weightKg' | 'female'>) {
+  return CELL_NA_PER_K * clamp(normalKStore(p) - b.kE, 0, 0.6 * normalKStore(p));
+}
+
+/** The engine's normal plasma glucose, mg/dL: glucose above it is excess extracellular solute. */
+export const NORMAL_GLUCOSE = 95;
+
+/**
+ * Plasma sodium and ECF volume once any excess glucose has drawn water out of the cells.
+ *
+ * Without insulin, glucose enters most cells slowly, so a rise in its plasma level is a rise in
+ * extracellular solute alone. Water follows it out of the cells until the osmolality is the same
+ * on both sides: the extracellular fluid expands, its sodium is diluted, and the total osmolality
+ * still ends up higher than before (Rose ch. 22, 25; Fig. 22-1). This is translocational
+ * hyponatraemia, and it happens within minutes, before the kidney has done anything.
+ *
+ * It is solved here as an ideal two-compartment osmometer. The cells keep their solute, total
+ * body water is fixed, and the glucose is confined to the ECF. That calculation is Katz's, and it
+ * gives a fall of about 1.6–1.7 mmol/L of sodium for every 100 mg/dL (5.6 mmol/L) of glucose.
+ * Hillier's clamp study (hillier1999) found the fall to be steeper above about 400 mg/dL, roughly
+ * 2.4 per 100 mg/dL overall; the pages say that the model sits at the lower, physical figure.
+ */
+export function extracellular(b: BodyState, p: CompartmentParams) {
+  const glucoseMgDl = p.glucose;
+  const na0 = edelmanNa(b.naE, b.kE, b.tbw);
+  const ecfNa = b.naE - NA_NON_ECF_PER_KG * p.weightKg - cellSodiumForPotassium(b, p);
+  const v0 = clamp(ecfNa / Math.max(na0, 80), 0.08 * b.tbw, 0.75 * b.tbw);
+  const g = Math.max(0, (glucoseMgDl - NORMAL_GLUCOSE) / 18); // excess glucose, mmol/L of ECF
+  if (g < 1e-6) return { na: na0, ecf: v0, shifted: 0 };
+  const t = Math.max(b.tbw, 1);
+  const s0 = 2 * na0; // effective osmolality carried by the cations before the glucose
+  // Glucose mass M in the ECF such that, after water has moved, its concentration there is g:
+  //   g (s0 v0 + M) = M (s0 + M / t)   ⇒   M²/t + M (s0 − g) − g s0 v0 = 0
+  const m = (t / 2) * (-(s0 - g) + Math.sqrt((s0 - g) * (s0 - g) + (4 * g * s0 * v0) / t));
+  const osm = s0 + m / t;
+  const v = clamp((s0 * v0 + m) / osm, 0.08 * b.tbw, 0.75 * b.tbw);
+  return { na: (na0 * v0) / v, ecf: v, shifted: v - v0 };
 }
 
 /**
@@ -130,7 +189,13 @@ export function plasmaPotassium(kE: number, weightKg: number, p: Params, pH: num
   const storeRatio = clamp(kE / totalNormal, 0.35, 1.8);
   // Roughly 1 mmol/L plasma change per ~200-400 mmol total body deficit in the mid range
   const k = 4.2 * Math.pow(storeRatio, 2.1);
-  const insulinShift = -1.1 * Math.log(clamp(p.insulin + p.drugs.insulinDrip, 0.1, 5));
+  // Insulin is permissive in one direction and therapeutic in the other. Its absence raises the
+  // plasma K⁺ only modestly, about 0.4–0.5 mmol/L, because the kidney excretes the excess (Rose
+  // ch. 12); a pharmacological dose drives K⁺ into cells hard enough to lower it by 0.5–1.5
+  // (Rose ch. 28). A single logarithmic gain made severe insulin deficiency raise the K⁺ by 2.5
+  // and the kidney then wasted a thousand mmol in two days of ketoacidosis.
+  const insulinEffect = clamp(p.insulin + p.drugs.insulinDrip, 0.05, 5);
+  const insulinShift = insulinEffect < 1 ? -0.3 * Math.log(insulinEffect) : -1.1 * Math.log(insulinEffect);
   const betaShift = -0.55 * Math.log(clamp(p.beta2 + 1.5 * p.drugs.albuterol, 0.1, 5)) + 0.35 * p.drugs.betaBlocker;
   // Mineral acidosis shifts K out of cells (~0.6 mmol/L per 0.1 pH); organic acidoses much less.
   const mineralFraction = clamp(1 - p.lacticAcid / 8 - p.ketoAcid / 8, 0, 1);
@@ -207,7 +272,9 @@ export interface PlasmaDerived extends Plasma {
 }
 
 export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
-  const na = edelmanNa(b.naE, b.kE, b.tbw);
+  // Sodium diluted by any water that excess glucose has drawn out of the cells.
+  const shifted = extracellular(b, p);
+  const na = shifted.na;
   const pco2 = respiratoryPCO2(b.hco3, p);
   // b.hco3 is the metabolic pool the kidney adjusts; what a blood gas reports also includes the
   // immediate non-renal buffering of the prevailing PCO2.
@@ -220,7 +287,7 @@ export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
   const bunOsm = b.bun / 2.8;
   const osm = effOsm + bunOsm + p.toxicAlcoholOsm;
   // Total ECF includes any oedema; what supports the circulation is the rest of it.
-  const ecf = ecfVolume(b, p.weightKg);
+  const ecf = shifted.ecf;
   const circulatingEcf = Math.max(ecf - b.edema, 0.3 * ecf);
   const albumin = clamp(p.albumin - 0.8 * clamp(p.proteinuria / 8, 0, 1), 1, 5.5);
   // Plasma chloride. This model tracks chloride by mass balance — intake, gastrointestinal loss

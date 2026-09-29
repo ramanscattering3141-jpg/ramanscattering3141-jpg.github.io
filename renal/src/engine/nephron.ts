@@ -242,7 +242,14 @@ export function runNephron(inp: NephronInput): NephronResult {
   // water removal raises the luminal Cl concentration above plasma (TF/P Cl ~1.2-1.3,
   // Rose Fig. 3-1). That gradient then drives passive paracellular NaCl reabsorption.
   const targetClConc = pl.Cl * (1.12 + 0.22 * (hco3ReabPT / Math.max(f.HCO3, 1e-9)));
-  const clReabPT = clamp(f.Cl - ((f.water - waterPT) * targetClConc) / 1000, f.Cl * 0.2, f.Cl * 0.8);
+  // The chloride left in the lumen is scaled to the sodium left there, not to the water. The two
+  // are the same thing while the luminal osmoles are sodium salts. They part company in an
+  // osmotic diuresis: unreabsorbed glucose or mannitol holds water in the lumen that carries no
+  // sodium, and scaling chloride to the water sent several hundred mmol a day more chloride than
+  // cation out of the proximal tubule, draining the body's chloride with nothing to replace it.
+  // At normal flow the two scalings give the same chloride to within 0.01%.
+  const naLeftPT = f.Na - naReabPT;
+  const clReabPT = clamp(f.Cl - naLeftPT * (targetClConc / Math.max(pl.Na, 80)), f.Cl * 0.2, f.Cl * 0.8);
   const kReabPT = f.K * 0.70 * clamp(ptFraction / PT_BASE, 0.5, 1.3);
   const ureaReabPT = f.urea * 0.45 * clamp(ptFraction / PT_BASE, 0.4, 1.3);
   const caReabPT = f.Ca * 0.65 * clamp(ptFraction / PT_BASE, 0.4, 1.2);
@@ -332,9 +339,23 @@ export function runNephron(inp: NephronInput): NephronResult {
   // urea recycling: IMCD urea reabsorption feeds the inner medullary interstitium
   let imcdUreaReab = inp.ureaProduction * 0.4;
 
+  // An osmotic diuresis washes the medulla out. Unreabsorbed glucose or mannitol raises medullary
+  // blood flow (by a mechanism the book calls unknown) and lowers papillary osmolality, which in
+  // turn reduces water abstraction from the descending limb and passive NaCl exit from the thin
+  // ascending limb (Rose ch. 4). That is why a solute diuresis gives a urine only modestly
+  // hyperosmotic to plasma, mostly glucose, with a Na⁺ + K⁺ concentration well below the plasma's
+  // (Rose ch. 24, 25). Without it the model concentrated a 1000 mg/dL glucosuria to 1000 mOsm/kg.
+  // Half the gradient is lost at about 2 mmol/min of unreabsorbed solute (a plasma glucose near
+  // 30 mmol/L at a normal GFR), which puts the urine-to-plasma osmolality ratio near 2 at an
+  // osmolar clearance of 9 mL/min and near 1.5 at 20 mL/min. The response is soft at the bottom
+  // end: the few tens of grams a day of glucosuria an SGLT2 inhibitor causes at a normal glucose
+  // is a mild diuresis that does not wash the medulla out.
+  const osmoticWashout = 1 / (1 + (nonReabsorbed * nonReabsorbed) / (nonReabsorbed + 0.5) / 1.5);
+
   for (let iter = 0; iter < 12; iter++) {
     // NaCl component of the gradient from TAL transport per unit flow
     gNaCl = clamp(
+      osmoticWashout *
       300 *
         Math.pow(clamp(nkcc, 0, 2), 0.9) *
         Math.pow(clamp(2.0 / Math.max(inp.vasaRecta, 0.2), 0.3, 2.2), 0.45) *
@@ -345,7 +366,8 @@ export function runNephron(inp: NephronInput): NephronResult {
     );
     // urea component: accumulation depends on IMCD urea delivery/permeability and flow
     gUrea = clamp(
-      190 * Math.pow(clamp(imcdUreaReab / 0.0165, 0.05, 3), 0.55) * Math.pow(clamp(t.UTA, 0.05, 2), 0.5) * Math.pow(clamp(1.6 / Math.max(inp.vasaRecta, 0.2), 0.3, 1.8), 0.4),
+      osmoticWashout *
+        190 * Math.pow(clamp(imcdUreaReab / 0.0165, 0.05, 3), 0.55) * Math.pow(clamp(t.UTA, 0.05, 2), 0.5) * Math.pow(clamp(1.6 / Math.max(inp.vasaRecta, 0.2), 0.3, 1.8), 0.4),
       10,
       800,
     );
@@ -592,9 +614,15 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // constant when only Na+ intake changes (Rose ch. 6, Table 6-3; ch. 12). Neither dependence
   // may therefore dominate the other.
   const flowRel = Math.max(flow, 0.1) / 6;
-  const kChannels = clamp(t.ROMK * Math.pow(Math.max(mr, 0.02), 0.6) + 0.35 * t.BK * clamp(Math.pow(flowRel, 0.8), 0, 3), 0, 7);
+  // Flow helps secretion by washing secreted K⁺ away, but only up to a point: once the luminal K⁺
+  // is held near zero, more flow cannot lower it further, and secretion is then limited by the
+  // channels and the pump. Above about twice normal distal flow the gain flattens. Without the
+  // ceiling, the six-fold distal flow of an osmotic diuresis wasted 600 mmol of K⁺ a day, where
+  // the deficit of diabetic ketoacidosis builds up at 3–5 mmol/kg over several days (Rose ch. 25).
+  const flowGain = flowRel <= 2 ? Math.pow(flowRel, 0.55) : Math.pow(2, 0.55) * Math.pow(flowRel / 2, 0.12);
+  const kChannels = clamp(t.ROMK * Math.pow(Math.max(mr, 0.02), 0.6) + 0.35 * t.BK * clamp(Math.pow(Math.min(flowRel, 2.5), 0.8), 0, 3), 0, 7);
   const kSecretion = clamp(
-    KSEC_GAIN * kChannels * (0.4 + 0.9 * voltage) * clamp(Math.pow(flowRel, 0.55), 0.25, 2.5) * (pl.K >= 4.2 ? clamp(1 + 0.9 * (pl.K - 4.2), 1, 3.5) : Math.max(0.02, Math.pow(pl.K / 4.2, 5))) /* K+ depletion withdraws ROMK and lowers cell K+ */ * (pl.pH > 7.45 ? 1.2 : pl.pH < 7.3 ? 0.8 : 1),
+    KSEC_GAIN * kChannels * (0.4 + 0.9 * voltage) * clamp(flowGain, 0.25, 2.5) * (pl.K >= 4.2 ? clamp(1 + 0.9 * (pl.K - 4.2), 1, 3.5) : Math.max(0.02, Math.pow(pl.K / 4.2, 5))) /* K+ depletion withdraws ROMK and lowers cell K+ */ * (pl.pH > 7.45 ? 1.2 : pl.pH < 7.3 ? 0.8 : 1),
     0,
     2.5,
   );
@@ -607,9 +635,16 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // point where it no longer balances the cations still in the lumen. That floor is what the
   // kidney runs up against when it drives urine chloride below 10 mmol/L in chloride
   // depletion, and it is why urine chloride normally tracks urine sodium.
+  //
+  // Hypochloraemia makes the collecting duct avid for chloride: as the plasma chloride falls
+  // relative to the sodium, more of the sodium reabsorbed takes chloride with it (and type B cells
+  // reclaim chloride through pendrin), which is why urine chloride can be driven below 10 mmol/L
+  // in chloride depletion while sodium is still being excreted (Rose ch. 13, 18).
+  const clAvidity = clamp((0.76 - pl.Cl / Math.max(pl.Na, 1)) / 0.08, 0, 1);
   const clAfter = (luminalCl: number, naReab: number, coupling: number, cationsOut: number) => {
     const floor = Math.min(luminalCl, 0.55 * cationsOut);
-    return Math.max(floor, luminalCl - naReab * coupling);
+    const c = coupling + (1 - coupling) * clAvidity;
+    return Math.max(floor, luminalCl - naReab * c);
   };
 
   const cntOut = { ...dctOut };
@@ -762,6 +797,16 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
 
   imcdOut.HCO3 = finalHCO3;
   imcdOut.NH4 = nh4Trapped;
+
+  // The final urine has to be electroneutral. Its chloride cannot exceed the cations left to
+  // balance it once bicarbonate, phosphate and the sulfate of the dietary acid load have taken
+  // their share. The segment rules above respect that at normal delivery; this is the backstop for
+  // a high-flow state (an osmotic diuresis, most of all) where rounding in each segment adds up to
+  // a urine carrying more chloride than cation, which bled the body of chloride with nothing to
+  // replace it and inflated the plasma anion gap. A normal urine sits well inside the limit.
+  const urineCations = imcdOut.Na + imcdOut.K + imcdOut.NH4 + 2 * (imcdOut.Ca + imcdOut.Mg);
+  const otherAnions = imcdOut.HCO3 + 1.8 * imcdOut.Pi + sulfateOut;
+  imcdOut.Cl = Math.min(imcdOut.Cl, Math.max(0, urineCations - otherAnions));
 
   // Final water equilibration with the papillary interstitium: this is the step that sets the
   // maximum urine osmolality.

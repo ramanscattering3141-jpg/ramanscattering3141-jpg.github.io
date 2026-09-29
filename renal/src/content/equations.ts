@@ -96,6 +96,32 @@ export const EQUATIONS: EquationDef[] = [
     keywords: ['tonicity'],
   },
   {
+    id: 'nacorr',
+    name: 'Sodium corrected for hyperglycaemia',
+    formula: 'Corrected Na⁺ = measured Na⁺ + k × (glucose − 5.6) ÷ 5.6,   k = 1.6 (Katz) to 2.4 (Hillier)',
+    group: 'Units & osmolality',
+    vars: [
+      { key: 'na', label: 'Measured Na⁺', unit: 'mmol/L', min: 100, max: 170, step: 1, value: 128 },
+      { key: 'glu', label: 'Glucose', unit: 'mmol/L', min: 3, max: 100, step: 0.5, value: 45 },
+      { key: 'k', label: 'Correction factor k', unit: 'mmol/L per 5.6', min: 1.6, max: 2.4, step: 0.1, value: 2.4 },
+    ],
+    compute: (v) => {
+      const c = v.na + (v.k * Math.max(0, v.glu - 5.6)) / 5.6;
+      return {
+        value: c,
+        unit: 'mmol/L',
+        read: c > 145 ? 'Water has been lost in excess of Na⁺ + K⁺: hypernatraemia will appear as the glucose falls.' : c < 135 ? 'True hyponatraemia persists even allowing for the glucose.' : 'Once the glucose is gone the sodium should be about normal.',
+      };
+    },
+    show: (v) => `${f(v.na)} + ${f(v.k, 1)} × (${f(v.glu, 1)} − 5.6) ÷ 5.6`,
+    explain: 'Glucose confined to the extracellular fluid draws water out of cells and dilutes the sodium (translocational hyponatraemia). Adding the dilution back estimates the sodium once insulin has moved glucose and water back into cells. The ideal-osmometer calculation gives 1.6 mmol/L per 5.6 mmol/L (100 mg/dL) of glucose; Hillier\'s volunteers showed a steeper fall above about 22 mmol/L, 2.4 overall.',
+    caveat: 'An estimate: it assumes no ongoing losses or infusions, and the true factor varies between patients.',
+    chapters: [25, 22],
+    route: '/hyperglycemia',
+    cite: { refs: ['hillier1999'], rose: [25], evidence: 'clinical' },
+    keywords: ['corrected sodium', 'Katz', 'Hillier', 'translocational hyponatremia', 'pseudohyponatremia'],
+  },
+  {
     id: 'osmgap',
     name: 'Plasma osmolal gap',
     formula: 'Osmolal gap = measured Posm − (2 × Na⁺ + glucose + urea)',
