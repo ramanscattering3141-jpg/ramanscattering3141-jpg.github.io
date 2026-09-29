@@ -58,6 +58,9 @@ export class EcgView {
   private ladderY = 0;
   private rhythmStrip: Strip | null = null;
   private cursor: number | null = null;
+  private seg: { t0: number; t1: number; label: string } | null = null;
+  /** Called with a time (ms) when the user taps the tracing without dragging. */
+  onSeek: ((t: number) => void) | null = null;
   private cal: { x0: number; x1: number; y: number } | null = null;
   private ro: ResizeObserver;
   private readout: HTMLDivElement;
@@ -88,6 +91,18 @@ export class EcgView {
 
   setCursor(t: number | null): void {
     this.cursor = t;
+    this.drawOverlay();
+  }
+
+  /** Highlight the ECG segment currently being written (drawn from its start up to the cursor). */
+  setSegment(seg: { t0: number; t1: number; label: string } | null): void {
+    this.seg = seg;
+    this.drawOverlay();
+  }
+
+  setCursorAndSegment(t: number | null, seg: { t0: number; t1: number; label: string } | null): void {
+    this.cursor = t;
+    this.seg = seg;
     this.drawOverlay();
   }
 
@@ -438,6 +453,7 @@ export class EcgView {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.over.width, this.over.height);
     ctx.setTransform(dpr * this.pxmm, 0, 0, dpr * this.pxmm, 0, 0);
+    if (this.seg && this.cursor !== null) this.drawSegment(ctx, this.seg, this.cursor);
     if (this.cursor !== null) {
       ctx.strokeStyle = css('--accent') || '#0b63c5';
       ctx.lineWidth = 0.3;
@@ -476,6 +492,53 @@ export class EcgView {
     }
   }
 
+  private drawSegment(ctx: CanvasRenderingContext2D, seg: { t0: number; t1: number; label: string }, cursor: number): void {
+    const run = this.run!;
+    const sig = run.sig;
+    const o = this.o;
+    const mmPerMs = o.speed / 1000;
+    const accent = css('--accent') || '#0b63c5';
+    for (const st of this.strips) {
+      const a = Math.max(seg.t0, st.t0);
+      const b = Math.min(seg.t1, st.t1);
+      if (b <= a) continue;
+      ctx.fillStyle = css('--seg-band') || 'rgba(11,99,197,0.10)';
+      ctx.fillRect(this.tx(st, a), st.y0 - o.rowMm * 0.5, (b - a) * mmPerMs, o.rowMm * 0.95);
+      const data = sig.leads[st.lead];
+      const e = Math.min(b, cursor);
+      if (!data || e <= a) continue;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 0.55;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      const i0 = Math.max(0, Math.round(((a - sig.from) * sig.fs) / 1000));
+      const i1 = Math.min(sig.n - 1, Math.round(((e - sig.from) * sig.fs) / 1000));
+      for (let i = i0; i <= i1; i++) {
+        const t = sig.from + (i * 1000) / sig.fs;
+        const x = st.x0 + (t - st.t0) * mmPerMs;
+        const y = st.y0 - data[i] * o.gain;
+        if (i === i0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      if (st === this.rhythmStrip) {
+        ctx.font = `600 2.6px system-ui, sans-serif`;
+        ctx.fillStyle = accent;
+        ctx.fillText(seg.label, Math.min(this.tx(st, a), this.wMm - 40), st.y0 - o.rowMm * 0.5 + 3);
+      }
+    }
+  }
+
+  private timeAt(x: number, y: number): number | null {
+    for (const st of this.strips) {
+      const x1 = this.tx(st, st.t1);
+      if (x < st.x0 || x > x1) continue;
+      if (y < st.y0 - this.o.rowMm * 0.55 || y > st.y0 + this.o.rowMm * 0.45) continue;
+      return st.t0 + (x - st.x0) / (this.o.speed / 1000);
+    }
+    return null;
+  }
+
   private bindCalipers(): void {
     let dragging = false;
     const pos = (e: PointerEvent): { x: number; y: number } => {
@@ -497,6 +560,8 @@ export class EcgView {
     const end = (): void => {
       dragging = false;
       if (this.cal && Math.abs(this.cal.x1 - this.cal.x0) < 0.6) {
+        const t = this.onSeek ? this.timeAt(this.cal.x0, this.cal.y) : null;
+        if (t !== null) this.onSeek!(t);
         this.cal = null;
         this.readout.textContent = 'Drag across the tracing to measure an interval.';
         this.drawOverlay();
@@ -505,6 +570,10 @@ export class EcgView {
     this.over.addEventListener('pointerup', end);
     this.over.addEventListener('pointercancel', end);
     this.readout.textContent = 'Drag across the tracing to measure an interval.';
+  }
+
+  setReadoutHint(text: string): void {
+    this.readout.textContent = text;
   }
 }
 

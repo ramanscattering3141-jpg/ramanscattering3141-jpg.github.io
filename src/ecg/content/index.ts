@@ -88,6 +88,7 @@ const PAGES: { id: string; title: string; href: string; keys: string }[] = [
   { id: 'tools-wct', title: 'Wide-complex tachycardia algorithms (Brugada, Vereckei aVR)', href: '#/tools/wct', keys: 'wide complex tachycardia vt vs svt aberrancy brugada algorithm vereckei avr algorithm rs interval' },
   { id: 'tools-leads', title: 'Lead reversal, dextrocardia & artefact lab', href: '#/tools/leads', keys: 'lead reversal limb lead swap misplaced electrodes dextrocardia artefact artifact tremor motion pseudo vt' },
   { id: 'tools-posterior', title: 'Posterior (V7–V9) and right-sided (V4R) leads', href: '#/ischemia', keys: 'posterior leads v7 v8 v9 right sided v4r posterior mi' },
+  { id: 'heart3d', title: '3-D heart & slow-motion ECG', href: '#/heart3d', keys: '3d heart three dimensional rotate rotatable anatomy slow motion step millisecond wavefront conduction animation heart vector vector loop projection' },
   { id: 'glossary', title: 'Glossary', href: '#/glossary', keys: 'glossary definitions terms vocabulary' },
   { id: 'path', title: 'Learning path & progress', href: '#/path', keys: 'learning path curriculum progress reviewed study plan' },
 ];

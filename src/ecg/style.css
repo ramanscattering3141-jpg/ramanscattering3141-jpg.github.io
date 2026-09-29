@@ -1050,3 +1050,247 @@ table.t th {
 .answer.show {
   display: block;
 }
+
+/* ---------------- Heart + explanation row, slow-motion playback ---------------- */
+.heart-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+.heart-row.large {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+}
+@media (max-width: 1000px) {
+  .heart-row,
+  .heart-row.large {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.heart-slot {
+  min-width: 0;
+}
+.playback {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.pb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.pb-row + .pb-row {
+  margin-top: 6px;
+}
+.pb-row .btn {
+  padding: 4px 9px;
+  font-size: 0.82rem;
+}
+.pb-speed,
+.pb-loop {
+  font-size: 0.82rem;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.scrub {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.pb-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 70px;
+  text-align: right;
+}
+.pb-hint {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+/* explanation box */
+.xp {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 200px;
+  font-size: 0.88rem;
+}
+.xp-phase {
+  display: inline-block;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.xp-phase.ph-QRS {
+  background: color-mix(in srgb, #ff8f1f 22%, var(--panel));
+  color: color-mix(in srgb, #b35600 80%, var(--ink));
+}
+.xp-phase.ph-T,
+.xp-phase.ph-U {
+  background: color-mix(in srgb, #5aa9ff 22%, var(--panel));
+}
+.xp-phase.ph-blockedP,
+.xp-phase.ph-VF {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.xp-live {
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin: 6px 0;
+}
+.xp-cond {
+  margin: 4px 0 6px;
+  padding-left: 18px;
+}
+.xp-cond li {
+  margin: 2px 0;
+}
+.xp-why {
+  margin: 4px 0 6px;
+}
+.xp-sub {
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 8px;
+}
+.xp-comp {
+  margin: 6px 0;
+}
+.xp-bar {
+  height: 5px;
+  background: var(--panel-2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.xp-bar i {
+  display: block;
+  height: 100%;
+  background: #ff8f1f;
+  transition: width 0.08s linear;
+}
+.xp-leads {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+/* 3-D heart */
+.h3d {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+}
+.h3d-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+.h3d-sel {
+  font-size: 0.8rem;
+  max-width: 100%;
+}
+.h3d-tog {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.h3d-canvas {
+  position: relative;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--panel-2) 70%, #1b2230), color-mix(in srgb, var(--panel) 40%, #0e1117));
+  touch-action: none;
+}
+.h3d-canvas canvas {
+  display: block;
+}
+.h3d-labels {
+  position: absolute !important;
+  inset: 0;
+}
+.h3d-gizmo {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  width: 70px;
+  height: 70px;
+  pointer-events: none;
+}
+.h3d-lab {
+  font: 600 11px system-ui, sans-serif;
+  color: #f4f4f4;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.h3d-lab.small {
+  font-size: 10px;
+  opacity: 0.9;
+}
+.h3d-lab.sys {
+  color: #ffe9a0;
+}
+.h3d-lab.blk {
+  color: #ff6b6b;
+}
+.h3d-lab.ap {
+  color: #e1a3f0;
+}
+.h3d-lab.focus {
+  color: #ff8a80;
+}
+.h3d-lab.lead {
+  color: #bdbdbd;
+  font-size: 10px;
+}
+.h3d-lab.lead.strong {
+  color: #8be08f;
+  font-size: 12px;
+}
+.h3d-lab.proj {
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.h3d-lab.proj.pos {
+  color: #8be08f;
+}
+.h3d-lab.proj.neg {
+  color: #ff8a80;
+}
+.h3d-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.h3d-leg i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}

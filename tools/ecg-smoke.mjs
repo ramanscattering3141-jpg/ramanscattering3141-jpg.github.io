@@ -9,13 +9,14 @@ const ROUTES = [
   'simulator', 'simulator?preset=dextrocardia', 'rhythms', 'rhythms/avnrt-lab', 'rhythms/avrt-lab', 'rhythms/flutter-lab', 'conduction', 'conduction/av', 'conduction/bbb',
   'structural', 'ischemia', 'electrolytes', 'electrolytes/drugs', 'inherited', 'management', 'acls', 'cases', 'challenge',
   'sandbox', 'sandbox/one', 'sandbox/build', 'sandbox/adenosine', 'sandbox/compare', 'sandbox/axis', 'sandbox/p', 'sandbox/qrs', 'sandbox/st', 'sandbox/hierarchy',
-  'ddx', 'search?q=wide%20QRS', 'search?q=epsilon', 'sources', 'tools', 'tools/qtc', 'tools/chads', 'tools/sgarbossa', 'tools/wct', 'tools/leads', 'glossary', 'glossary/reentry', 'path',
+  'ddx', 'search?q=wide%20QRS', 'search?q=epsilon', 'sources', 'tools', 'tools/qtc', 'tools/chads', 'tools/sgarbossa', 'tools/wct', 'tools/leads', 'glossary', 'glossary/reentry', 'path', 'heart3d', 'heart3d?preset=lbbb',
   'dx/avnrt', 'dx/stemi', 'dx/hcm', 'dx/arvc', 'dx/athlete', 'dx/takotsubo', 'dx/deWinter', 'dx/lvAneurysm', 'dx/cpvt', 'dx/dextrocardia', 'dx/leadReversal', 'dx/artifact',
 ];
 
 const server = await preview({ preview: { port: 4179, strictPort: true }, logLevel: 'silent' });
 const base = 'http://localhost:4179/ecg/';
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }).catch(() => chromium.launch());
+const args = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium', args }).catch(() => chromium.launch({ args }));
 let failures = 0;
 for (const [w, h, label] of [[1280, 900, 'desktop'], [390, 844, 'mobile']]) {
   const page = await browser.newPage({ viewport: { width: w, height: h } });

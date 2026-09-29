@@ -21,10 +21,12 @@
   },
   "homepage": "https://github.com/ramanscattering3141-jpg/ramanscattering3141-jpg.github.io#readme",
   "dependencies": {
-    "cesium": "^1.145.0"
+    "cesium": "^1.145.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@types/three": "^0.186.0",
     "egm96-universal": "^1.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",

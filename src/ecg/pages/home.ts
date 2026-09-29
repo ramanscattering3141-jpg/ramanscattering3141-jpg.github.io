@@ -9,12 +9,13 @@ export function renderHome(root: HTMLElement): () => void {
     loopBanner(),
   );
   const panel = new EcgPanel({ heart: true, duration: 8000, layout: 'strips', leads: ['II', 'V1'], showLadder: true, showLabels: true });
-  root.append(h('section', { class: 'card' }, h('h2', null, 'Live example: a PAC initiates AV nodal re-entry'), p('A premature atrial beat finds the **fast pathway** still refractory, travels down the **slow pathway** (long PR "jump"), and returns up the recovered fast pathway — a circuit is born. Press **Animate conduction** and watch the ladder diagram and the heart.'), panel.el));
+  root.append(h('section', { class: 'card' }, h('h2', null, 'Live example: a PAC initiates AV nodal re-entry'), p('A premature atrial beat finds the **fast pathway** still refractory, travels down the **slow pathway** (long PR "jump"), and returns up the recovered fast pathway — a circuit is born. Press **Play** (choose a slow speed, or step ±1 ms) and watch the ladder diagram and the heart.'), panel.el));
   panel.show(presetPhysio('avnrt'));
 
   const tiles: [string, string, string, string][] = [
     ['A', 'ECG Fundamentals', '#/fundamentals', 'Membrane and action potentials, vectors, the 12 leads, a rotatable activation vector, systematic interpretation.'],
     ['B', 'ECG Physiology', '#/physiology', 'Why each wave exists; activation sequence beat-by-beat; "WHY?" chains for every major finding.'],
+    ['3D', '3-D heart & slow-motion ECG', '#/heart3d', 'Rotate the heart, slow time to 0.01×, and watch the wavefront, conduction system and heart vector write each part of the ECG.'],
     ['C', 'ECG Simulator', '#/simulator', 'Every physiological variable on sliders, live 12-lead, ladder diagram and conduction animation.'],
     ['D', 'Rhythm Library', '#/rhythms', 'Sinus, ectopic, atrial, junctional, AVNRT, AVRT, WPW, ventricular and arrest rhythms — each with mechanism, ECG and management.'],
     ['E', 'Conduction Disorders', '#/conduction', 'AV block with selectable level and escape; bundle-branch and fascicular block step-through; pacemakers.'],
