@@ -5,7 +5,7 @@
 // gradually after a fall in GFR and what lets the sandbox reach a new steady state.
 
 import { clamp } from './math';
-import { acidBase, derivePlasma, ecfVolume, edelmanNa, initialBody, respiratoryPCO2, type BodyState, type PlasmaDerived } from './body';
+import { acidBase, derivePlasma, ecfVolume, edelmanNa, initialBody, oncoticGradientRel, respiratoryPCO2, type BodyState, type PlasmaDerived } from './body';
 import { evaluateRegulation, type RegulationState } from './regulation';
 import { runKidney } from './kidney';
 import type { KidneyResult, Params } from './types';
@@ -397,8 +397,12 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   const ecfNormal = p.weightKg * (p.female ? 0.5 : 0.6) / 3;
   const ecfNow = ecfVolume(b, p.weightKg);
   const excessEcf = Math.max(0, ecfNow - ecfNormal);
+  // The albumin term is the loss of transcapillary oncotic gradient, not the fall in plasma
+  // albumin: interstitial oncotic pressure falls in parallel and largely preserves the gradient,
+  // so moderate hypoalbuminaemia contributes far less than its number suggests (Rose ch. 16).
+  const oncoticLoss = 1 - oncoticGradientRel(p.albumin);
   const starlingStress = clamp(
-    0.6 * clamp(1 - p.cardiacFunction, 0, 1) + 0.5 * p.portalHypertension + 0.6 * p.capillaryLeak + 0.45 * clamp((3.5 - p.albumin) / 2, 0, 1) + 0.025 * p.venousCongestion,
+    0.6 * clamp(1 - p.cardiacFunction, 0, 1) + 0.5 * p.portalHypertension + 0.6 * p.capillaryLeak + 0.7 * oncoticLoss + 0.025 * p.venousCongestion,
     0,
     0.95,
   );

@@ -78,6 +78,23 @@ export interface NephronResult {
   urineHCO3: number;
 }
 
+/**
+ * Primary sodium retention in glomerular disease.
+ *
+ * Nephrotic oedema is usually an overfilling state, not underfilling: sodium retention begins
+ * before the plasma albumin has fallen, and in experimental glomerular disease it is localised to
+ * the collecting tubules. Rose is explicit that how this happens is not well understood (ch. 16),
+ * so this is an empirical term keyed to the severity of glomerular injury, not a mechanism.
+ *
+ * Its clinical signature is the one that distinguishes the two: retention with a suppressed renin
+ * and a normal or expanded plasma volume, rather than the high renin of a patient who is
+ * underfilled. Rose's account of remission in minimal change disease is the evidence — sodium
+ * excretion rises and the oedema starts to clear before the plasma albumin has moved at all.
+ */
+function glomerularRetention(p: Params) {
+  return 1 + 0.9 * clamp(p.proteinuria / 6, 0, 1);
+}
+
 const PT_BASE = 0.63; // reference fractional proximal reabsorption before modulation
 const MD_REF = 0.609; // normal macula densa NaCl uptake signal (dimensionless)
 const MD_DELIVERY_REF = 1.09; // mmol/min of Cl delivered past the macula densa when normal
@@ -514,7 +531,8 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
     (1 - 0.78 * d.amiloride) *
     (1 - 0.55 * d.trimethoprim) *
     (1 - 0.35 * injury) *
-    adapt;
+    adapt *
+    glomerularRetention(p);
   const naAvail = dctOut.Na;
   const flow = dctOut.water;
   const enacFrac = (a: number) => clamp(1 - Math.exp(-a * enac), 0.01, 0.995);

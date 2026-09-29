@@ -53,7 +53,13 @@ export function cardiacOutput(cardiacFunction: number, cbv: number) {
   // Above normal filling there is real preload reserve: in heart failure the rise in filling
   // pressure that follows renal Na+ retention raises output back toward normal, which is why
   // moderate failure reaches a compensated steady state (Rose ch. 8, Fig. 8-7).
-  const filling = cbv >= 1 ? 1 + (1.5 * (cbv - 1)) / (1 + (cbv - 1)) : Math.pow(Math.max(cbv, 0.05), 0.9);
+  // Above normal filling there is real preload reserve, but it is limited: a normal circulation is
+  // already near the flat part of the curve, which is why volume loading a healthy person raises
+  // cardiac output and blood pressure only modestly and the extra salt is handled by pressure
+  // natriuresis instead. A failing circulation sits lower on the same curve and so has more to
+  // gain from the filling that sodium retention provides — the compensation of Rose Fig. 16-5.
+  const reserve = 1.5 + 1.1 * clamp(1 - cardiacFunction, 0, 0.8);
+  const filling = cbv >= 1 ? 1 + (reserve * (cbv - 1)) / (1 + (cbv - 1)) : Math.pow(Math.max(cbv, 0.05), 0.9);
   return clamp(cardiacFunction * filling, 0.05, 2);
 }
 
@@ -64,7 +70,10 @@ export function reninRelease(p: Params, pressure: number, md: number, sns: numbe
   const macula = Math.pow(curves.expo(-3.6, 1, 0.15, 10)(md), 1 - 0.6 * nsaid);
   const beta1 = (0.4 + 0.6 * Math.pow(sns, 0.8)) * (1 - 0.5 * p.drugs.betaBlocker);
   const feedback = Math.pow(Math.max(at1, 0.05), -0.25);
-  return baro * macula * beta1 * feedback * Math.pow(anp, -0.2);
+  // The inputs are multiplied, so at their extremes they compound into values no adrenal or
+  // juxtaglomerular apparatus could produce. Plasma renin activity in severe heart failure or
+  // decompensated cirrhosis runs some ten to twenty times normal, not hundreds.
+  return clamp(baro * macula * beta1 * feedback * Math.pow(anp, -0.2), 0.02, 20);
 }
 
 export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState): RegulationState {
@@ -145,7 +154,9 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     // ten-fold with chronic sodium restriction, Rose ch. 6), so the adrenal response to AII is
     // steeper than linear. This is what lets a low-salt diet raise aldosterone enough to
     // conserve Na+ without first having to raise the plasma K+ (Table 6-3).
-    const aldoDriven = Math.pow(Math.max(at1, 0.02), 1.6) * clamp(Math.exp(0.8 * (inp.K - 4.2)), 0.25, 8) * Math.pow(anp, -0.2);
+    // Ceiling as for renin: the zona glomerulosa saturates. Plasma aldosterone in severe secondary
+    // hyperaldosteronism reaches something like twenty to thirty times normal, not thousands.
+    const aldoDriven = clamp(Math.pow(Math.max(at1, 0.02), 1.6) * clamp(Math.exp(0.8 * (inp.K - 4.2)), 0.25, 8) * Math.pow(anp, -0.2), 0.02, 25);
     const aldo = p.aldoSynthesis * Math.max(p.aldoAutonomous, aldoDriven);
     const mr = aldo * (1 - 0.9 * d.spironolactone) + d.fludrocortisone + 3 * p.cortisolMR;
 

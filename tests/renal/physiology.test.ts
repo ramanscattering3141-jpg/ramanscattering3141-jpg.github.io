@@ -10,7 +10,7 @@ import { GLOM_REF, solveGlomerulus, oncotic } from '../../renal/src/engine/glome
 import { evaluate, runToSteadyState, simulate } from '../../renal/src/engine/simulate';
 import { runKidney } from '../../renal/src/engine/kidney';
 import { runNephron } from '../../renal/src/engine/nephron';
-import { initialBody, edelmanNa, respiratoryPCO2, acidBase } from '../../renal/src/engine/body';
+import { initialBody, edelmanNa, respiratoryPCO2, acidBase, oncoticGradientRel } from '../../renal/src/engine/body';
 import { withIsotonicChange } from '../../renal/src/engine/scenarios';
 
 /**
@@ -1269,6 +1269,111 @@ describe('diuretics: potency, braking and sequential blockade (Rose ch. 15)', ()
 
     test('continuous exposure is not the same as a daily dose — the off-hours are the point', () => {
       expect(netAt(270, 0)).toBeLessThan(netAt(270, 1) - 100);
+    });
+  });
+});
+
+/**
+ * Oedematous states (Rose ch. 16). The chapter's argument is that oedema needs two things — a
+ * Starling change that favours filtration, and renal sodium retention — and that the retention is
+ * usually an appropriate response to underfilling rather than the primary fault. The exception,
+ * and the one that matters clinically, is nephrotic syndrome, where retention is primary.
+ */
+describe('oedematous states: underfilling, overfilling and compensation (Rose ch. 16)', () => {
+  const at = (patch: ParamPatch, days = 45) => runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 150, ...patch }), days).ev;
+  const normal = at({});
+
+  test('hypoalbuminaemia alone does not cause oedema', () => {
+    // Rose ch. 16: interstitial oncotic pressure falls in parallel, so the transcapillary gradient
+    // is largely preserved. This is the chapter's correction of a long-standing assumption.
+    expect(at({ albumin: 2.5 }).derived.edemaLiters).toBeLessThan(0.5);
+    expect(at({ albumin: 1.8 }).derived.edemaLiters).toBeLessThan(1.5);
+    // and the gradient itself is what is preserved, not the plasma albumin
+    expect(oncoticGradientRel(2.5)).toBeGreaterThan(0.8);
+    expect(oncoticGradientRel(4.0)).toBeCloseTo(1, 2);
+    // below the point where the interstitial reservoir is exhausted it does fall
+    expect(oncoticGradientRel(1.2)).toBeLessThan(oncoticGradientRel(2.5));
+  });
+
+  test('acute hypoalbuminaemia is different: the interstitium has not adapted', () => {
+    expect(oncoticGradientRel(2.0, false)).toBeLessThan(oncoticGradientRel(2.0, true));
+  });
+
+  test('underfilling: heart failure retains sodium with a high renin and aldosterone', () => {
+    const hf = at({ cardiacFunction: 0.45 });
+    expect(hf.derived.ecfLiters).toBeGreaterThan(normal.derived.ecfLiters + 5);
+    expect(hf.derived.edemaLiters).toBeGreaterThan(2);
+    expect(hf.reg.hormones.renin).toBeGreaterThan(3 * normal.reg.hormones.renin);
+    expect(hf.reg.hormones.aldo).toBeGreaterThan(3 * normal.reg.hormones.aldo);
+    expect(hf.kidney.urine.exc.Na).toBeLessThan(60); // still not in balance
+  });
+
+  test('overfilling: nephrotic syndrome retains sodium with renin suppressed', () => {
+    // The distinguishing signature. Rose: remission of minimal change disease raises sodium
+    // excretion and clears oedema before the plasma albumin has changed, so the retention is
+    // primary and renal, not a response to underfilling.
+    const neph = at({ albumin: 2.2, proteinuria: 10 });
+    expect(neph.derived.ecfLiters).toBeGreaterThan(normal.derived.ecfLiters + 1);
+    expect(neph.reg.hormones.renin).toBeLessThan(normal.reg.hormones.renin);
+    expect(neph.reg.hormones.aldo).toBeLessThan(normal.reg.hormones.aldo);
+    // plasma volume is defended, not depleted
+    expect(neph.plasma.plasmaVolume).toBeGreaterThan(0.93 * normal.plasma.plasmaVolume);
+  });
+
+  test('remission clears the retention before albumin moves (Rose Fig. 16-4)', () => {
+    const relapse = at({ albumin: 2.2, proteinuria: 10 });
+    // proteinuria resolves, albumin has not yet recovered
+    const remitting = at({ albumin: 2.2, proteinuria: 0 });
+    expect(remitting.derived.ecfLiters).toBeLessThan(relapse.derived.ecfLiters);
+    expect(remitting.derived.edemaLiters).toBeLessThan(relapse.derived.edemaLiters + 0.01);
+  });
+
+  test('cirrhosis behaves as volume-depleted despite a high cardiac output', () => {
+    const cirr = at({ vasodilation: 0.55, portalHypertension: 0.9, albumin: 2.2 });
+    expect(cirr.reg.hormones.renin).toBeGreaterThan(5 * normal.reg.hormones.renin);
+    expect(cirr.reg.hormones.adh).toBeGreaterThan(normal.reg.hormones.adh);
+    expect(cirr.kidney.urine.Na).toBeLessThan(25); // avid retention, Rose's < 25 mmol/L
+    expect(cirr.reg.SVR).toBeLessThan(normal.reg.SVR); // the fall in resistance is the cause
+  });
+
+  /** Rose Fig. 16-5: thoracic IVC constriction. A new steady state within about a week. */
+  describe('Fig. 16-5: the compensated state', () => {
+    const settled = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 150 }), 60).state.body;
+    const course = (cf: number) => simulate(applyPatch(DEFAULT_PARAMS, { naIntake: 150, cardiacFunction: cf }), 30, 0.1, settled).points;
+
+    test('moderate impairment: renin, aldosterone and sodium excretion return to baseline', () => {
+      const pts = course(0.72);
+      const day0 = pts[1];
+      const end = pts[pts.length - 1];
+      expect(day0.renin).toBeGreaterThan(3); // the initial activation
+      expect(day0.urineNa).toBeLessThan(40);
+      expect(end.renin).toBeLessThan(2); // and its resolution
+      expect(end.urineNa).toBeGreaterThan(0.85 * 150);
+      expect(end.MAP).toBeGreaterThan(88);
+    });
+
+    test('it takes about a week, and leaves the volume expanded', () => {
+      const pts = course(0.72);
+      const balanced = pts.find((x) => x.urineNa > 0.85 * 150);
+      expect(balanced).toBeDefined();
+      expect(balanced!.day).toBeGreaterThan(2);
+      expect(balanced!.day).toBeLessThan(12);
+      expect(balanced!.ecf).toBeGreaterThan(pts[0].ecf + 1);
+    });
+
+    test('severe impairment does not compensate — retention continues', () => {
+      const pts = course(0.45);
+      const end = pts[pts.length - 1];
+      expect(end.urineNa).toBeLessThan(0.6 * 150);
+      expect(end.renin).toBeGreaterThan(2);
+      expect(end.ecf).toBeGreaterThan(pts[0].ecf + 10);
+    });
+
+    test('the more severe the impairment, the more volume compensation costs', () => {
+      const ecfAt = (cf: number) => at({ cardiacFunction: cf }).derived.ecfLiters;
+      expect(ecfAt(0.8)).toBeLessThan(ecfAt(0.72));
+      expect(ecfAt(0.72)).toBeLessThan(ecfAt(0.65));
+      expect(ecfAt(0.65)).toBeLessThan(ecfAt(0.55));
     });
   });
 });

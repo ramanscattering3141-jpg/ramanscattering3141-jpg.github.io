@@ -7,6 +7,36 @@
 import { clamp } from './math';
 import type { Params, Plasma } from './types';
 
+/** Landis–Pappenheimer: oncotic pressure of plasma protein, c in g/dL, with the Gibbs–Donnan excess. */
+const oncotic = (c: number) => 2.1 * c + 0.16 * c * c + 0.009 * c * c * c;
+
+/**
+ * The transcapillary oncotic gradient in muscle and subcutaneous tissue, relative to normal, at a
+ * given plasma albumin. This — not the plasma albumin itself — is what opposes filtration.
+ *
+ * The distinction matters, and it is the reason hypoalbuminaemia alone is a weaker cause of oedema
+ * than it appears (Rose ch. 16, Fig. 16-3). Less albumin in the plasma means less entering the
+ * interstitium, so interstitial oncotic pressure falls in parallel and the gradient is largely
+ * preserved: nephrotic patients whose plasma albumin has halved can have a nearly normal
+ * transcapillary gradient. The interstitial protein reservoir is finite, though — it can fall only
+ * to about 1 mmHg — so once it is exhausted further falls are unopposed, which is why oedema
+ * attributable to hypoalbuminaemia alone is mostly seen below about 1.5–2.0 g/dL.
+ *
+ * @param albuminGdl plasma albumin, g/dL (the engine's internal unit)
+ * @param chronic    false for acute hypoalbuminaemia — rapid infusion of large volumes of saline,
+ *                   where the interstitium has had no time to adapt, so the gradient falls at once
+ *                   and oedema can appear before filling pressures are restored.
+ */
+export function oncoticGradientRel(albuminGdl: number, chronic = true) {
+  const globulins = 3; // g/dL, roughly constant
+  const reference = 4.0; // the engine's normal plasma albumin, so a normal body scores exactly 1
+  const pip0 = oncotic(reference + globulins);
+  const pip = oncotic(clamp(albuminGdl, 0.4, 6) + globulins);
+  const pii0 = 8; // normal interstitial oncotic pressure, mmHg (Rose Table 16-1)
+  const adapt = chronic ? Math.min(pii0 - 1, 0.8 * Math.max(0, pip0 - pip)) : 0;
+  return clamp((pip - (pii0 - adapt)) / (pip0 - pii0), 0.05, 1.3);
+}
+
 export interface BodyState {
   /** exchangeable sodium, mmol */
   naE: number;
@@ -158,7 +188,7 @@ export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
   const deltaRatio = b.hco3 < 23 ? (agCorrected - 12) / Math.max(24 - b.hco3, 0.1) : 0;
   const calcOsm = 2 * na + glucose / 18 + b.bun / 2.8;
   const plasmaVolumeNormal = p.weightKg * 0.043;
-  const oncoticHold = clamp(albumin / 4, 0.45, 1.3);
+  const oncoticHold = oncoticGradientRel(albumin);
   const plasmaVolume = clamp(circulatingEcf * 0.215 * (0.55 + 0.45 * oncoticHold) * (1 - 0.5 * clamp(p.capillaryLeak, 0, 0.8)), 0.8, 8);
   const ionizedCa = clamp(b.ca * 0.5 * (1 + 0.15 * (7.4 - pH) / 0.1), 0.5, 2.0);
 
