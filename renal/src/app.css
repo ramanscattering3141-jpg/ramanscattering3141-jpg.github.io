@@ -382,3 +382,7 @@ a.btn.primary-link { background: var(--accent-dim); border-color: var(--accent-d
 .callout { border-left: 3px solid var(--accent, #6aa9e8); background: color-mix(in srgb, var(--accent, #6aa9e8) 10%, transparent); padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; margin: 0; }
 .callout.danger { border-left-color: #d9534f; background: color-mix(in srgb, #d9534f 12%, transparent); }
 .callout.good { border-left-color: #3fae6a; background: color-mix(in srgb, #3fae6a 12%, transparent); }
+
+/* a table row that selects a scenario */
+tbody tr.active { background: #5ecfba14; }
+tbody tr.active th[scope='row'] { color: var(--accent); }

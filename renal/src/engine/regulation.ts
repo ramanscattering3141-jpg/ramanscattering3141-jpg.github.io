@@ -80,6 +80,9 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
   let adh = prev?.hormones.adh ?? 1.5;
   let out: RegulationState | undefined;
 
+  let prevMap = 0;
+  let prevAt1 = 0;
+  let prevAdh = 0;
   for (let iter = 0; iter < 30; iter++) {
     // Arterial tone
     // Vasopressin is a vasoconstrictor at V1 receptors, but the pressor response saturates and
@@ -91,9 +94,14 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     // rise in resistance and pressure. This is the arm that makes pressure natriuresis the
     // final defence of the extracellular volume (Rose ch. 8).
     const tissueAutoregulation = CO > 1 ? Math.pow(CO, 1.6) : 1;
+    // The reflexes defend arterial pressure without overshooting it: a modest volume loss leaves
+    // pressure unchanged or slightly low even while renal Na+ retention is already brisk, which
+    // is why salt restriction lowers blood pressure a little rather than raising it (Rose ch. 8).
+    // The systemic vasoconstrictor gains are therefore smaller than the renal effects of the
+    // same signals, which act on the tubule.
     const SVR =
-      Math.pow(at1, 0.12) *
-      Math.pow(sns, 0.22) *
+      Math.pow(at1, 0.06) *
+      Math.pow(sns, 0.16) *
       tissueAutoregulation *
       (1 - p.vasodilation) *
       (1 - 0.12 * d.ccb) *
@@ -190,6 +198,13 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     if (p.pthMode === 'high') pth = 6;
     if (p.pthMode === 'low') pth = 0.1;
 
+    // The loop is a damped fixed point; once it stops moving there is nothing more to gain, and
+    // a steady-state run calls this many thousands of times.
+    const settled = iter > 2 && Math.abs(MAP - prevMap) < 1e-4 && Math.abs(at1 - prevAt1) < 1e-5 && Math.abs(adh - prevAdh) < 1e-4;
+    prevMap = MAP;
+    prevAt1 = at1;
+    prevAdh = adh;
+
     out = {
       MAP,
       CO,
@@ -214,6 +229,7 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
         insulin: p.insulin + d.insulinDrip,
       },
     };
+    if (settled) break;
   }
   return out!;
 }

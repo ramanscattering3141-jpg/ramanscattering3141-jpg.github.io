@@ -13,6 +13,8 @@ export interface KidneyInput {
   MAP: number;
   /** urea appearance rate, mmol/min */
   ureaProduction: number;
+  /** previous macula densa signal: seeds the fixed point so it converges in one or two passes */
+  mdSeed?: number;
 }
 
 /**
@@ -153,7 +155,9 @@ export function runKidney(inp: KidneyInput): KidneyResult {
     return [l, r];
   };
 
-  let mdSignal = 1;
+  // Seeding the fixed point from the previous evaluation (the body changes only slightly between
+  // sub-steps) turns a ~10-iteration solve into one or two, which is most of the cost of a run.
+  let mdSignal = inp.mdSeed ?? 1;
   let [left, right] = bothSides(mdSignal);
   let nephron = runNephron({
     params: p,

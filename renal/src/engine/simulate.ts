@@ -86,7 +86,7 @@ export function acidProduction(p: Params) {
   return diet + p.extraAcid + organic - p.drugs.sodiumBicarbonate - p.drugs.potassiumCitrate;
 }
 
-export function evaluate(body: BodyState, params: Params, prevReg?: RegulationState): Evaluation {
+export function evaluate(body: BodyState, params: Params, prevReg?: RegulationState, prevKidney?: KidneyResult): Evaluation {
   const plasma = derivePlasma(body, params);
   const stenosisDrop = (s: number, MAP: number) => MAP * 0.62 * Math.pow(clamp(s, 0, 0.95), 2.2);
 
@@ -106,17 +106,21 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
     prevReg,
   );
 
+  // Both fixed points are seeded from the previous evaluation. Between sub-steps the body has
+  // barely changed, so the solve collapses from ~10 damped passes to one or two.
+  const mdSeed = prevKidney?.maculaDensa;
   let kidney = runKidney({
     params,
     plasma,
     hormones: reg.hormones,
     MAP: reg.MAP,
     ureaProduction: ureaGeneration(params) / 1440,
+    mdSeed,
   });
 
   // Close the loop between the kidney's macula densa signal and the hormone system. The two
   // subsystems feed back on each other, so the iterate is damped to stop it ringing.
-  let mdBlend = kidney.maculaDensa;
+  let mdBlend = mdSeed ?? kidney.maculaDensa;
   for (let i = 0; i < 10; i++) {
     mdBlend = 0.55 * mdBlend + 0.45 * kidney.maculaDensa;
     const regNext = evaluateRegulation(
@@ -140,6 +144,7 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
       hormones: regNext.hormones,
       MAP: regNext.MAP,
       ureaProduction: ureaGeneration(params) / 1440,
+      mdSeed: kidney.maculaDensa,
     });
     const converged = Math.abs(kidneyNext.GFR - kidney.GFR) < 0.3 && Math.abs(regNext.MAP - reg.MAP) < 0.2;
     reg = regNext;
@@ -252,6 +257,16 @@ export function describeAcidBase(hco3: number, pco2: number, pH: number, agCorre
  * Advance the body state by dt days. The balance equations are stiff (urine output can change
  * several-fold within hours), so the caller's step is broken into short sub-steps.
  */
+/**
+ * Extra water drunk because of thirst, L/day. Thirst rises steeply above its osmotic threshold
+ * (a few mOsm/kg above ADH's) and with marked hypovolaemia; with access to water it can match
+ * almost any loss, which is why hypernatraemia is uncommon unless thirst or access is impaired
+ * (Rose ch. 6, 7, 24).
+ */
+export function thirstDrive(ev: Evaluation) {
+  return 1.2 * (clamp((ev.plasma.effOsm - 288) / 4, 0, 12) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2));
+}
+
 export function stepDay(
   state: SimState,
   params: Params,
@@ -273,19 +288,35 @@ export function stepDay(
   // transient without paying for tiny steps for the rest of the run.
   let h = Math.min(remaining, h0 ?? MIN_SUBSTEP * 4);
   let guard = 0;
-  while (remaining > 1e-9 && guard++ < 400) {
+  while (remaining > 1e-9 && guard++ < 2000) {
     h = Math.min(h, remaining);
-    const r = substep(cur, params, h, reg);
+    const r = substep(cur, params, h, reg, ev?.kidney);
+    // Reject a step that turned out to move a store by more than ~4% and redo it smaller. Without
+    // this, the first sub-step after a sudden change (a drug started, a hormone switched on) can
+    // be taken at the large step size the quiet period before it allowed, which overshoots and
+    // makes the excretion curves ring for a day or two afterwards.
+    // r.ev is the evaluation the step started from; compare the plasma it produced with the
+    // plasma the new body implies. Tonicity and plasma K+ are what the fast loops (ADH and
+    // thirst, distal K+ and Na+ transport) respond to, and they move much further than the
+    // stores do, so a step that is safe for the stores can still set those loops oscillating.
+    const after = derivePlasma(r.state.body, params);
+    const kJump = Math.abs(after.K - r.ev.plasma.K);
+    const osmJump = Math.abs(after.effOsm - r.ev.plasma.effOsm);
+    if ((r.rate * h > 0.015 || kJump > 0.1 || osmJump > 1) && h > MIN_SUBSTEP) {
+      h = Math.max(MIN_SUBSTEP, h / 2);
+      continue;
+    }
     cur = r.state;
     ev = r.ev;
     reg = r.ev.reg;
     rate = r.rate;
     remaining -= h;
     if (cur.outOfRange) break;
-    // Aim for at most a 1.5% relative change in any store per sub-step, and never grow the step
-    // by more than 60% at a time so a sudden change cannot be stepped over.
+    // Aim for at most a 1.5% relative change in any store per sub-step, and grow the step back
+    // only gently. Growing it quickly after a rejected step just alternates between a step that
+    // is too long and one that is rejected, which is what makes a fast loop (water balance) ring.
     const wanted = r.rate > 1e-9 ? 0.015 / r.rate : MAX_SUBSTEP;
-    h = clamp(Math.min(wanted, h * 1.6), MIN_SUBSTEP, MAX_SUBSTEP);
+    h = clamp(Math.min(wanted, h * 1.15), MIN_SUBSTEP, MAX_SUBSTEP);
   }
   if (!ev) {
     ev = evaluate(cur.body, params, prevReg);
@@ -293,8 +324,8 @@ export function stepDay(
   return { state: cur, ev, rate, h };
 }
 
-function substep(state: SimState, params: Params, dt: number, prevReg?: RegulationState): { state: SimState; ev: Evaluation; rate: number } {
-  const ev = evaluate(state.body, params, prevReg);
+function substep(state: SimState, params: Params, dt: number, prevReg?: RegulationState, prevKidney?: KidneyResult): { state: SimState; ev: Evaluation; rate: number } {
+  const ev = evaluate(state.body, params, prevReg, prevKidney);
   const b = { ...state.body };
   const p = params;
   const k = ev.kidney;
@@ -307,11 +338,7 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   // Water: intake minus renal + extrarenal losses; thirst defends tonicity when intact.
   let waterIn = ev.balance.waterIn;
   if (p.thirstIntact) {
-    // Thirst rises steeply above its threshold and, with access to water, can match almost any
-    // loss — which is why hypernatraemia is uncommon unless thirst or access is impaired
-    // (Rose ch. 7, 24).
-    const thirstDrive = clamp((ev.plasma.effOsm - 288) / 4, 0, 12) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2);
-    waterIn += thirstDrive * 1.2;
+    waterIn += thirstDrive(ev);
   }
   const tbwWanted = b.tbw + (waterIn - ev.balance.waterOut) * dt;
   const tbwFloor = p.weightKg * 0.32;

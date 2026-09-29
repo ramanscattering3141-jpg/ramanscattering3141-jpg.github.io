@@ -491,8 +491,12 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const flow = dctOut.water;
   const enacFrac = (a: number) => clamp(1 - Math.exp(-a * enac), 0.01, 0.995);
   // Absolute distal capacity, scaled by nephron mass and by chronic adaptation to high delivery.
+  // Aldosterone raises this capacity, but only so far: the connecting tubule and collecting duct
+  // are the last few per cent of Na+ reabsorption and cannot recapture a loop diuretic's whole
+  // delivery however high aldosterone goes. That ceiling is why loop diuretics are powerful and
+  // why sequential blockade of the distal segments adds to them (Rose ch. 5, 15).
   const distalCapacity =
-    0.95 * clamp(inp.nephronFraction, 0.05, 1) * p.distalAdaptation * clamp(enac, 0.05, 2.2) * (1 - 0.55 * injury);
+    0.95 * clamp(inp.nephronFraction, 0.05, 1) * p.distalAdaptation * clamp(0.45 + 0.35 * enac, 0.15, 1.35) * (1 - 0.55 * injury);
   let distalBudget = distalCapacity;
   const takeDistal = (wanted: number) => {
     const taken = Math.min(wanted, Math.max(0, distalBudget));

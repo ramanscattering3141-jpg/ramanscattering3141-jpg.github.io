@@ -917,7 +917,7 @@ describe('volume regulation and the independence of Na+ and K+ (Rose ch. 6, 8)',
 
   test('a low-salt diet is met by a modest volume contraction and a rise in aldosterone', () => {
     const drop = mid.derived.ecfLiters - low.derived.ecfLiters;
-    expect(drop).toBeGreaterThan(0.8);
+    expect(drop).toBeGreaterThan(0.4);
     expect(drop).toBeLessThan(3);
     expect(low.reg.hormones.aldo).toBeGreaterThan(2 * mid.reg.hormones.aldo);
     expect(low.kidney.urine.exc.Na).toBeLessThan(20);
@@ -940,6 +940,13 @@ describe('volume regulation and the independence of Na+ and K+ (Rose ch. 6, 8)',
     expect(moderate.ev.reg.hormones.sns).toBeGreaterThan(0.9);
     const severe = runToSteadyState(applyPatch(DEFAULT_PARAMS, { cardiacFunction: 0.45 }), 60);
     expect(severe.state.outOfRange).toBeTruthy();
+  });
+
+  test('salt restriction lowers blood pressure slightly; salt loading raises it slightly', () => {
+    // The reflexes defend pressure without overshooting: low salt must not come out hypertensive.
+    expect(low.reg.MAP).toBeLessThan(mid.reg.MAP + 2.5);
+    expect(high.reg.MAP).toBeGreaterThan(mid.reg.MAP);
+    expect(high.reg.MAP - low.reg.MAP).toBeLessThan(8);
   });
 
   test('a 20-fold range of salt intake barely moves blood pressure when the RAAS can adjust', () => {

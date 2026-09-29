@@ -39,7 +39,10 @@ export function useAcute(p: Params, body?: BodyState): Evaluation {
 }
 
 // ---------------------------------------------------------------- worker plumbing
-type JobSpec = { kind: 'steady'; params: Params; days: number; start?: BodyState } | { kind: 'trajectory'; params: Params; days: number; dt: number; start?: BodyState };
+type JobSpec =
+  | { kind: 'steady'; params: Params; days: number; start?: BodyState }
+  | { kind: 'trajectory'; params: Params; days: number; dt: number; start?: BodyState }
+  | { kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number };
 
 type SteadyResult = { state: SimState; ev: Evaluation };
 type CourseResult = { points: TrajectoryPoint[]; final: Evaluation; state: SimState };
@@ -86,7 +89,11 @@ function run<T>(job: JobSpec): Promise<T> {
     return new Promise((resolve) =>
       setTimeout(() => {
         if (job.kind === 'steady') resolve(runToSteadyState(job.params, job.days, 0.5, job.start) as T);
-        else resolve(simulate(job.params, job.days, job.dt, job.start) as T);
+        else if (job.kind === 'trajectory') resolve(simulate(job.params, job.days, job.dt, job.start) as T);
+        else {
+          const settled = runToSteadyState(job.from, job.settleDays ?? 60);
+          resolve({ ...simulate(job.to, job.days, job.dt, settled.state.body), before: settled.ev } as T);
+        }
       }, 0),
     );
   }
@@ -155,6 +162,28 @@ export function course(p: Params, days: number, dt = 0.25, start?: BodyState): P
     courseCache.set(key, r);
     return r;
   });
+}
+
+type StepResult = CourseResult & { before: Evaluation };
+const stepCache = new Map<string, StepResult>();
+
+/**
+ * Settle the body on one set of parameters, then switch to another and record the transition —
+ * the shape of most teaching experiments (a change of diet, a drug started). Both halves run in
+ * one worker job so the two never race.
+ */
+export function useStep(from: Params, to: Params, days: number, dt = 0.25, settleDays = 60) {
+  const key = paramsKey(from, `|${paramsKey(to)}|${days}|${dt}|${settleDays}`);
+  const r = useAsync(key, () => {
+    const hit = stepCache.get(key);
+    if (hit) return Promise.resolve(hit);
+    return run<StepResult>({ kind: 'step', from, to, days, dt, settleDays }).then((v) => {
+      if (stepCache.size > 100) stepCache.clear();
+      stepCache.set(key, v);
+      return v;
+    });
+  }, 120);
+  return { points: r.value?.points, before: r.value?.before, final: r.value?.final, state: r.value?.state, busy: r.busy };
 }
 
 export function useCourse(p: Params, days: number, dt = 0.25, start?: BodyState) {
