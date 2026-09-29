@@ -42,7 +42,7 @@ Useful engine calls (see `renal/src/engine/simulate.ts`, `renal/src/sim/hooks.ts
 
 **Done:** chapters 1–23 of content, and 41 working modules (listed in `renal/README.md`). Unwritten modules are marked "in preparation" automatically. A page becomes live the moment its file exists in `renal/src/pages/`, because `routes.ts` checks this.
 
-**In progress: chapter 24, hypernatraemia and the diabetes insipidus states.** The route is already registered: `/water-disorders` → `renal/src/pages/WaterDisorders.tsx` (not written yet), chapters [24].
+**Chapter 24 (hypernatraemia and the diabetes insipidus states) is finished.** Next is chapter 25 (see below). The route is already registered: `/water-disorders` → `renal/src/pages/WaterDisorders.tsx` (not written yet), chapters [24].
 
 The engine already reproduces the water-deprivation test (Rose Fig. 24-6 / Table 24-4). Start the patient in the state shown, deprive them of water, then give desmopressin:
 
@@ -64,13 +64,13 @@ Rose's criteria: a 100–800% rise in complete central DI, 15–50% in partial c
 1. ~~Regression tests for the water-restriction test~~ Done: `tests/renal/physiology.test.ts`, "the water-restriction test (Fig. 24-6, Table 24-4)". The protocol lives in `renal/src/sim/deprivation.ts` (`waterDeprivationTest`, `DEPRIVATION_PATIENTS`) and runs in the worker through `useDeprivation(patch)` in `sim/hooks.ts`.
 2. ~~Thirst~~ Fixed: the engine's thirst gain was too shallow, so untreated central DI *with thirst* reached Na 185. It is now about 3 L/day per mOsm/kg above threshold (`thirstDrive` in `engine/simulate.ts`, mirrored in `sim/osmoregulation.ts`). DI now sits at Na 142–144 and primary polydipsia at 137.5, as Rose says.
 3. ~~`ch24.ts`~~ Done, with three verified modern updates (copeptin, `fenske2018copeptin`; the AVP-D/AVP-R renaming, `arima2022rename`; the correction rate in adults, `chauhan2019hypernat`).
-4. **Next: build `renal/src/pages/WaterDisorders.tsx`** with tabs `thirst`, `deprivation`, `correct`, `polyuria`.
+4. ~~Build `WaterDisorders.tsx`~~ Done (tabs `thirst`, `deprivation`, `correct`, `polyuria`; the correction runs through `hypernatraemiaCorrection` / `useCorrection`). Notes kept for reference: with tabs `thirst`, `deprivation`, `correct`, `polyuria`.
    - `deprivation`: `useDeprivation(DEPRIVATION_PATIENTS[i].patch)` gives hourly samples (Posm, Uosm, flow, Na, weight loss), the stop reason and the % rise with desmopressin.
    - `correct`: complete central DI with no thirst has **no steady state**, so it cannot be the start. Build the start by withholding water (`thirstIntact: false, waterIntake: 0`) from a settled patient until Na ≈ 165, then treat for 72 h. Fluids available as params: `ivD5W`, `ivNS` (L/day); quarter-isotonic saline = 0.75 D5W + 0.25 NS. Show the Na trajectory against the 12 mmol/L/day line, and Rose's deficit estimate.
    - `polyuria`: water vs solute diuresis from steady states of `{centralDI: 1}`, `{waterIntake: 12}`, `{ivNS: 6}`, `{proteinIntake: 260}`, `{glucose: 30}`.
 
 ### After chapter 24
-- ch25 hyperglycaemia / DKA / HHS → `/hyperglycemia`
+- **Next:** ch25 hyperglycaemia / DKA / HHS → `/hyperglycemia` (route registered; page `Hyperglycemia.tsx` not written). Note the engine's `glucose` parameter is in **mg/dL** (30 mmol/L = 540). At glucose 540 the model already gives a glucose diuresis (3.4 L/day, 1079 mOsm/kg) and a translocational fall in sodium to 129. Book text is at the local scratchpad only (not in the repo, for copyright), so a new session must work from the book itself.
 - ch26–28 potassium → `/hypokalemia`, `/hyperkalemia` (with ECG)
 - ch29–30 → `/minerals`
 - Disease modules: AKI, obstruction, CKD, glomerular, tubulointerstitial, inherited

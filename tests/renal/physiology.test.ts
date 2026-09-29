@@ -12,7 +12,7 @@ import { runKidney } from '../../renal/src/engine/kidney';
 import { runNephron } from '../../renal/src/engine/nephron';
 import { initialBody, edelmanNa, respiratoryPCO2, acidBase, oncoticGradientRel } from '../../renal/src/engine/body';
 import { withIsotonicChange } from '../../renal/src/engine/scenarios';
-import { waterDeprivationTest, DEPRIVATION_PATIENTS } from '../../renal/src/sim/deprivation';
+import { waterDeprivationTest, DEPRIVATION_PATIENTS, hypernatraemiaCorrection, type Regimen } from '../../renal/src/sim/deprivation';
 
 /**
  * One evaluation from the normal body state: the immediate ("before anything has had time to
@@ -1980,6 +1980,24 @@ describe('hypernatraemia and the diabetes insipidus states (Rose ch. 24)', () =>
       expect(polydipsia.riseWithDDAVP).toBeLessThan(10);
       // it takes longer: the patient starts water-loaded
       expect(polydipsia.deprived.hour).toBeGreaterThan(cdi.deprived.hour);
+    });
+  });
+
+  describe('correcting hypernatraemia (Rose ch. 24, treatment)', () => {
+    const rx = (r: Partial<Regimen>) => hypernatraemiaCorrection({ cause: 'losses', d5w: 0, quarterSaline: 0, desmopressin: false, ...r });
+
+    test('a measured amount of free water corrects within 12 mmol/L a day; twice as much does not', () => {
+      const measured = rx({ d5w: 2.5 });
+      expect(measured.startNa).toBeGreaterThan(163);
+      expect(measured.worstDay).toBeLessThanOrEqual(12);
+      expect(measured.points[measured.points.length - 1].na).toBeLessThan(146);
+      expect(rx({ d5w: 5 }).worstDay).toBeGreaterThan(12);
+    });
+
+    test('central DI: without desmopressin the loss outruns the infusion; with it, too much water overshoots', () => {
+      expect(rx({ cause: 'cdi', d5w: 2.5 }).outOfRange).toBeDefined();
+      const overshoot = rx({ cause: 'cdi', d5w: 5, desmopressin: true });
+      expect(overshoot.points[overshoot.points.length - 1].na).toBeLessThan(135);
     });
   });
 });

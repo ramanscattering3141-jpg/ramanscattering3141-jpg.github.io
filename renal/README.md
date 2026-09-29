@@ -19,20 +19,20 @@ The lab shares this repository's Vite build with the flight simulator at the sit
 
 ## What is finished
 
-**Chapters 1–23** of Rose & Post have an interactive rebuild in the textbook view (`#/textbook`). Each chapter has its thesis, key concepts with causal chains, key numbers, equations, clinical connections, pathology, questions and sourced modern updates.
+**Chapters 1–24** of Rose & Post have an interactive rebuild in the textbook view (`#/textbook`). Each chapter has its thesis, key concepts with causal chains, key numbers, equations, clinical connections, pathology, questions and sourced modern updates.
 
-**41 modules are working:**
+**42 modules are working:**
 
 - *The nephron:* nephron explorer, nephron flow simulator, tubular transport lab, hormones
 - *Filtration & clearance:* glomerular filtration, afferent/efferent lab, autoregulation, renin–angiotensin–aldosterone, clearance, fractional excretion, GFR & creatinine kinetics
 - *Tubular transport:* proximal tubule, glucose & SGLT2, loop of Henle, countercurrent multiplication, vasa recta, urea recycling, distal nephron
-- *Water, sodium & volume:* body water & serum sodium, sodium & effective volume, ADH & water balance, urine osmolality, free-water clearance, hyponatraemia simulator, hypovolaemic states, oedematous states
+- *Water, sodium & volume:* body water & serum sodium, sodium & effective volume, ADH & water balance, urine osmolality, free-water clearance, hyponatraemia simulator, hypernatraemia & polyuria (thirst, the water-restriction test, correction rates, water vs solute diuresis), hypovolaemic states, oedematous states
 - *Potassium:* potassium balance
 - *Acid–base:* acid–base engine, bicarbonate handling, ammonium excretion, titratable acid, metabolic acidosis, metabolic alkalosis, renal tubular acidosis, respiratory disorders, simple & mixed disorders
 - *Drugs & clinical:* diuretic lab, pre-renal vs ATN, urine chemistries
 
 **In preparation.** These modules appear dimmed in the menu and open to a "being written" page with links to their textbook chapters:
-hypernatraemia & polyuria (ch. 24), hyperglycaemia/DKA/HHS (ch. 25), potassium disorders (ch. 26–28), calcium/phosphate/magnesium, AKI, obstruction, CKD, glomerular, tubulointerstitial and inherited tubular disease, clinical cases, the sandbox, break-the-kidney, what-if, knowledge graph, equation explorer, lab interpreter, guided lessons, challenges and the AI tutor.
+hyperglycaemia/DKA/HHS (ch. 25), potassium disorders (ch. 26–28), calcium/phosphate/magnesium, AKI, obstruction, CKD, glomerular, tubulointerstitial and inherited tubular disease, clinical cases, the sandbox, break-the-kidney, what-if, knowledge graph, equation explorer, lab interpreter, guided lessons, challenges and the AI tutor.
 
 ## How it is built
 
@@ -50,7 +50,7 @@ tests/renal/
   content.test.ts      every citation, route, equation and cross-link resolves
 ```
 
-**How accuracy is checked.** For each chapter the engine is tested against the book's own figures and tables *before* a page is written. Where the engine disagrees, the engine is fixed and the case becomes a regression test. Examples: the urine anion gap under acid load vs diarrhoea vs RTA (Rose Fig. 19-1), bicarbonate titration separating type 1 from type 2 RTA (Fig. 19-6), respiratory compensation of 1/10 acute and 3.5/10 chronic for hypercapnia, Table 23-9 (isotonic saline lowers the sodium in SIADH), and desmopressin separating central from nephrogenic diabetes insipidus (ch. 24).
+**How accuracy is checked.** For each chapter the engine is tested against the book's own figures and tables *before* a page is written. Where the engine disagrees, the engine is fixed and the case becomes a regression test. Examples: the urine anion gap under acid load vs diarrhoea vs RTA (Rose Fig. 19-1), bicarbonate titration separating type 1 from type 2 RTA (Fig. 19-6), respiratory compensation of 1/10 acute and 3.5/10 chronic for hypercapnia, Table 23-9 (isotonic saline lowers the sodium in SIADH), and the water-restriction test with desmopressin separating central from nephrogenic diabetes insipidus (Fig. 24-6).
 
 **Sources.** Every claim is tagged by evidence type (fundamental physiology, experimental, clinical evidence, guideline, clinical reasoning). Where later evidence has changed the book's picture, the change is marked as a modern update and cited. Every external reference is a PubMed record checked by PMID. The book is paraphrased, not reproduced.
 

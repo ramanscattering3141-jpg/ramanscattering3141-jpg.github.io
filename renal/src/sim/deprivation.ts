@@ -132,3 +132,88 @@ export const DEPRIVATION_PATIENTS: { id: string; label: string; patch: ParamPatc
   { id: 'pndi', label: 'Partial nephrogenic DI', patch: { drugs: { lithium: 0.55 } }, note: 'A blunted response to ADH that desmopressin barely improves.' },
   { id: 'polydipsia', label: 'Primary polydipsia', patch: { waterIntake: 12 }, note: 'The kidney is normal and ADH secretion intact. Stop the water and the urine concentrates.' },
 ];
+
+// ---------------------------------------------------------------- correcting hypernatraemia
+
+export type HypernatraemiaCause = 'losses' | 'cdi';
+
+export interface Regimen {
+  /** how the water was lost: unreplaced losses with a normal kidney, or central DI without thirst */
+  cause: HypernatraemiaCause;
+  /** 5% dextrose in water, L/day */
+  d5w: number;
+  /** quarter-isotonic saline, L/day (750 mL free water + 250 mL isotonic saline per litre) */
+  quarterSaline: number;
+  desmopressin: boolean;
+}
+
+export interface CorrectionResult {
+  startNa: number;
+  /** total body water at the start, L */
+  tbw: number;
+  /** Rose's estimate: TBW × (Na/140 − 1), L */
+  deficit: number;
+  /** days without water it took to get there */
+  daysWithoutWater: number;
+  points: { hour: number; na: number; uflow: number }[];
+  /** the largest fall in any 24 h window, mmol/L */
+  worstDay: number;
+  outOfRange?: string;
+}
+
+const TARGET_START_NA = 165;
+const startCache = new Map<HypernatraemiaCause, { body: BodyState; days: number; na: number }>();
+
+function hypernatraemicStart(cause: HypernatraemiaCause) {
+  const hit = startCache.get(cause);
+  if (hit) return hit;
+  const base: ParamPatch = cause === 'cdi' ? { centralDI: 1 } : {};
+  let body = runToSteadyState(applyPatch(DEFAULT_PARAMS, base), 14, 0.25).state.body;
+  const dry = applyPatch(DEFAULT_PARAMS, { ...base, thirstIntact: false, waterIntake: 0 });
+  // Large steps while the sodium is far from the target, small ones as it approaches. Central
+  // DI without thirst loses 700-800 mL/h, so it needs half-hour steps throughout.
+  let na = 0;
+  let days = 0;
+  while (days < 30) {
+    const far = cause !== 'cdi' && na < TARGET_START_NA - 6;
+    const chunk = far ? 0.5 : cause === 'cdi' ? 1 / 48 : 1 / 24;
+    const r = simulate(dry, chunk, chunk / 4, body);
+    body = r.state.body;
+    na = r.final.plasma.Na;
+    days += chunk;
+    if (na >= TARGET_START_NA) break;
+  }
+  const out = { body, days, na };
+  startCache.set(cause, out);
+  return out;
+}
+
+/** Withhold water until the sodium reaches about 165, then treat for three days. */
+export function hypernatraemiaCorrection(rx: Regimen): CorrectionResult {
+  const start = hypernatraemicStart(rx.cause);
+  const base: ParamPatch = rx.cause === 'cdi' ? { centralDI: 1 } : {};
+  const treat = applyPatch(DEFAULT_PARAMS, {
+    ...base,
+    thirstIntact: false,
+    waterIntake: 0,
+    ivD5W: rx.d5w + 0.75 * rx.quarterSaline,
+    ivNS: 0.25 * rx.quarterSaline,
+    drugs: rx.desmopressin ? { desmopressin: 1 } : {},
+  });
+  const r = simulate(treat, 3, 1 / 24, start.body);
+  const points = r.points.map((p) => ({ hour: p.day * 24, na: p.Na, uflow: (p.urineVolume * 1000) / 24 }));
+  let worstDay = 0;
+  for (const p of points) {
+    const later = points.find((q) => q.hour >= p.hour + 24 - 1e-6);
+    if (later) worstDay = Math.max(worstDay, p.na - later.na);
+  }
+  return {
+    startNa: start.na,
+    tbw: start.body.tbw,
+    deficit: start.body.tbw * (start.na / 140 - 1),
+    daysWithoutWater: start.days,
+    points,
+    worstDay,
+    outOfRange: r.state.outOfRange,
+  };
+}

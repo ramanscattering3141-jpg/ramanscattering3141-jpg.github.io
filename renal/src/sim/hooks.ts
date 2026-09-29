@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { evaluate, runToSteadyState, simulate, stepCourse, type Evaluation, type SimState, type TrajectoryPoint } from '../engine/simulate';
 import { initialBody, type BodyState } from '../engine/body';
 import type { Job } from './worker';
-import { waterDeprivationTest, type DeprivationResult } from './deprivation';
+import { hypernatraemiaCorrection, waterDeprivationTest, type CorrectionResult, type DeprivationResult, type Regimen } from './deprivation';
 import { applyPatch, DEFAULT_PARAMS, type ParamPatch, type Params } from '../engine/types';
 
 export const paramsKey = (p: Params, extra = '') => JSON.stringify(p) + extra;
@@ -44,7 +44,8 @@ type JobSpec =
   | { kind: 'steady'; params: Params; days: number; start?: BodyState }
   | { kind: 'trajectory'; params: Params; days: number; dt: number; start?: BodyState }
   | { kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number }
-  | { kind: 'deprivation'; patch: ParamPatch };
+  | { kind: 'deprivation'; patch: ParamPatch }
+  | { kind: 'correction'; rx: Regimen };
 
 type SteadyResult = { state: SimState; ev: Evaluation };
 type CourseResult = { points: TrajectoryPoint[]; final: Evaluation; state: SimState };
@@ -93,6 +94,7 @@ function run<T>(job: JobSpec): Promise<T> {
         if (job.kind === 'steady') resolve(runToSteadyState(job.params, job.days, 0.5, job.start) as T);
         else if (job.kind === 'trajectory') resolve(simulate(job.params, job.days, job.dt, job.start) as T);
         else if (job.kind === 'deprivation') resolve(waterDeprivationTest(job.patch) as T);
+        else if (job.kind === 'correction') resolve(hypernatraemiaCorrection(job.rx) as T);
         else resolve(stepCourse(job.from, job.to, job.days, job.dt, job.settleDays, job.fineDays, job.coarseDt) as T);
       }, 0),
     );
@@ -199,6 +201,23 @@ export function useDeprivation(patch: ParamPatch) {
       return v;
     });
   }, 60);
+  return { result: r.value, busy: r.busy };
+}
+
+const correctionCache = new Map<string, CorrectionResult>();
+
+/** Correct a hypernatraemia of about 165 with a chosen regimen, run in a worker. */
+export function useCorrection(rx: Regimen) {
+  const key = JSON.stringify(rx);
+  const r = useAsync(key, () => {
+    const hit = correctionCache.get(key);
+    if (hit) return Promise.resolve(hit);
+    return run<CorrectionResult>({ kind: 'correction', rx }).then((v) => {
+      if (correctionCache.size > 60) correctionCache.clear();
+      correctionCache.set(key, v);
+      return v;
+    });
+  }, 150);
   return { result: r.value, busy: r.busy };
 }
 

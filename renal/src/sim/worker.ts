@@ -4,7 +4,7 @@
 import { runToSteadyState, simulate, stepCourse } from '../engine/simulate';
 import type { BodyState } from '../engine/body';
 import type { ParamPatch, Params } from '../engine/types';
-import { waterDeprivationTest } from './deprivation';
+import { hypernatraemiaCorrection, waterDeprivationTest, type Regimen } from './deprivation';
 
 export type Job =
   | { id: number; kind: 'steady'; params: Params; days: number; start?: BodyState }
@@ -20,7 +20,9 @@ export type Job =
    */
   | { id: number; kind: 'step'; from: Params; to: Params; days: number; dt: number; settleDays?: number; fineDays?: number; coarseDt?: number }
   /** the water-restriction test on one patient */
-  | { id: number; kind: 'deprivation'; patch: ParamPatch };
+  | { id: number; kind: 'deprivation'; patch: ParamPatch }
+  /** withhold water to a sodium of ~165, then treat */
+  | { id: number; kind: 'correction'; rx: Regimen };
 
 self.onmessage = (e: MessageEvent<Job>) => {
   const job = e.data;
@@ -31,6 +33,8 @@ self.onmessage = (e: MessageEvent<Job>) => {
     } else if (job.kind === 'trajectory') {
       const r = simulate(job.params, job.days, job.dt, job.start);
       (self as unknown as Worker).postMessage({ id: job.id, result: r });
+    } else if (job.kind === 'correction') {
+      (self as unknown as Worker).postMessage({ id: job.id, result: hypernatraemiaCorrection(job.rx) });
     } else if (job.kind === 'deprivation') {
       (self as unknown as Worker).postMessage({ id: job.id, result: waterDeprivationTest(job.patch) });
     } else {
