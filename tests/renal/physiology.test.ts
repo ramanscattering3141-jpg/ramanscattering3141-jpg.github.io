@@ -481,7 +481,11 @@ describe('acid–base', () => {
     const hypercapnic = evaluate(settledBody, applyPatch(DEFAULT_PARAMS, { paco2Offset: 25 }));
     expect(hypercapnic.plasma.PCO2).toBeGreaterThan(normal.plasma.PCO2 + 8);
     expect(hypercapnic.kidney.ammoniagenesis).toBeGreaterThan(1.3 * normal.kidney.ammoniagenesis);
-    expect(hypercapnic.kidney.urine.exc.NAE).toBeGreaterThan(normal.kidney.urine.exc.NAE);
+    // Net acid excretion is flat at the instant of hypercapnia — the acute buffering has already
+    // raised the plasma bicarbonate, so the larger filtered load consumes the extra pump capacity.
+    // What matters is that it rises once the disturbance persists, generating new bicarbonate.
+    const afterADay = simulate(applyPatch(DEFAULT_PARAMS, { paco2Offset: 25 }), 1, 0.05, settledBody).final;
+    expect(afterADay.kidney.urine.exc.NAE).toBeGreaterThan(1.2 * normal.kidney.urine.exc.NAE);
     // and the converse: hypocapnia suppresses it
     const hypocapnic = evaluate(settledBody, applyPatch(DEFAULT_PARAMS, { paco2Offset: -15 }));
     expect(hypocapnic.kidney.ammoniagenesis).toBeLessThan(normal.kidney.ammoniagenesis);
@@ -1522,3 +1526,81 @@ describe('hypovolaemia: composition, azotaemia and replacement (Rose ch. 14)', (
 function si_creat(ev: ReturnType<typeof evaluate>) {
   return ev.body.creat * 88.4;
 }
+
+/**
+ * Metabolic alkalosis (Rose ch. 18). The chapter's spine is that generation and maintenance are
+ * separate problems: the kidney can excrete an enormous bicarbonate load, so an alkalosis only
+ * persists if something is stopping it. These tests are mostly about the maintenance factor.
+ */
+describe('metabolic alkalosis: generation, maintenance and correction (Rose ch. 18)', () => {
+  const settled = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 150 }), 60);
+  const run = (patch: ParamPatch, days: number, from = settled.state.body) => simulate(applyPatch(DEFAULT_PARAMS, { naIntake: 150, ...patch }), days, 0.1, from);
+
+  test('a chloride-replete kidney excretes a large alkali load instead of becoming alkalotic', () => {
+    // Rose: normal subjects given 1000 mmol/day of NaHCO3 for two weeks excrete nearly all of it.
+    const day1 = run({ drugs: { sodiumBicarbonate: 1000 } }, 1).final;
+    const day14 = run({ drugs: { sodiumBicarbonate: 1000 } }, 14).final;
+    expect(day14.kidney.urine.exc.HCO3).toBeGreaterThan(300);
+    expect(day14.kidney.urine.pH).toBeGreaterThan(7.5);
+    // and it plateaus rather than climbing: the kidney has found its new balance
+    expect(Math.abs(day14.plasma.HCO3 - day1.plasma.HCO3)).toBeLessThan(2);
+  });
+
+  test('vomiting: alkalosis with a paradoxically acid urine and no urinary chloride', () => {
+    // A patient who is vomiting is not eating, which is what allows chloride to fall.
+    const v = run({ naIntake: 20, vomiting: 1.2, waterIntake: 2 }, 3).final;
+    expect(v.plasma.HCO3).toBeGreaterThan(38);
+    expect(v.plasma.pH).toBeGreaterThan(7.5);
+    expect(v.plasma.Cl).toBeLessThan(95);
+    // the paradox: alkalaemic blood, acid urine
+    expect(v.kidney.urine.pH).toBeLessThan(6.2);
+    expect(v.kidney.urine.Cl).toBeLessThan(5);
+    expect(v.kidney.FE.HCO3 * 100).toBeLessThan(0.2);
+  });
+
+  test('chloride, not volume, is what maintains it', () => {
+    // Rose's decisive comparison: a non-sodium chloride salt corrects the alkalosis without
+    // restoring volume, while giving volume without chloride does not correct it at all.
+    const sick = run({ naIntake: 20, vomiting: 1.2, waterIntake: 2 }, 3);
+    const after = (patch: ParamPatch) => run({ naIntake: 20, waterIntake: 2, ...patch }, 4, sick.state.body).final;
+    const untreated = after({});
+    const withKCl = after({ drugs: { potassiumChloride: 120 } });
+    const withWater = after({ ivD5W: 2 });
+
+    // potassium chloride corrects it
+    expect(withKCl.plasma.HCO3).toBeLessThan(untreated.plasma.HCO3 - 6);
+    expect(withKCl.kidney.urine.Cl).toBeGreaterThan(40);
+    // without restoring the volume
+    expect(withKCl.derived.ecfLiters).toBeLessThan(untreated.derived.ecfLiters + 1);
+    // while free water restores volume and leaves the alkalosis untouched
+    expect(withWater.derived.ecfLiters).toBeGreaterThan(withKCl.derived.ecfLiters);
+    expect(withWater.plasma.HCO3).toBeGreaterThan(withKCl.plasma.HCO3 + 5);
+    expect(withWater.kidney.urine.pH).toBeLessThan(6.5); // still avidly reclaiming
+  });
+
+  test('saline corrects it, and the urine turns alkaline as it does', () => {
+    const sick = run({ naIntake: 20, vomiting: 1.2, waterIntake: 2 }, 3);
+    const treated = run({ naIntake: 20, waterIntake: 2, ivNS: 2 }, 4, sick.state.body).final;
+    expect(treated.plasma.HCO3).toBeLessThan(sick.final.plasma.HCO3 - 10);
+    expect(treated.plasma.Cl).toBeGreaterThan(sick.final.plasma.Cl + 10);
+    expect(treated.kidney.urine.Cl).toBeGreaterThan(40);
+  });
+
+  test('in mineralocorticoid excess it is potassium, not volume, that maintains it', () => {
+    // Aldosterone escape prevents the volume expansion, so the alkalosis is held up by the
+    // hypokalaemia — and replacing potassium corrects it.
+    const aldo = run({ aldoAutonomous: 4 }, 14).final;
+    const aldoKCl = run({ aldoAutonomous: 4, drugs: { potassiumChloride: 120 } }, 14).final;
+    expect(aldo.plasma.K).toBeLessThan(3.4);
+    expect(aldo.plasma.HCO3).toBeGreaterThan(settled.ev.plasma.HCO3 + 1);
+    expect(aldoKCl.plasma.K).toBeGreaterThan(aldo.plasma.K + 0.4);
+    expect(aldoKCl.plasma.HCO3).toBeLessThan(aldo.plasma.HCO3 - 0.8);
+  });
+
+  test('respiratory compensation raises the PCO2, and can exceed 45 mmHg', () => {
+    const v = run({ naIntake: 20, vomiting: 1.2, waterIntake: 2 }, 3).final;
+    expect(v.plasma.PCO2).toBeGreaterThan(45);
+    // Rose: about 0.7 mmHg per 1 mmol/L, so the pH is only partly protected
+    expect(v.plasma.pH).toBeGreaterThan(7.45);
+  });
+});

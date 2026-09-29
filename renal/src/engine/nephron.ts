@@ -636,10 +636,21 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // Driven by cell acidity, as ammoniagenesis is: keyed to plasma bicarbonate alone the pump would
   // switch itself off as compensation raised the bicarbonate, and chronic hypercapnia could never
   // generate the new bicarbonate it needs (Rose ch. 11, Table 17-3).
+  // Chloride depletion sustains distal H+ secretion even when the blood is alkalaemic, by two
+  // routes Rose sets out: sodium reabsorbed without chloride to follow leaves the lumen more
+  // electronegative, which favours H+ accumulation, and the H+-ATPase cosecretes chloride, which a
+  // low luminal concentration also favours. This is why the urine stays acid in a
+  // chloride-depletion alkalosis, and why it turns alkaline as soon as chloride is replaced.
+  // Keyed to the plasma chloride, not the luminal concentration. Those come apart in exactly the
+  // case that matters: after an alkali load the luminal chloride is low because bicarbonate has
+  // replaced it, while the patient is chloride-replete and should be spilling bicarbonate freely.
+  // What maintains an alkalosis is systemic hypochloraemia.
+  const clDepletionDrive = clamp(1 + 0.03 * (106 - pl.Cl), 0.85, 1.6);
   const hPump =
     t.HATPase *
     clamp(Math.pow(Math.max(mr, 0.02), 0.15), 0.5, 1.6) *
     clamp(1 + 6.0 * (7.4 - pl.pH), 0.25, 3.2) *
+    clDepletionDrive *
     (0.55 + 0.45 * voltage) *
     (1 - 0.4 * injury) *
     clamp(1 + 0.15 * (4.2 - pl.K), 0.7, 1.5);
@@ -647,11 +658,15 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // HCO3- rises. The response is graded, not a switch, and it needs luminal Cl- to exchange
   // against: in chloride depletion it fails, which is one reason vomiting maintains alkalosis.
   const hco3Excess = Math.log1p(Math.exp((pl.HCO3 - 26) / 1.2)) * 1.2;
-  const pendrinSecretion = clamp(
-    0.02 * t.pendrin * hco3Excess * clamp(ccdOut.Cl / Math.max((ccdOut.water / 1000) * 30, 1e-6), 0.2, 2),
-    0,
-    0.6,
-  );
+  // The exchange runs on the inward chloride gradient, so when luminal chloride is very low it
+  // essentially stops rather than merely slowing. That failure is what produces the paradoxical
+  // aciduria of a chloride-depletion alkalosis: the urine is acid while the blood is alkalaemic,
+  // and stays that way until chloride is replaced (Rose ch. 18, Fig. 18-2).
+  const luminalClRel = ccdOut.Cl / Math.max((ccdOut.water / 1000) * 30, 1e-6);
+  // The rate follows the transmembrane chloride gradient rather than the luminal concentration
+  // alone, so it falls away faster than linearly as the lumen is stripped of chloride — which is
+  // what drives the urine pH below 6 while the blood is at 7.5.
+  const pendrinSecretion = clamp(0.02 * t.pendrin * hco3Excess * Math.pow(clamp(luminalClRel, 0, 2), 1.8), 0, 0.6);
 
   const omcdIn = { ...ccdOut };
   const omcdOut = { ...omcdIn };
