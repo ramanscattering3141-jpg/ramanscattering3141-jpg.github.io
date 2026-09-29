@@ -163,6 +163,40 @@ export const EQUATIONS: EquationDef[] = [
     keywords: ['Starling forces', 'ultrafiltration'],
   },
   {
+    id: 'starling',
+    name: 'Starling forces at a systemic capillary',
+    formula: 'Net = (Pcap − Pif) − σ(πcap − πif)',
+    group: 'Filtration & clearance',
+    vars: [
+      { key: 'pcap', label: 'Capillary hydraulic pressure', unit: 'mmHg', min: 5, max: 45, step: 0.5, value: 17.3 },
+      { key: 'pif', label: 'Interstitial hydraulic pressure', unit: 'mmHg', min: -6, max: 12, step: 0.5, value: -3 },
+      { key: 'picap', label: 'Plasma oncotic pressure', unit: 'mmHg', min: 5, max: 35, step: 0.5, value: 28 },
+      { key: 'piif', label: 'Interstitial oncotic pressure', unit: 'mmHg', min: 0, max: 22, step: 0.5, value: 8 },
+      { key: 'sigma', label: 'Reflection coefficient σ', unit: '', min: 0, max: 1, step: 0.05, value: 0.95 },
+    ],
+    compute: (v) => {
+      const n = v.pcap - v.pif - v.sigma * (v.picap - v.piif);
+      return {
+        value: n,
+        unit: 'mmHg',
+        read:
+          n > 15
+            ? 'Beyond the ~15 mmHg the safety factors can absorb — oedema forms'
+            : n > 0.3
+              ? 'Filtration raised, but within the safety margin; lymph flow carries it'
+              : n < 0
+                ? 'Net absorption'
+                : 'Normal: a small outward gradient returned by the lymphatics',
+      };
+    },
+    show: (v) => `(${f(v.pcap)} − ${f(v.pif)}) − ${f(v.sigma)}(${f(v.picap)} − ${f(v.piif)})`,
+    explain:
+      'The normal muscle capillary sits at about +0.3 mmHg, and the filtrate is returned by the lymphatics. Oedema needs roughly a 15 mmHg rise, because lymph flow increases, interstitial oncotic pressure washes out and interstitial hydraulic pressure rises. σ is the reflection coefficient: 1 if the wall is impermeable to protein, 0 if freely permeable — near 0 in the hepatic sinusoid, which is why portal hypertension so readily produces ascites, and reduced by capillary injury in burns and sepsis.',
+    chapters: [7, 16],
+    route: '/edema',
+    keywords: ['Starling', 'oedema', 'oncotic', 'reflection coefficient', 'capillary'],
+  },
+  {
     id: 'gfrKf',
     name: 'GFR from Kf',
     formula: 'GFR = Kf × mean NFP',
