@@ -285,8 +285,14 @@ export function runNephron(inp: NephronInput): NephronResult {
     dtlWaterOut = clamp((dtlSolute / Math.max(eqOsm, 100)) * 1000, dtlIn.water * 0.18, dtlIn.water);
 
     // Thin ascending limb: water-impermeable, passive NaCl exit into the interstitium.
-    const atlIn = { ...dtlIn, water: dtlWaterOut };
-    const atlOut = { ...atlIn };
+    // Urea recycling: most of the urea reabsorbed from the inner medullary collecting duct
+    // re-enters the thin limbs (UT-A2 in the descending limb, and the thin ascending limb) and is
+    // carried round again, so the urea leaving the loop can equal or exceed the filtered amount
+    // (Rose ch. 4). The rest leaves the medulla in the vasa recta.
+    const recycled = imcdUreaReab * 0.75;
+    const dtlOut = { ...dtlIn, water: dtlWaterOut, urea: dtlIn.urea + 0.4 * recycled };
+    const atlIn = { ...dtlOut };
+    const atlOut = { ...atlIn, urea: atlIn.urea + 0.6 * recycled };
     const atlNaOut = Math.min(atlIn.Na * 0.22 * clamp(gNaCl / 600, 0.2, 1.5), atlIn.Cl * 0.45);
     atlOut.Na = atlIn.Na - atlNaOut;
     atlOut.Cl = atlIn.Cl - atlNaOut;
@@ -329,15 +335,16 @@ export function runNephron(inp: NephronInput): NephronResult {
     // Delivery is reported separately: it can rise at the same time as sensing falls.
     mdDelivery = talOut.Cl / Math.max(inp.nephronFraction, 0.05) / MD_DELIVERY_REF;
 
-    put('DTL', dtlIn, { ...dtlIn, water: dtlWaterOut }, medullaTarget * 0.85);
-    put('ATL', { ...dtlIn, water: dtlWaterOut }, atlOut, osmOfLoad(atlOut));
+    put('DTL', dtlIn, dtlOut, medullaTarget * 0.85);
+    put('ATL', atlIn, atlOut, osmOfLoad(atlOut));
     put('TAL', atlOut, talOut, osmOfLoad(talOut));
     loopOut = talOut;
 
     // ------------------------------------------------- distal nephron (needed for urea loop)
     const distal = runDistal(loopOut, inp, medullaTarget);
+    const change = Math.abs(distal.ureaReabIMCD - imcdUreaReab);
     imcdUreaReab = distal.ureaReabIMCD;
-    if (iter > 2 && Math.abs(distal.ureaReabIMCD - imcdUreaReab) < 1e-6) break;
+    if (iter > 2 && change < 1e-6) break;
   }
 
   const distal = runDistal(loopOut, inp, medullaTarget);
