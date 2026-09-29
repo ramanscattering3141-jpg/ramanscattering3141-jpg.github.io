@@ -4,7 +4,10 @@
 // it has been overtaken. Every externally sourced clinical claim carries a citation, and the
 // grade says what kind of statement it is.
 
-import { PUBMED_REFS, type PubmedRef } from './pubmed.generated';
+import { PUBMED_REFS as GENERATED_REFS, type PubmedRef } from './pubmed.generated';
+import { EXTRA_REFS } from './pubmed.extra';
+
+const PUBMED_REFS: PubmedRef[] = [...GENERATED_REFS, ...EXTRA_REFS];
 
 /** What kind of knowledge a statement rests on. Shown as a badge next to the claim. */
 export type Evidence =

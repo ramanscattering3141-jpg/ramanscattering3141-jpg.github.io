@@ -219,6 +219,9 @@ export const EDGES: GraphEdge[] = [
   { from: 'autoregulation', to: 'gfr', sign: 0, mechanism: 'holds filtration nearly constant as perfusion pressure varies, through the myogenic response and tubuloglomerular feedback', evidence: 'physiology', cite: { rose: [2] } },
 
   // --- potassium
+  { from: 'nkcc2', to: 'distalDelivery', sign: -1, mechanism: 'NaCl not reabsorbed in the thick ascending limb is delivered to the distal nephron', evidence: 'physiology', cite: { rose: [15] } },
+  { from: 'ncc', to: 'distalDelivery', sign: -1, mechanism: 'NaCl not taken up in the distal convoluted tubule reaches the connecting tubule and collecting duct', evidence: 'physiology', cite: { rose: [15] } },
+  { from: 'distalDelivery', to: 'enac', sign: 1, mechanism: 'more sodium reaching the principal cells means more sodium entering through ENaC', evidence: 'physiology', cite: { rose: [12] } },
   { from: 'distalDelivery', to: 'plasmaK', sign: -1, mechanism: 'more sodium delivered distally means more ENaC-mediated uptake, a more negative lumen and more potassium secreted', evidence: 'physiology', cite: { rose: [12] } },
   { from: 'aldosterone', to: 'plasmaK', sign: -1, mechanism: 'increases distal potassium secretion', evidence: 'physiology', cite: { rose: [12] } },
   { from: 'romk', to: 'plasmaK', sign: -1, mechanism: 'the apical exit route for secreted potassium', evidence: 'physiology' },

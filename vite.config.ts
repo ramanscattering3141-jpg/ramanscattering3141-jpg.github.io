@@ -20,7 +20,7 @@ export default defineConfig({
       ],
     }),
   ],
-  esbuild: { jsx: 'automatic', jsxImportSource: 'preact' },
+  oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } },
   build: {
     chunkSizeWarningLimit: 6000,
     target: 'es2022',

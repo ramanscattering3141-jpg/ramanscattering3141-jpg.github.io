@@ -4,7 +4,7 @@
 import { clamp } from './math';
 import { GLOM_REF, solveGlomerulus } from './glomerulus';
 import { runNephron } from './nephron';
-import type { Hormones, KidneyResult, KidneySide, Params, Plasma, SoluteId, Urine } from './types';
+import type { Hormones, KidneyResult, KidneySide, Params, Plasma, Urine } from './types';
 
 export interface KidneyInput {
   params: Params;

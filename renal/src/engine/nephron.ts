@@ -10,8 +10,7 @@
 //   IMCD: final NaCl (urine Na can fall <1 mmol/L), ADH-dependent water and urea
 
 import { clamp, saturable } from './math';
-import type { Hormones, KidneyResult, Params, Plasma, SegmentFlux, SegmentId, SoluteId } from './types';
-import { SEGMENTS } from './types';
+import type { Hormones, Params, Plasma, SegmentFlux, SegmentId, SoluteId } from './types';
 
 const zero = (): Record<SoluteId, number> => ({
   Na: 0,
@@ -256,14 +255,12 @@ export function runNephron(inp: NephronInput): NephronResult {
   let maculaDensa = 1;
   let mdDelivery = 1;
   let talVoltage = 1;
-  let iterOut: { urea: number } = { urea: dtlIn.urea };
 
   // urea recycling: IMCD urea reabsorption feeds the inner medullary interstitium
   let imcdUreaReab = inp.ureaProduction * 0.4;
 
   for (let iter = 0; iter < 12; iter++) {
     // NaCl component of the gradient from TAL transport per unit flow
-    const talNa = dtlIn.Na * loopNaFraction;
     gNaCl = clamp(
       300 *
         Math.pow(clamp(nkcc, 0, 2), 0.9) *
@@ -336,7 +333,6 @@ export function runNephron(inp: NephronInput): NephronResult {
     put('ATL', { ...dtlIn, water: dtlWaterOut }, atlOut, osmOfLoad(atlOut));
     put('TAL', atlOut, talOut, osmOfLoad(talOut));
     loopOut = talOut;
-    iterOut = { urea: talOut.urea };
 
     // ------------------------------------------------- distal nephron (needed for urea loop)
     const distal = runDistal(loopOut, inp, medullaTarget);
