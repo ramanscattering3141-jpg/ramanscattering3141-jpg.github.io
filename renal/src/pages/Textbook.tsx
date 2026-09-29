@@ -3,7 +3,7 @@
 
 import { CHAPTERS, chapterByN } from '../content/chapters';
 import { ROSE_CHAPTERS, ROSE, ref, formatRef, refUrl } from '../content/sources';
-import { routeByPath, routesForChapter } from '../routes';
+import { readyRoute, routesForChapter } from '../routes';
 import { href } from '../router';
 import { Chain, Panel, Sources } from '../ui/kit';
 import { EquationCard } from '../ui/EquationCard';
@@ -128,9 +128,9 @@ function ChapterView({ n }: { n: number }) {
             {c.equation && <EquationCard eq={c.equation} compact />}
             <div class="concept-foot">
               <Sources cite={c.cite ?? { rose: [n], evidence: 'physiology' }} />
-              {c.route && routeByPath.get(c.route) && (
+              {c.route && readyRoute(c.route) && (
                 <a class="btn primary-link" href={href(c.route)}>
-                  Manipulate this: {routeByPath.get(c.route)!.title} →
+                  Manipulate this: {readyRoute(c.route)!.title} →
                 </a>
               )}
             </div>
@@ -181,7 +181,7 @@ function ChapterView({ n }: { n: number }) {
                 <div class="patho-row">
                   <span class="badge physiology">so</span> {p.consequence}
                 </div>
-                {p.route && (
+                {p.route && readyRoute(p.route) && (
                   <a href={href(p.route)} style={{ fontSize: '0.82rem' }}>
                     Model it →
                   </a>

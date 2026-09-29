@@ -2,7 +2,7 @@
 
 import { type ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { GROUPS, ROUTES, routeByPath } from './routes';
+import { GROUPS, ROUTES, isReady, routeByPath, type RouteDef } from './routes';
 import { href, navigate, useLocation } from './router';
 import { ModeContext, loadMode, saveMode, type Mode } from './ui/mode';
 
@@ -28,6 +28,35 @@ function usePage(page: string | undefined) {
     };
   }, [page]);
   return { comp: comp && comp.name === page ? comp.C : null, failed };
+}
+
+/** A module that is planned but not yet written: say so, and point at what already exists. */
+function InPreparation(props: { route: RouteDef }) {
+  const r = props.route;
+  // Deliberately light: the shell is loaded before any page, so it does not import the chapter
+  // content. The textbook page itself says whether a chapter has been rebuilt yet.
+  const chapters = r.chapters ?? [];
+  return (
+    <div class="page-head">
+      <div class="eyebrow">In preparation</div>
+      <h1>{r.title}</h1>
+      <p class="lede">{r.blurb}</p>
+      <p>This module is being written.</p>
+      {chapters.length > 0 && (
+        <p>
+          Read the physiology it will be built on in the interactive textbook:{' '}
+          {chapters.map((n, i) => (
+            <span key={n}>
+              {i > 0 && ', '}
+              <a href={href('/textbook', { ch: String(n) })}>Rose &amp; Post ch. {n}</a>
+            </span>
+          ))}
+          .
+        </p>
+      )}
+      <a href="#/">Back to the start</a>
+    </div>
+  );
 }
 
 export function App() {
@@ -93,16 +122,24 @@ export function App() {
           {GROUPS.map((g) => (
             <div class="nav-group" key={g.id}>
               <h5>{g.label}</h5>
-              {ROUTES.filter((r) => r.group === g.id && r.path !== '/search').map((r) => (
-                <a key={r.path} class={`nav-item ${loc.path === r.path ? 'active' : ''}`} href={href(r.path)} aria-current={loc.path === r.path ? 'page' : undefined}>
-                  {r.title}
-                </a>
-              ))}
+              {ROUTES.filter((r) => r.group === g.id && r.path !== '/search').map((r) =>
+                isReady(r) ? (
+                  <a key={r.path} class={`nav-item ${loc.path === r.path ? 'active' : ''}`} href={href(r.path)} aria-current={loc.path === r.path ? 'page' : undefined}>
+                    {r.title}
+                  </a>
+                ) : (
+                  <span key={r.path} class="nav-item pending" title="This module is being written">
+                    {r.title}
+                  </span>
+                ),
+              )}
             </div>
           ))}
         </nav>
         <main class="main" id="main">
-          {!route || failed ? (
+          {route && !isReady(route) ? (
+            <InPreparation route={route} />
+          ) : !route || failed ? (
             <div class="page-head">
               <h1>Not found</h1>
               <p class="lede">There is no module at “{loc.path}”.</p>

@@ -6,7 +6,7 @@ import { EDGES, NODES, getNode, type GraphEdge, type GraphNode } from './graph';
 import { EQUATIONS } from './equations';
 import { CHAPTERS } from './chapters';
 import { SEGMENT_INFO, STRUCTURES } from './segments';
-import { ROUTES } from '../routes';
+import { ROUTES, isReady, readyRoute } from '../routes';
 
 export type HitKind = 'module' | 'node' | 'equation' | 'concept' | 'segment';
 
@@ -67,14 +67,17 @@ export function buildDocs(): SearchDoc[] {
   if (docsCache) return docsCache;
   const docs: SearchDoc[] = [];
   for (const r of ROUTES) {
-    if (r.path === '/search') continue;
+    if (r.path === '/search' || !isReady(r)) continue;
     docs.push({ id: `route:${r.path}`, kind: 'module', title: r.title, text: r.blurb, route: r.path, tags: [...(r.keywords ?? []), ...(r.nodes ?? []).map((n) => getNode(n)?.label ?? '')] });
   }
   for (const n of NODES) {
-    docs.push({ id: `node:${n.id}`, kind: 'node', title: n.label, text: n.summary, route: n.route, tags: n.aliases ?? [], nodeId: n.id, sub: n.kind });
+    docs.push({ id: `node:${n.id}`, kind: 'node', title: n.label, text: n.summary, route: n.route && readyRoute(n.route) ? n.route : undefined, tags: n.aliases ?? [], nodeId: n.id, sub: n.kind });
   }
   for (const e of EQUATIONS) {
-    docs.push({ id: `eq:${e.id}`, kind: 'equation', title: e.name, text: `${e.formula}. ${e.explain}`, route: '/equations', query: { eq: e.id }, tags: e.keywords ?? [], sub: e.group });
+    // until the equation explorer is written, an equation leads to the module that uses it
+    const explorer = !!readyRoute('/equations');
+    const route = explorer ? '/equations' : e.route && readyRoute(e.route) ? e.route : undefined;
+    docs.push({ id: `eq:${e.id}`, kind: 'equation', title: e.name, text: `${e.formula}. ${e.explain}`, route, query: explorer ? { eq: e.id } : undefined, tags: e.keywords ?? [], sub: e.group });
   }
   for (const ch of CHAPTERS) {
     ch.concepts.forEach((c, i) => {

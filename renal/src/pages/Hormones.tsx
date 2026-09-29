@@ -6,6 +6,7 @@ import { NephronDiagram } from '../ui/NephronDiagram';
 import { HORMONES } from '../content/hormones';
 import { acute, makeParams, NORMAL } from '../sim/hooks';
 import { href } from '../router';
+import { readyRoute } from '../routes';
 import type { ParamPatch } from '../engine/types';
 
 /** Which hormones can be driven directly in the engine, and how. */
@@ -66,7 +67,7 @@ export default function Hormones({ query }: { query: URLSearchParams }) {
           <h4>Drugs</h4>
           <div class="chips">{h.drugs.map((d) => <span key={d} class="tag">{d}</span>)}</div>
           <Sources cite={h.cite} />
-          {h.route && (
+          {h.route && readyRoute(h.route) && (
             <p style={{ marginTop: 10 }}>
               <a class="btn primary-link" href={href(h.route)}>
                 Explore in depth →

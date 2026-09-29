@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { Question } from '../content/chapters/types';
 import { href } from '../router';
+import { readyRoute } from '../routes';
 
 export function QuestionCard({ q, n }: { q: Question; n?: number }) {
   const [picked, setPicked] = useState<number | null>(null);
@@ -25,7 +26,7 @@ export function QuestionCard({ q, n }: { q: Question; n?: number }) {
       {picked !== null && (
         <div class={`note ${right ? '' : 'caution'}`} style={{ marginTop: 8 }}>
           <strong>{right ? 'Correct.' : `Not quite — the answer is ${String.fromCharCode(65 + q.answer)}.`}</strong> {q.explanation}
-          {q.route && (
+          {q.route && readyRoute(q.route) && (
             <>
               {' '}
               <a href={href(q.route)}>Test it in the simulator →</a>

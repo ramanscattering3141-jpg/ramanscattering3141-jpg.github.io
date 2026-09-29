@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { equationById, initialValues, type EquationDef } from '../content/equations';
 import { href } from '../router';
+import { readyRoute } from '../routes';
 import { Sources } from './kit';
 
 /** A live equation: every term is a slider, the result updates as you move it. */
@@ -13,7 +14,7 @@ export function EquationCard(props: { eq: EquationDef | string; compact?: boolea
     <div class="eq-card">
       <div class="eq-head">
         <h4>{eq.name}</h4>
-        {eq.route && !props.compact && (
+        {eq.route && readyRoute(eq.route) && !props.compact && (
           <a href={href(eq.route)} class="tag">
             open simulator →
           </a>

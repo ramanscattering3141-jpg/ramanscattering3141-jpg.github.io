@@ -4,7 +4,7 @@
 import { type ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { href, navigate } from '../router';
-import { ROUTES, routeByPath } from '../routes';
+import { ROUTES, readyRoute, routeByPath } from '../routes';
 import { roseChapter } from '../content/sources';
 import type { ParamPatch } from '../engine/types';
 
@@ -100,7 +100,7 @@ export function WhatIf(props: { options: WhatIfOption[]; onApply: (o: WhatIfOpti
 
 /** Links to related modules at the foot of a page. */
 export function Related(props: { paths: string[]; title?: string }) {
-  const rs = props.paths.map((p) => routeByPath.get(p)).filter(Boolean);
+  const rs = props.paths.map(readyRoute).filter(Boolean);
   if (!rs.length) return null;
   return (
     <section style={{ marginTop: 22 }}>

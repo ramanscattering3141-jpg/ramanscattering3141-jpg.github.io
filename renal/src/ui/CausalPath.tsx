@@ -1,6 +1,7 @@
 import type { GraphEdge } from '../content/graph';
 import { getNode } from '../content/graph';
 import { href } from '../router';
+import { readyRoute } from '../routes';
 import { EvidenceBadge } from './kit';
 
 /** Renders a knowledge-graph path as a chain: node —mechanism→ node … with the net direction. */
@@ -35,6 +36,7 @@ export function CausalPath({ path, startDirection = 1 }: { path: GraphEdge[]; st
 export function NodeLink({ id }: { id: string }) {
   const n = getNode(id);
   if (!n) return <span>{id}</span>;
+  if (!readyRoute('/graph')) return <span title={n.summary}>{n.label}</span>;
   return (
     <a href={href('/graph', { n: id })} title={n.summary}>
       {n.label}

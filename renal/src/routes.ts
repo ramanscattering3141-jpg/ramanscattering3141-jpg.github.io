@@ -123,5 +123,19 @@ export const ROUTES: RouteDef[] = [
 
 export const routeByPath = new Map(ROUTES.map((r) => [r.path, r]));
 
-/** Which modules draw on a given textbook chapter. */
-export const routesForChapter = (n: number) => ROUTES.filter((r) => r.chapters?.includes(n));
+// Modules still being written stay in the registry so the navigation shows the whole plan, but
+// nothing links to one until its page file exists: a reader should never follow a link into a
+// "not found".
+const PAGE_FILES = new Set(Object.keys(import.meta.glob('./pages/*.tsx')).map((f) => f.slice('./pages/'.length, -'.tsx'.length)));
+
+/** Whether a module's page has been written. */
+export const isReady = (r: RouteDef | undefined): boolean => !!r && PAGE_FILES.has(r.page);
+
+/** The route at a path, if its page has been written. */
+export const readyRoute = (path: string): RouteDef | undefined => {
+  const r = routeByPath.get(path);
+  return r && isReady(r) ? r : undefined;
+};
+
+/** Which written modules draw on a given textbook chapter. */
+export const routesForChapter = (n: number) => ROUTES.filter((r) => r.chapters?.includes(n) && isReady(r));

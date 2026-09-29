@@ -1,6 +1,6 @@
 import { si } from '../units';
 import { useState } from 'preact/hooks';
-import { GROUPS, ROUTES } from '../routes';
+import { GROUPS, ROUTES, isReady, readyRoute } from '../routes';
 import { href } from '../router';
 import { Chain, Panel, Readout, Slider } from '../ui/kit';
 import { NephronDiagram } from '../ui/NephronDiagram';
@@ -26,15 +26,23 @@ export default function Home() {
           laboratory result.
         </p>
         <div class="btn-row">
-          <a class="btn primary-link" href={href('/lessons')}>
-            Start a guided lesson
-          </a>
-          <a class="btn" href={href('/textbook')}>
+          {readyRoute('/lessons') && (
+            <a class="btn primary-link" href={href('/lessons')}>
+              Start a guided lesson
+            </a>
+          )}
+          <a class={readyRoute('/lessons') ? 'btn' : 'btn primary-link'} href={href('/textbook')}>
             Open the interactive textbook
           </a>
-          <a class="btn" href={href('/sandbox')}>
-            Go straight to the sandbox
-          </a>
+          {readyRoute('/sandbox') ? (
+            <a class="btn" href={href('/sandbox')}>
+              Go straight to the sandbox
+            </a>
+          ) : (
+            <a class="btn" href={href('/nephron')}>
+              Explore the nephron
+            </a>
+          )}
         </div>
       </header>
 
@@ -91,7 +99,8 @@ export default function Home() {
       <h2 style={{ marginTop: 10 }}>Flagship experiments</h2>
       <div class="grid grid-3" style={{ marginBottom: 22 }}>
         {FEATURED.map((p) => {
-          const r = ROUTES.find((x) => x.path === p)!;
+          const r = readyRoute(p);
+          if (!r) return null;
           return (
             <a key={p} class="card-link" href={href(p)}>
               <h4>{r.title}</h4>
@@ -119,7 +128,11 @@ export default function Home() {
             <ul style={{ margin: 0, paddingLeft: '1em', fontSize: '0.88rem' }}>
               {ROUTES.filter((r) => r.group === g.id).map((r) => (
                 <li key={r.path}>
-                  <a href={href(r.path)}>{r.title}</a>
+                  {isReady(r) ? (
+                    <a href={href(r.path)}>{r.title}</a>
+                  ) : (
+                    <span class="faint">{r.title} · in preparation</span>
+                  )}
                 </li>
               ))}
             </ul>

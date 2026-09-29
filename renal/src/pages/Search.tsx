@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { causalAnswer, nodesInQuery, search, upstream, type Hit, type HitKind } from '../content/search';
 import { href, navigate } from '../router';
+import { readyRoute } from '../routes';
 import { Panel } from '../ui/kit';
 import { CausalPath, NodeLink } from '../ui/CausalPath';
 import { NODE_KIND_LABEL } from '../content/graph';
@@ -55,8 +56,16 @@ export default function Search({ query }: { query: URLSearchParams }) {
             ))}
           </div>
           <p class="muted" style={{ marginTop: 10, fontSize: '0.85rem' }}>
-            Ask the <a href={href('/tutor', { q: q0 })}>AI tutor</a> for a full explanation, or open{' '}
-            {causal.from.route && <a href={href(causal.from.route)}>the {causal.from.label} simulator</a>}.
+            {readyRoute('/tutor') && (
+              <>
+                Ask the <a href={href('/tutor', { q: q0 })}>AI tutor</a> for a full explanation.{' '}
+              </>
+            )}
+            {causal.from.route && readyRoute(causal.from.route) && (
+              <>
+                Open <a href={href(causal.from.route)}>the {causal.from.label} simulator</a>.
+              </>
+            )}
           </p>
         </Panel>
       )}
