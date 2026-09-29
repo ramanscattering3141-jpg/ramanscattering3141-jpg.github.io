@@ -11,6 +11,7 @@ import { evaluate, runToSteadyState, simulate } from '../../renal/src/engine/sim
 import { runKidney } from '../../renal/src/engine/kidney';
 import { runNephron } from '../../renal/src/engine/nephron';
 import { initialBody, edelmanNa, respiratoryPCO2, acidBase } from '../../renal/src/engine/body';
+import { withIsotonicChange } from '../../renal/src/engine/scenarios';
 
 /**
  * One evaluation from the normal body state: the immediate ("before anything has had time to
@@ -954,6 +955,16 @@ describe('volume regulation and the independence of Na+ and K+ (Rose ch. 6, 8)',
     expect(kLoad.reg.hormones.aldo).toBeGreaterThan(mid.reg.hormones.aldo);
     expect(kLow.plasma.K).toBeLessThan(mid.plasma.K);
     expect(kLow.plasma.K).toBeGreaterThan(2.5);
+  });
+
+  test('the macula densa senses volume depletion (less NaCl delivered) and renin rises', () => {
+    const base = runToSteadyState(DEFAULT_PARAMS, 60).state.body;
+    const depleted = evaluate(withIsotonicChange(base, 1), DEFAULT_PARAMS);
+    const normal = evaluate(base, DEFAULT_PARAMS);
+    expect(depleted.kidney.maculaDensa).toBeLessThan(normal.kidney.maculaDensa);
+    expect(depleted.reg.hormones.renin).toBeGreaterThan(1.2 * normal.reg.hormones.renin);
+    // and a litre of loss already cuts sodium excretion by more than half
+    expect(depleted.kidney.urine.exc.Na).toBeLessThan(0.5 * normal.kidney.urine.exc.Na);
   });
 
   test('most urinary K+ comes from regulated distal secretion', () => {

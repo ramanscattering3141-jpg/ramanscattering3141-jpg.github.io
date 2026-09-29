@@ -346,10 +346,17 @@ export function runNephron(inp: NephronInput): NephronResult {
     // even though delivery is high (Rose ch. 2).
     const mdClConc = (talOut.Cl / Math.max(talOut.water, 0.05)) * 1000; // mmol/L at the macula densa
     const uptake = mdClConc / (mdClConc + 45); // saturable Cl-dependence of NKCC2
-    const sensed = uptake * clamp(nkcc, 0, 1.6);
-    maculaDensa = clamp(sensed / MD_REF, 0.05, 6);
     // Delivery is reported separately: it can rise at the same time as sensing falls.
     mdDelivery = talOut.Cl / Math.max(inp.nephronFraction, 0.05) / MD_DELIVERY_REF;
+    // The TAL is gradient-limited, so the NaCl concentration reaching the macula densa rises and
+    // falls with loop flow: slower flow lets the TAL dilute further. That flow dependence is how
+    // volume depletion (lower GFR, more proximal reabsorption) is sensed here and releases renin
+    // (Rose ch. 2). Above normal the response is blunted: macula densa nitric oxide rises with
+    // NaCl delivery and resets feedback on a high-salt diet, so GFR is kept up to excrete the
+    // load (Rose ch. 8). NKCC2 blockade still dominates, so a loop diuretic reads as "low".
+    const flowSensing = mdDelivery < 1 ? Math.pow(Math.max(mdDelivery, 0.1), 0.5) : 1 + 0.1 * Math.min(mdDelivery - 1, 2);
+    const sensed = uptake * clamp(nkcc, 0, 1.6) * flowSensing;
+    maculaDensa = clamp(sensed / MD_REF, 0.05, 6);
 
     put('DTL', dtlIn, dtlOut, medullaTarget * 0.85);
     put('ATL', atlIn, atlOut, osmOfLoad(atlOut));

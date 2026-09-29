@@ -42,23 +42,26 @@ export const EDELMAN_INTERCEPT = -25.6;
 
 /** Normal starting state for a 70 kg adult. */
 export function initialBody(p: Params): BodyState {
-  // Exchangeable Na+ and total body water are set to the point at which the model is in balance
-  // on a 150 mmol/day diet, with the plasma Na+ (their ratio, via Edelman) unchanged.
-  const naE = 43.4 * p.weightKg; // exchangeable Na, mmol
-  const tbw = p.weightKg * (p.female ? 0.5 : 0.6) * 0.9933;
-  const kE = 45 * p.weightKg;
+  // The stores are the ones the model itself settles at on a normal diet (150 mmol Na+, 80 mmol
+  // K+ a day), so a scenario does not open with a transient of the model's own making. Women
+  // have less body water per kg and proportionally smaller exchangeable stores, so the same
+  // plasma Na+ (Edelman).
+  const waterScale = p.female ? 0.5 / 0.6 : 1;
+  const tbw = p.weightKg * 0.5969 * waterScale;
+  const naE = 43.69 * p.weightKg * waterScale; // exchangeable Na, mmol
+  const kE = 44.85 * p.weightKg * waterScale;
   return {
     naE,
     kE,
     tbw,
     ecfFraction: 1 / 3,
-    hco3: 24,
+    hco3: 23.6,
     organicAnions: 0,
-    clE: 104 * (tbw / 3),
+    clE: 105.8 * (tbw / 3),
     // The starting creatinine is the level this model settles at for a normal adult, so a
     // scenario does not open with a spurious creatinine transient of its own.
-    creat: p.female ? 0.58 : 0.68,
-    bun: 14,
+    creat: p.female ? 0.58 : 0.66,
+    bun: 13.2,
     pi: 1.15,
     ca: 2.35,
     mg: 0.85,
