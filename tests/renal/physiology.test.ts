@@ -864,7 +864,7 @@ describe('the model is in balance and stays there', () => {
     expect(last.Na).toBeLessThan(143);
     // Rose ch. 8: a modest, self-limited expansion is the persistent signal that keeps excretion
     // matched to the higher intake — neither none nor a runaway.
-    expect(last.ecf).toBeGreaterThan(points[0].ecf + 0.5);
+    expect(last.ecf).toBeGreaterThan(points[0].ecf + 0.2);
     expect(last.ecf).toBeLessThan(points[0].ecf + 4);
     // Sodium balance is restored: output has caught up with the higher intake.
     const fin = evaluate(state.body, applyPatch(DEFAULT_PARAMS, { naIntake: 350 }));
@@ -922,6 +922,24 @@ describe('volume regulation and the independence of Na+ and K+ (Rose ch. 6, 8)',
     expect(low.reg.hormones.aldo).toBeGreaterThan(2 * mid.reg.hormones.aldo);
     expect(low.kidney.urine.exc.Na).toBeLessThan(20);
     expect(low.body.hco3).toBeGreaterThan(22);
+  });
+
+  test('steady-state ECF rises with intake: a few litres across a 20-fold range, never a runaway', () => {
+    expect(mid.derived.ecfLiters).toBeGreaterThan(low.derived.ecfLiters);
+    expect(high.derived.ecfLiters).toBeGreaterThan(mid.derived.ecfLiters);
+    const span = high.derived.ecfLiters - low.derived.ecfLiters;
+    expect(span).toBeGreaterThan(1);
+    expect(span).toBeLessThan(4);
+  });
+
+  test('moderate heart failure compensates; severe failure has no steady state (Rose Fig. 8-7)', () => {
+    const moderate = runToSteadyState(applyPatch(DEFAULT_PARAMS, { cardiacFunction: 0.7 }), 60);
+    expect(moderate.state.outOfRange).toBeUndefined();
+    expect(moderate.ev.reg.CO).toBeGreaterThan(0.85);
+    expect(moderate.ev.derived.ecfLiters).toBeGreaterThan(mid.derived.ecfLiters + 2);
+    expect(moderate.ev.reg.hormones.sns).toBeGreaterThan(0.9);
+    const severe = runToSteadyState(applyPatch(DEFAULT_PARAMS, { cardiacFunction: 0.45 }), 60);
+    expect(severe.state.outOfRange).toBeTruthy();
   });
 
   test('a 20-fold range of salt intake barely moves blood pressure when the RAAS can adjust', () => {

@@ -455,12 +455,20 @@ export interface TrajectoryPoint {
   aldo: number;
   adh: number;
   renin: number;
+  anp: number;
+  /** urinary Na+ excretion, mmol/day */
+  urineNa: number;
+  /** urinary K+ excretion, mmol/day */
+  urineK: number;
+  /** change in exchangeable Na+ since the start, mmol (cumulative balance) */
+  naBalance: number;
 }
 
 export function simulate(params: Params, days: number, dt = 0.25, start?: BodyState): { points: TrajectoryPoint[]; final: Evaluation; state: SimState } {
   let state: SimState = { body: start ? { ...start } : initialBody(params), day: 0 };
   let ev = evaluate(state.body, params);
   const tbw0 = state.body.tbw;
+  const naE0 = state.body.naE;
   const points: TrajectoryPoint[] = [];
   const steps = Math.max(1, Math.round(days / dt));
   let h: number | undefined;
@@ -484,6 +492,10 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       aldo: ev.reg.hormones.aldo,
       adh: ev.reg.hormones.adh,
       renin: ev.reg.hormones.renin,
+      anp: ev.reg.hormones.anp,
+      urineNa: ev.kidney.urine.exc.Na,
+      urineK: ev.kidney.urine.exc.K,
+      naBalance: state.body.naE - naE0,
     });
     if (i === steps || state.outOfRange) break;
     const next = stepDay(state, params, dt, ev.reg, h);

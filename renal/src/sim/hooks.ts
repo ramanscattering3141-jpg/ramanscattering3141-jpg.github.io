@@ -44,23 +44,39 @@ type JobSpec = { kind: 'steady'; params: Params; days: number; start?: BodyState
 type SteadyResult = { state: SimState; ev: Evaluation };
 type CourseResult = { points: TrajectoryPoint[]; final: Evaluation; state: SimState };
 
-let worker: Worker | null | undefined;
+// A small pool: independent steady states (a family of curves, several scenarios side by side)
+// compute in parallel instead of queueing behind one another.
+let pool: Worker[] | null | undefined;
+const busy = new Map<Worker, number>();
 let nextId = 1;
 const pending = new Map<number, (r: unknown) => void>();
 
 function getWorker(): Worker | null {
-  if (worker !== undefined) return worker;
-  try {
-    worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-    worker.onmessage = (e: MessageEvent<{ id: number; result?: unknown; error?: string }>) => {
-      const cb = pending.get(e.data.id);
-      pending.delete(e.data.id);
-      if (cb) cb(e.data.result ?? null);
-    };
-  } catch {
-    worker = null;
+  if (pool === undefined) {
+    try {
+      const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+      pool = [];
+      for (let i = 0; i < n; i++) {
+        const w = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+        busy.set(w, 0);
+        w.onmessage = (e: MessageEvent<{ id: number; result?: unknown; error?: string }>) => {
+          busy.set(w, Math.max(0, (busy.get(w) ?? 1) - 1));
+          const cb = pending.get(e.data.id);
+          pending.delete(e.data.id);
+          if (cb) cb(e.data.result ?? null);
+        };
+        pool.push(w);
+      }
+    } catch {
+      pool = null;
+    }
   }
-  return worker;
+  if (!pool || pool.length === 0) return null;
+  // least-loaded worker
+  let best = pool[0];
+  for (const w of pool) if ((busy.get(w) ?? 0) < (busy.get(best) ?? 0)) best = w;
+  busy.set(best, (busy.get(best) ?? 0) + 1);
+  return best;
 }
 
 function run<T>(job: JobSpec): Promise<T> {

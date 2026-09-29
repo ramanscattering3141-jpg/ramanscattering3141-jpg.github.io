@@ -50,7 +50,10 @@ export function cardiacOutput(cardiacFunction: number, cbv: number) {
   // Below normal filling the curve is steep (stroke volume falls almost in proportion to
   // venous return); above it the curve flattens, which is why a failing heart gains little from
   // further volume expansion.
-  const filling = cbv >= 1 ? 1 + (0.9 * (cbv - 1)) / (1 + 1.5 * (cbv - 1)) : Math.pow(Math.max(cbv, 0.05), 0.9);
+  // Above normal filling there is real preload reserve: in heart failure the rise in filling
+  // pressure that follows renal Na+ retention raises output back toward normal, which is why
+  // moderate failure reaches a compensated steady state (Rose ch. 8, Fig. 8-7).
+  const filling = cbv >= 1 ? 1 + (1.5 * (cbv - 1)) / (1 + (cbv - 1)) : Math.pow(Math.max(cbv, 0.05), 0.9);
   return clamp(cardiacFunction * filling, 0.05, 2);
 }
 
@@ -106,7 +109,11 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     // Arterial baroreceptors reset within days when pressure stays high, so sustained
     // hypertension suppresses sympathetic outflow only a little; hypotension, by contrast,
     // drives it hard (Rose ch. 8).
-    const cardiopulmonary = cbv < 1 ? Math.exp(-2.5 * (cbv - 1)) : Math.exp(-0.5 * (cbv - 1));
+    // In heart failure the high atrial pressures no longer restrain sympathetic outflow (the
+    // cardiopulmonary reflex is blunted), so the arterial underfilling dominates and sympathetic
+    // activity is raised despite the expanded volume (Rose ch. 8, 16).
+    const cpInhibition = 0.5 * Math.pow(clamp(p.cardiacFunction, 0.2, 1), 3);
+    const cardiopulmonary = cbv < 1 ? Math.exp(-2.5 * (cbv - 1)) : Math.exp(-cpInhibition * (cbv - 1));
     const arterial = eabv < 1 ? Math.exp(-3.2 * (eabv - 1)) : Math.exp(-1.0 * (eabv - 1));
     const snsNew = clamp(arterial * cardiopulmonary, 0.4, 6) * p.snsOverride;
     sns = 0.5 * sns + 0.5 * snsNew;
