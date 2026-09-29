@@ -29,3 +29,4 @@ export function runEcg(p: Physio, duration = 10000, leads?: LeadId[]): EcgRun {
 export function runPatch(patch: PhysioPatch, duration = 10000): EcgRun {
   return runEcg(makePhysio(patch), duration);
 }
+export { explainAt, beatAt, heading, type Moment, type Phase, type PhaseId, type ActiveComp } from './explain';

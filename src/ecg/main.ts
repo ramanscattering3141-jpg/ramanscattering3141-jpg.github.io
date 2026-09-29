@@ -19,6 +19,7 @@ import { renderSearch, renderSources } from './pages/search';
 import { renderTools } from './pages/tools';
 import { renderGlossary } from './pages/glossary';
 import { renderPath } from './pages/path';
+import { renderHeart3d } from './pages/heart3dPage';
 import { disclaimer } from './ui/common';
 
 export type Cleanup = (() => void) | void;
@@ -41,6 +42,7 @@ const NAV: { letter: string; label: string; href: string; match: string }[] = [
   { letter: 'N', label: 'Physiology Sandbox', href: '#/sandbox', match: 'sandbox' },
 ];
 const EXTRA: { label: string; href: string; match: string }[] = [
+  { label: '3-D heart & slow-motion ECG', href: '#/heart3d', match: 'heart3d' },
   { label: 'Learning path & progress', href: '#/path', match: 'path' },
   { label: 'Differential diagnosis engine', href: '#/ddx', match: 'ddx' },
   { label: 'Clinical tools & calculators', href: '#/tools', match: 'tools' },
@@ -77,6 +79,7 @@ const ROUTES: Record<string, Renderer> = {
   tools: renderTools,
   glossary: renderGlossary,
   path: renderPath,
+  heart3d: renderHeart3d,
 };
 
 function applyTheme(t: string): void {
