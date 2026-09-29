@@ -609,6 +609,23 @@ describe('diuretics', () => {
     expect(thiazide.kidney.FE.Na * 100).toBeLessThan(6);
   });
 
+  test('distal adaptation causes partial resistance, and makes an added thiazide worth more', () => {
+    // Rose ch. 15: chronic loop therapy hypertrophies the thiazide-sensitive distal tubule. The
+    // loop diuretic achieves less, but is never abolished ("not seriously impaired"), while the
+    // natriuretic response to an added thiazide grows (Loon 1989).
+    const fe = (patch: ParamPatch) => snap(patch).derived.FENa;
+    const naive = fe({ drugs: { furosemide: 0.9 } });
+    const adapted = fe({ distalAdaptation: 1.8, drugs: { furosemide: 0.9 } });
+    expect(adapted).toBeLessThan(naive);
+    expect(adapted).toBeGreaterThan(3); // resistance is partial, not total
+
+    const addedWhenNaive = fe({ drugs: { furosemide: 0.9, thiazide: 0.8 } }) - naive;
+    const addedWhenAdapted = fe({ distalAdaptation: 1.8, drugs: { furosemide: 0.9, thiazide: 0.8 } }) - adapted;
+    expect(addedWhenAdapted).toBeGreaterThan(addedWhenNaive);
+    // and far more than the same thiazide achieves on its own
+    expect(addedWhenAdapted).toBeGreaterThan(2 * fe({ distalAdaptation: 1.8, drugs: { thiazide: 0.8 } }));
+  });
+
   test('sequential nephron blockade: adding a thiazide to a loop diuretic adds natriuresis', () => {
     const loop = snap({ drugs: { furosemide: 0.8 } });
     const both = snap({ drugs: { furosemide: 0.8, thiazide: 0.8 } });

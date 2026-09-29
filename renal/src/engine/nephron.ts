@@ -455,6 +455,13 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const pl = inp.plasma;
   const injury = clamp(p.tubularInjury, 0, 1);
 
+  // Chronic loop diuretic therapy hypertrophies the distal tubule and collecting duct, with a
+  // measurable rise in Na+-K+-ATPase activity (Rose ch. 15; Kaissling 1988). The effect is real —
+  // it is why adding a thiazide to a loop diuretic yields more than the thiazide would alone — but
+  // it is bounded: Rose is explicit that the response to a loop diuretic is not seriously impaired
+  // in most circumstances, so the adapted segments must not be able to reclaim the whole delivery.
+  const adapt = clamp(1 + 0.45 * (p.distalAdaptation - 1), 0.6, 1.5);
+
   // --- DCT: thiazide-sensitive NaCl cotransport; PTH-sensitive active Ca uptake (TRPV5);
   //     Mg via TRPM6. WNK/SPAK signalling makes NCC activity K-sensitive (Terker 2015).
   const kOnNCC = clamp(1 + 0.45 * (4.2 - pl.K), 0.6, 1.8);
@@ -463,12 +470,13 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
     (1 - 0.92 * d.thiazide) *
     kOnNCC *
     clamp(1 + 0.08 * Math.log(Math.max(h.at1, 0.05)), 0.8, 1.25) *
-    p.distalAdaptation *
+    adapt *
     (1 - 0.3 * injury);
   // As in the loop, the distal convoluted tubule has a finite absolute capacity (~7% of the
   // filtered load). This is why a loop diuretic's natriuresis is not simply recaptured
   // downstream, and why blocking this segment with a thiazide produces a real natriuresis.
-  const dctCapacity = 1.3 * clamp(inp.nephronFraction, 0.05, 1) * clamp(ncc, 0, 2) * p.distalAdaptation;
+  // The adaptation is already carried by ncc, so it is not applied a second time here.
+  const dctCapacity = 1.3 * clamp(inp.nephronFraction, 0.05, 1) * clamp(ncc, 0, 2);
   const dctNaReab = Math.min(inLoad.Na * clamp(0.62 * ncc, 0.02, 0.88), dctCapacity);
   const dctOut = { ...inLoad };
   dctOut.Na = inLoad.Na - dctNaReab;
@@ -506,7 +514,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
     (1 - 0.78 * d.amiloride) *
     (1 - 0.55 * d.trimethoprim) *
     (1 - 0.35 * injury) *
-    p.distalAdaptation;
+    adapt;
   const naAvail = dctOut.Na;
   const flow = dctOut.water;
   const enacFrac = (a: number) => clamp(1 - Math.exp(-a * enac), 0.01, 0.995);
@@ -515,8 +523,8 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // are the last few per cent of Na+ reabsorption and cannot recapture a loop diuretic's whole
   // delivery however high aldosterone goes. That ceiling is why loop diuretics are powerful and
   // why sequential blockade of the distal segments adds to them (Rose ch. 5, 15).
-  const distalCapacity =
-    0.95 * clamp(inp.nephronFraction, 0.05, 1) * p.distalAdaptation * clamp(0.45 + 0.35 * enac, 0.15, 1.35) * (1 - 0.55 * injury);
+  // The adaptation is carried by enac above, so it is not applied a second time here.
+  const distalCapacity = 0.95 * clamp(inp.nephronFraction, 0.05, 1) * clamp(0.45 + 0.35 * enac, 0.15, 1.35) * (1 - 0.55 * injury);
   let distalBudget = distalCapacity;
   const takeDistal = (wanted: number) => {
     const taken = Math.min(wanted, Math.max(0, distalBudget));
