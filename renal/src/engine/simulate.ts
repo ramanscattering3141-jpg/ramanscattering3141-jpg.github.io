@@ -533,6 +533,10 @@ export interface TrajectoryPoint {
   /** fractional excretion of urea, per cent */
   feurea: number;
   urinePH: number;
+  /** arterial PCO2, mmHg */
+  PCO2: number;
+  /** plasma chloride, mmol/L */
+  Cl: number;
 }
 
 export function simulate(params: Params, days: number, dt = 0.25, start?: BodyState): { points: TrajectoryPoint[]; final: Evaluation; state: SimState } {
@@ -571,6 +575,8 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       fena: ev.derived.FENa,
       feurea: ev.derived.FEUrea,
       urinePH: ev.kidney.urine.pH,
+      PCO2: ev.plasma.PCO2,
+      Cl: ev.plasma.Cl,
     });
     if (i === steps || state.outOfRange) break;
     const next = stepDay(state, params, dt, ev.reg, h);
