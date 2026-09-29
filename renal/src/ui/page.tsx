@@ -2,8 +2,8 @@
 // the five-question frame, "what if?" buttons and links onwards.
 
 import { type ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
-import { href } from '../router';
+import { useEffect, useState } from 'preact/hooks';
+import { href, navigate } from '../router';
 import { ROUTES, routeByPath } from '../routes';
 import { roseChapter } from '../content/sources';
 import type { ParamPatch } from '../engine/types';
@@ -132,4 +132,27 @@ export function Toggle(props: { label: string; checked: boolean; onChange: (v: b
 /** A small "busy" indicator for results still being computed in the worker. */
 export function Busy({ on }: { on: boolean }) {
   return on ? <span class="busy">computing…</span> : null;
+}
+
+/**
+ * A tab whose value lives in the URL (`?tab=`), so a view can be linked to and the browser's
+ * back button works. The state has to follow the query as well as set it: moving between two
+ * links on the same page only changes the hash, so the component is re-rendered rather than
+ * remounted.
+ */
+export function useTabParam<T extends string>(path: string, ids: readonly T[], fallback: T, query: URLSearchParams): [T, (t: T) => void] {
+  const fromUrl = query.get('tab') as T | null;
+  const valid = fromUrl && ids.includes(fromUrl) ? fromUrl : null;
+  const [tab, setTab] = useState<T>(valid ?? fallback);
+  useEffect(() => {
+    if (valid && valid !== tab) setTab(valid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valid]);
+  return [
+    tab,
+    (t: T) => {
+      setTab(t);
+      navigate(path, { tab: t });
+    },
+  ];
 }

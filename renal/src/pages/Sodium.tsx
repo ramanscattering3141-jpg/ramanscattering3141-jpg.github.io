@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { PageHead, FiveQuestions, Related, Toggle, Busy } from '../ui/page';
+import { PageHead, FiveQuestions, Related, Toggle, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Chain, Sources, Predict, Tabs, LineChart, toneFor, type Series } from '../ui/kit';
 import { EquationCard } from '../ui/EquationCard';
 import { acute, makeParams, steady, useStep, useSteady } from '../sim/hooks';
@@ -7,7 +7,6 @@ import { withFluid } from '../engine/scenarios';
 import { thirstDrive, type Evaluation } from '../engine/simulate';
 import type { ParamPatch } from '../engine/types';
 import { si } from '../units';
-import { navigate } from '../router';
 
 type Tab = 'step' | 'curve' | 'clamp' | 'effective' | 'osmo';
 
@@ -584,6 +583,7 @@ function OsmoTab() {
 
 // ------------------------------------------------------------------------------------------------
 
+const TAB_IDS = ['step', 'curve', 'clamp', 'effective', 'osmo'] as const;
 const TABS: { id: Tab; label: string }[] = [
   { id: 'step', label: 'Step change in salt intake' },
   { id: 'curve', label: 'Pressure natriuresis' },
@@ -593,16 +593,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function Sodium({ query }: { query: URLSearchParams }) {
-  const fromUrl = query.get('tab') as Tab | null;
-  const [tab, setTabState] = useState<Tab>(fromUrl && TABS.some((t) => t.id === fromUrl) ? fromUrl : 'step');
-  useEffect(() => {
-    if (fromUrl && TABS.some((t) => t.id === fromUrl) && fromUrl !== tab) setTabState(fromUrl);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromUrl]);
-  const setTab = (t: Tab) => {
-    setTabState(t);
-    navigate('/sodium', { tab: t });
-  };
+  const [tab, setTab] = useTabParam('/sodium', TAB_IDS, 'step', query);
   return (
     <div>
       <PageHead

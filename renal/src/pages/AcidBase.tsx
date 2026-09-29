@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'preact/hooks';
-import { PageHead, FiveQuestions, WhatIf, Related, Toggle } from '../ui/page';
+import { PageHead, FiveQuestions, WhatIf, Related, Toggle, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Chain, Sources, Predict, LineChart, Tabs, toneFor, BarRow, type Series } from '../ui/kit';
 import { EquationCard } from '../ui/EquationCard';
 import { acidLoad, bufferCapacity, hFromHco3, LOAD_DEFAULT, pHFrom, titration, type LoadInput } from '../sim/acidbase';
-import { navigate } from '../router';
 
 type Tab = 'load' | 'open' | 'map';
 
+const TAB_IDS = ['load', 'open', 'map'] as const;
 const TABS: { id: Tab; label: string }[] = [
   { id: 'load', label: 'Where an acid load goes' },
   { id: 'open', label: 'Why an open buffer is powerful' },
@@ -240,12 +240,7 @@ function MapTab() {
 }
 
 export default function AcidBase({ query }: { query: URLSearchParams }) {
-  const fromUrl = query.get('tab') as Tab | null;
-  const [tab, setTabState] = useState<Tab>(fromUrl && TABS.some((t) => t.id === fromUrl) ? fromUrl : 'load');
-  const setTab = (t: Tab) => {
-    setTabState(t);
-    navigate('/acid-base', { tab: t });
-  };
+  const [tab, setTab] = useTabParam('/acid-base', TAB_IDS, 'load', query);
 
   return (
     <div>
