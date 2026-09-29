@@ -1151,3 +1151,107 @@ describe('urine chemistries and where they mislead (Rose ch. 13)', () => {
     expect(Math.abs(highSalt.kidney.urine.exc.Na - 300)).toBeLessThan(40);
   });
 });
+
+/**
+ * Diuretics (Rose ch. 15). The chapter's central argument is that a diuretic's net effect is far
+ * smaller than its peak, because the kidney defends the volume the drug removes — so these tests
+ * are mostly about the compensation, not the natriuresis.
+ */
+describe('diuretics: potency, braking and sequential blockade (Rose ch. 15)', () => {
+  const settled = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 150 }), 60).state.body;
+  /** The instantaneous response, before body composition has changed: the peak of the dose. */
+  const peak = (patch: ParamPatch) => {
+    const p = applyPatch(DEFAULT_PARAMS, { naIntake: 150, ...patch });
+    return evaluate(settled, p);
+  };
+
+  test('potency follows the site: loop > thiazide > K+-sparing (Rose Table 15-1)', () => {
+    const loop = peak({ drugs: { furosemide: 1 } }).derived.FENa;
+    const thiazide = peak({ drugs: { thiazide: 1 } }).derived.FENa;
+    const amiloride = peak({ drugs: { amiloride: 1 } }).derived.FENa;
+    expect(loop).toBeGreaterThan(thiazide);
+    expect(thiazide).toBeGreaterThan(peak({}).derived.FENa);
+    // the book's ceilings: loop up to 20-25%, thiazide 3-5%, K+-sparing 1-2%
+    expect(loop).toBeGreaterThan(8);
+    expect(loop).toBeLessThan(25);
+    expect(amiloride).toBeLessThan(3);
+  });
+
+  test('acetazolamide is weak despite acting where most Na+ is reabsorbed', () => {
+    // The loop reclaims most of the extra delivery, which is the whole point of Rose's argument
+    // that the site of action does not by itself determine potency.
+    const acz = peak({ drugs: { acetazolamide: 1 } });
+    expect(acz.derived.FENa).toBeLessThan(peak({ drugs: { furosemide: 0.5 } }).derived.FENa);
+    expect(acz.derived.FENa).toBeLessThan(3);
+    // but it does produce a bicarbonate diuresis and an alkaline urine
+    expect(acz.kidney.urine.exc.HCO3).toBeGreaterThan(5 * peak({}).kidney.urine.exc.HCO3);
+  });
+
+  test('the loop reclaims an increased proximal delivery (flow-dependent transport)', () => {
+    const base = peak({});
+    const acz = peak({ drugs: { acetazolamide: 1 } });
+    const deliveredToLoop = (ev: ReturnType<typeof peak>) => ev.kidney.segments.ATL.in.Na;
+    const reabsorbedInLoop = (ev: ReturnType<typeof peak>) => ev.kidney.segments.TAL.in.Na - ev.kidney.segments.TAL.out.Na;
+    expect(deliveredToLoop(acz)).toBeGreaterThan(deliveredToLoop(base));
+    expect(reabsorbedInLoop(acz)).toBeGreaterThan(reabsorbedInLoop(base));
+  });
+
+  test('sequential nephron blockade: adding a thiazide to a loop diuretic adds natriuresis', () => {
+    const loop = peak({ drugs: { furosemide: 1 } }).derived.FENa;
+    const both = peak({ drugs: { furosemide: 1, thiazide: 1 } }).derived.FENa;
+    const all = peak({ drugs: { furosemide: 1, thiazide: 1, amiloride: 1 } }).derived.FENa;
+    expect(both).toBeGreaterThan(loop);
+    expect(all).toBeGreaterThan(both);
+  });
+
+  test('a loop diuretic blinds the macula densa, so renin rises although distal delivery is high', () => {
+    const base = peak({});
+    const loop = peak({ drugs: { furosemide: 0.9 } });
+    expect(loop.kidney.mdDelivery).toBeGreaterThan(base.kidney.mdDelivery);
+    expect(loop.kidney.maculaDensa).toBeLessThan(base.kidney.maculaDensa);
+    expect(loop.reg.hormones.renin).toBeGreaterThan(2 * base.reg.hormones.renin);
+  });
+
+  /**
+   * Rose Fig. 15-1: 40 mg of furosemide in a normal subject eating 270 mmol of Na+ a day gives a
+   * brisk natriuresis for about six hours and then excretion below intake for the other eighteen,
+   * so there is no net sodium loss over the day. The three ways out are salt restriction, twice
+   * daily dosing, and a higher dose.
+   */
+  describe('Fig. 15-1: why a single daily dose produces no net loss on a high salt intake', () => {
+    const netAt = (diet: number, doses: number, dose = 0.9) => {
+      const base = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: diet }), 60).state.body;
+      const p = applyPatch(DEFAULT_PARAMS, { naIntake: diet, diureticDoses: doses, drugs: { furosemide: dose } });
+      const r = simulate(p, 1, 0.021, base);
+      return r.points[r.points.length - 1].naBalance;
+    };
+
+    test('once daily on 270 mmol/day: essentially no net sodium loss over 24 hours', () => {
+      expect(Math.abs(netAt(270, 1))).toBeLessThan(60);
+    });
+
+    test('excretion falls below intake once the dose wears off', () => {
+      const base = runToSteadyState(applyPatch(DEFAULT_PARAMS, { naIntake: 270 }), 60).state.body;
+      const p = applyPatch(DEFAULT_PARAMS, { naIntake: 270, diureticDoses: 1, drugs: { furosemide: 0.9 } });
+      const r = simulate(p, 1, 0.021, base);
+      const mean = (a: number, b: number) => {
+        const pts = r.points.filter((x) => x.day >= a && x.day < b);
+        return pts.reduce((s, x) => s + x.urineNa, 0) / Math.max(pts.length, 1);
+      };
+      expect(mean(0, 0.25)).toBeGreaterThan(270); // the natriuresis
+      expect(mean(0.25, 0.75)).toBeLessThan(270); // the retention that cancels it
+    });
+
+    test('restricting salt converts it into a real loss', () => {
+      expect(netAt(40, 1)).toBeLessThan(netAt(270, 1) - 40);
+    });
+
+    test('twice daily dosing also converts it into a real loss', () => {
+      expect(netAt(270, 2)).toBeLessThan(netAt(270, 1) - 30);
+    });
+
+    test('continuous exposure is not the same as a daily dose — the off-hours are the point', () => {
+      expect(netAt(270, 0)).toBeLessThan(netAt(270, 1) - 100);
+    });
+  });
+});

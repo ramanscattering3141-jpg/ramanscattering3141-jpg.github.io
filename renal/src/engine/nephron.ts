@@ -145,10 +145,14 @@ export function runNephron(inp: NephronInput): NephronResult {
   const lnSns = Math.log(Math.max(h.sns, 0.1));
   const at1Pt = lnAt1 > 0 ? 0.17 * lnAt1 : 0.04 * lnAt1;
   const snsPt = lnSns > 0 ? 0.08 * lnSns : 0.02 * lnSns;
+  // Carbonic anhydrase inhibition blocks the bicarbonate-coupled part of proximal Na+ entry, not
+  // all of it: the later proximal tubule reabsorbs NaCl down the chloride gradient by a largely
+  // CA-independent route, so acetazolamide cuts proximal Na+ reabsorption by roughly a third
+  // while nearly abolishing bicarbonate reabsorption (through caActivity below).
   const nheActivity =
     t.NHE3 *
     clamp(1 + at1Pt + snsPt, 0.45, 1.5) *
-    (1 - 0.75 * d.acetazolamide) *
+    (1 - 0.35 * d.acetazolamide) *
     (1 - 0.6 * injury);
   const caActivity = t.CA * (1 - 0.9 * d.acetazolamide);
   const hco3Fraction = clamp(0.9 * nheActivity * Math.pow(caActivity, 0.6) * Math.pow(t.NBCe1, 0.8), 0, 0.95);
@@ -183,7 +187,6 @@ export function runNephron(inp: NephronInput): NephronResult {
       ptOsmoticBrake *
       pressureNatriuresis *
       (1 - 0.18 * injury) *
-      (1 + (lnAt1 > 0 ? 0.06 : 0.015) * lnAt1) *
       Math.pow(t.NaKATPase, 0.5),
     0.15,
     0.82,
@@ -323,10 +326,19 @@ export function runNephron(inp: NephronInput): NephronResult {
     // Thick ascending limb: NKCC2 -> lumen-positive voltage -> paracellular Ca/Mg.
     // NaCl reabsorption here is limited three ways: by the fraction the segment normally takes,
     // by the chloride delivered (NKCC2 carries 2 Cl- per Na+, but the K+ recycles so net
-    // transport is ~1:1 NaCl), and by an absolute transport capacity. The capacity limit is what
-    // makes a high delivered load raise distal delivery instead of being fully reclaimed.
+    // transport is ~1:1 NaCl), and by transport capacity.
+    //
+    // That capacity is not a fixed ceiling. Transport here is flow-dependent, rising with the
+    // chloride delivered (Rose ch. 4, Fig. 4-3), and it is precisely that which makes proximally
+    // acting diuretics weak: most of the extra fluid delivered out of the proximal tubule is
+    // reclaimed in the loop, so blocking the segment that reabsorbs the most sodium does not
+    // produce the largest diuresis (Rose ch. 15). Modelled as a saturating function of delivery,
+    // chosen so that the normal operating point (about 6.5 mmol/min delivered, 5.2 reabsorbed)
+    // is unchanged while an increased load is largely, but not wholly, recovered.
+    const nephrons = clamp(inp.nephronFraction, 0.05, 1);
     const talNaWanted = atlOut.Na * clamp(loopNaFraction * 1.05, 0.02, 0.92);
-    const talCapacity = 5.2 * clamp(inp.nephronFraction, 0.05, 1) * clamp(nkcc, 0, 1.6) * loopPressure;
+    const talTm = 26 * nephrons * clamp(nkcc, 0, 1.6) * loopPressure;
+    const talCapacity = talTm * (atlOut.Na / (atlOut.Na + 26 * nephrons));
     const talNaReab = Math.min(talNaWanted, atlOut.Cl * 0.93, talCapacity);
     talVoltage = clamp(nkcc * Math.pow(clamp(t.ROMK, 0.05, 2), 0.5), 0, 1.6);
     const caReabTAL = atlOut.Ca * clamp(0.68 * talVoltage * t.claudin16 * clamp(1 - 0.35 * (t.CaSR - 1), 0.4, 1.2), 0, 0.85);

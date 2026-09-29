@@ -143,6 +143,14 @@ export interface Params {
   obstructionChronic: boolean;
   /** mmHg; 0 = off. A servo-controlled aortic occluder that stops renal perfusion pressure rising above this (Hall 1984; Rose Fig. 8-9) */
   renalPressureClamp: number;
+  /**
+   * Doses per day of the short-acting diuretics. 0 (the default) means continuous exposure — a
+   * constant infusion, or simply ignoring pharmacokinetics. Any other value makes each dose wear
+   * off between administrations, which is what produces the post-diuretic sodium retention that
+   * cancels much of the natriuresis (Rose ch. 15, Fig. 15-1) and the reason a diuretic may be
+   * given twice daily or paired with dietary salt restriction.
+   */
+  diureticDoses: number;
   tubularInjury: number; // 0..1 (ATN)
   kfFactor: number; // glomerular surface area / permeability (GN < 1)
   proteinuria: number; // g/day
@@ -270,6 +278,7 @@ export const DEFAULT_PARAMS: Params = {
   tgf: 1,
   distalAdaptation: 1,
   renalPressureClamp: 0,
+  diureticDoses: 0,
   transporters: { ...DEFAULT_TRANSPORTERS },
   drugs: { ...DEFAULT_DRUGS },
 };

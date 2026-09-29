@@ -267,6 +267,39 @@ export function thirstDrive(ev: Evaluation) {
   return 1.2 * (clamp((ev.plasma.effOsm - 288) / 4, 0, 12) + clamp((0.95 - ev.reg.eabv) * 6, 0, 2));
 }
 
+/**
+ * Hours of action of one dose, for the agents short enough that it matters. The potassium-sparing
+ * agents and spironolactone act long enough to be treated as continuous.
+ */
+const DOSE_HOURS = { furosemide: 6, thiazide: 12, acetazolamide: 8 } as const;
+
+/**
+ * The drug exposure at a given moment, when the diuretic is given as intermittent doses rather
+ * than continuously.
+ *
+ * This is what makes a diuretic's net effect so much smaller than its peak. A single morning dose
+ * of a loop diuretic acts for about six hours; for the other eighteen the drug is gone while the
+ * volume deficit it created is still driving sodium retention, so excretion falls below intake and
+ * cancels much of the earlier loss (Rose ch. 15, Fig. 15-1). Modelled as an exponential decay
+ * reaching about 5% of peak at the end of the stated duration, which is smooth enough not to make
+ * the integrator stiff at each dose.
+ */
+export function dosedParams(params: Params, day: number): Params {
+  const n = params.diureticDoses;
+  if (!n || n <= 0) return params;
+  const interval = 24 / n; // hours between doses
+  const hour = (((day * 24) % interval) + interval) % interval;
+  let changed = false;
+  const drugs = { ...params.drugs };
+  for (const key of ['furosemide', 'thiazide', 'acetazolamide'] as const) {
+    if (!params.drugs[key]) continue;
+    const decay = Math.exp((-Math.log(20) * hour) / DOSE_HOURS[key]);
+    drugs[key] = params.drugs[key] * decay;
+    changed = true;
+  }
+  return changed ? { ...params, drugs } : params;
+}
+
 export function stepDay(
   state: SimState,
   params: Params,
@@ -290,7 +323,7 @@ export function stepDay(
   let guard = 0;
   while (remaining > 1e-9 && guard++ < 2000) {
     h = Math.min(h, remaining);
-    const r = substep(cur, params, h, reg, ev?.kidney);
+    const r = substep(cur, dosedParams(params, cur.day), h, reg, ev?.kidney);
     // Reject a step that turned out to move a store by more than ~4% and redo it smaller. Without
     // this, the first sub-step after a sudden change (a drug started, a hormone switched on) can
     // be taken at the large step size the quiet period before it allowed, which overshoots and
