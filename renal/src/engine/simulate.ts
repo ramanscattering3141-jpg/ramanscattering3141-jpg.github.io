@@ -586,13 +586,13 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   b.bun = clamp(b.bun + bunDelta * dt, 2, 300);
 
   // Phosphate, calcium, magnesium: intake vs excretion with bone/gut buffering.
-  const piIntake = clamp(p.proteinIntake * 0.15, 5, 80); // mmol/day absorbed
+  const piIntake = clamp(p.proteinIntake * 0.2, 5, 80); // mmol/day net absorbed (urine PO4 ~16 mmol/day, Rose ch. 6)
   const piOut = k.urine.exc.Pi;
   b.pi = clamp(b.pi + ((piIntake - piOut) / Math.max(b.tbw * 0.4, 5)) * dt * 0.5, 0.2, 5);
   const caIntake = 25 * clamp(ev.reg.hormones.calcitriol, 0.1, 3);
   const caOut = k.urine.exc.Ca + 20;
   const boneBuffer = clamp(ev.reg.hormones.pth, 0.1, 20);
-  b.ca = clamp(b.ca + (((caIntake - caOut) / 100) * dt + 0.02 * (boneBuffer - 1) * dt) * 0.3, 1.2, 4.0);
+  b.ca = clamp(b.ca + (((caIntake - caOut) / 100) * dt + 0.045 * (boneBuffer - 1) * dt) * 0.3, 1.2, 4.0);
   // Fractional intestinal Mg²⁺ absorption rises when the body is depleted (active TRPM6 transport
   // in the gut), roughly doubling as the plasma level falls toward 0.5 mmol/L.
   const mgIntake = 12 * clamp(1 + 2 * (0.85 - b.mg), 0.6, 2.2);

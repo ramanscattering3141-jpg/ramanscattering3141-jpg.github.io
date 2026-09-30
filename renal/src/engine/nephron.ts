@@ -183,8 +183,8 @@ export function runNephron(inp: NephronInput): NephronResult {
   const piCapacity =
     f.Pi *
     clamp(
-      0.85 * t.NaPi2 * Math.pow(Math.max(h.pth, 0.05), -0.22) * Math.pow(Math.max(h.fgf23, 0.05), -0.12) * (1 - 0.5 * injury),
-      0,
+      0.85 * t.NaPi2 * Math.pow(Math.max(h.pth, 0.05), -0.12) * Math.pow(Math.max(h.fgf23, 0.05), -0.06) * (1 - 0.5 * injury),
+      0.2,
       0.98,
     );
   const piReab = Math.min(f.Pi, piCapacity * (pl.pH < 7.3 ? 0.85 : 1));
