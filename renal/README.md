@@ -19,20 +19,22 @@ The lab shares this repository's Vite build with the flight simulator at the sit
 
 ## What is finished
 
-**Chapters 1–24** of Rose & Post have an interactive rebuild in the textbook view (`#/textbook`). Each chapter has its thesis, key concepts with causal chains, key numbers, equations, clinical connections, pathology, questions and sourced modern updates.
+**Chapters 1–28** of Rose & Post have an interactive rebuild in the textbook view (`#/textbook`). Each chapter has its thesis, key concepts with causal chains, key numbers, equations, clinical connections, pathology, questions and sourced modern updates. Chapter 30 (the equation summary) is realised as the equation explorer, and chapter 29's worked problems as the clinical cases and challenges.
 
-**42 modules are working:**
+**All 60-plus modules are working.** A page is live the moment its file exists in `renal/src/pages/`, because `routes.ts` checks this; nothing is left dimmed.
 
 - *The nephron:* nephron explorer, nephron flow simulator, tubular transport lab, hormones
 - *Filtration & clearance:* glomerular filtration, afferent/efferent lab, autoregulation, renin–angiotensin–aldosterone, clearance, fractional excretion, GFR & creatinine kinetics
 - *Tubular transport:* proximal tubule, glucose & SGLT2, loop of Henle, countercurrent multiplication, vasa recta, urea recycling, distal nephron
-- *Water, sodium & volume:* body water & serum sodium, sodium & effective volume, ADH & water balance, urine osmolality, free-water clearance, hyponatraemia simulator, hypernatraemia & polyuria (thirst, the water-restriction test, correction rates, water vs solute diuresis), hypovolaemic states, oedematous states
-- *Potassium:* potassium balance
+- *Water, sodium & volume:* body water & serum sodium, sodium & effective volume, ADH & water balance, urine osmolality, free-water clearance, hyponatraemia simulator, hypernatraemia & polyuria, hypovolaemic states, oedematous states
+- *Potassium:* potassium balance, hypokalaemia (with the ECG), hyperkalaemia (with the ECG and an emergency-treatment time course)
 - *Acid–base:* acid–base engine, bicarbonate handling, ammonium excretion, titratable acid, metabolic acidosis, metabolic alkalosis, renal tubular acidosis, respiratory disorders, simple & mixed disorders
-- *Drugs & clinical:* diuretic lab, pre-renal vs ATN, urine chemistries
-
-**In preparation.** These modules appear dimmed in the menu and open to a "being written" page with links to their textbook chapters:
-hyperglycaemia/DKA/HHS (ch. 25), potassium disorders (ch. 26–28), calcium/phosphate/magnesium, AKI, obstruction, CKD, glomerular, tubulointerstitial and inherited tubular disease, clinical cases, the sandbox, break-the-kidney, what-if, knowledge graph, equation explorer, lab interpreter, guided lessons, challenges and the AI tutor.
+- *Minerals:* calcium, phosphate & magnesium — PTH, calcitriol and FGF23, and the CKD–mineral and bone disorder
+- *Glucose:* hyperglycaemia, DKA and HHS with a crisis time course
+- *Kidney disease:* acute kidney injury, pre-renal vs ATN, urinary obstruction, chronic kidney disease, glomerular pathophysiology, tubulointerstitial disease, inherited tubular disorders
+- *Drugs:* diuretic lab
+- *Laboratory:* physiology sandbox, break-the-kidney, what-if explorer, knowledge map, equation explorer, laboratory interpreter
+- *Clinical:* clinical cases, guided lessons, predict-then-observe challenges, the (retrieval) AI tutor, urine chemistries
 
 ## How it is built
 

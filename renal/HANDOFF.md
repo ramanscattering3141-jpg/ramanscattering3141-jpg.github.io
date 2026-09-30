@@ -2,7 +2,7 @@
 
 This file lets a new session (or a person) pick up the work without the chat history. Update it with every commit that changes the plan.
 
-Branch: `claude/compassionate-mayer-vl169d`. Everything is committed and pushed. Nothing lives only in a local checkout.
+Branch: `claude/compassionate-mayer-vl169d`. Everything is committed and pushed. Nothing lives only in a local checkout. The build is content-complete — see section 4.
 
 ## 1. Getting it live (needs a person)
 
@@ -40,44 +40,32 @@ Useful engine calls (see `renal/src/engine/simulate.ts`, `renal/src/sim/hooks.ts
 
 ## 4. Status
 
-**Done:** chapters 1–23 of content, and 41 working modules (listed in `renal/README.md`). Unwritten modules are marked "in preparation" automatically. A page becomes live the moment its file exists in `renal/src/pages/`, because `routes.ts` checks this.
+**The build is content-complete.** Chapters 1–28 have interactive chapter content, and every module in the menu is live (60-plus pages; a page goes live the moment its file exists in `renal/src/pages/`, because `routes.ts` checks this). Chapter 30's equation summary is the equation explorer; chapter 29's worked problems seed the clinical cases and challenges. The full suite is green (`npx vitest run tests/renal`, 198 tests) and all routes pass a browser smoke test with no console errors (`smoke.tmp.mjs`, git-excluded).
 
-**Chapter 24 (hypernatraemia and the diabetes insipidus states) is finished.** Next is chapter 25 (see below). The route is already registered: `/water-disorders` → `renal/src/pages/WaterDisorders.tsx` (not written yet), chapters [24].
+Built since the ch24 handoff, in order:
+- **ch25** hyperglycaemia / DKA / HHS → `/hyperglycemia`, with the crisis time-course simulator (`renal/src/sim/hyperglycemia.ts`).
+- **ch26–27** hypokalaemia → `/hypokalemia`; **ch28** hyperkalaemia → `/hyperkalemia`. Both with the ECG (`renal/src/ui/EcgStrip.tsx`); hyperkalaemia has an emergency-treatment time course fitted to Rose's Table 28-4 effect sizes (a pharmacodynamic sketch, not the renal engine — noted on the page).
+- **Minerals** → `/minerals` (Ca/Pi/Mg, PTH, calcitriol, FGF23, CKD–MBD).
+- **Disease:** `/aki`, `/obstruction`, `/ckd`, `/glomerular`, `/tubulointerstitial`, `/inherited`.
+- **Laboratory:** `/sandbox`, `/break`, `/whatif`, `/graph`, `/equations`, `/labs`.
+- **Clinical:** `/cases`, `/lessons`, `/challenges`, `/tutor` (a retrieval tutor over the KB search index — no external model, so it never drifts from Rose).
 
-The engine already reproduces the water-deprivation test (Rose Fig. 24-6 / Table 24-4). Start the patient in the state shown, deprive them of water, then give desmopressin:
+Engine work done alongside these (all covered by the regression suite):
+- Potassium adaptation of the secreting cells (`kAdapt`, slow, mineralocorticoid-gated); ammonium excretion scaled so it is preserved per nephron until GFR < 40–50; low-flow K⁺ secretion steepened and a basal aldosterone-independent ROMK conductance; ENaC loss blunts secretion.
+- Escape from antidiuresis (`adhEscape`) and a milder cortisol→ADH drive, so chronic water retention stabilises instead of crashing the sodium.
+- CKD minerals: realistic phosphate intake, phosphate reabsorption floored at ~20% (so Pi rises below GFR ~30), and a stronger PTH bone-calcium defence.
+- Obstruction: Bowman's-space pressure scaled for a graded GFR fall; glomerulus: effective oncotic pressure falls at half rate in hypoalbuminaemia so nephrotic hyperfiltration is modest, not doubled.
 
-```
-                     start Na / uOsm / uVol      deprived Posm / uOsm   + desmopressin uOsm (rise)
-normal               139.1 / 556 / 1.5 L/d      295 / 1179             1180 (0%)
-complete central DI  184.8 / 37 / 17.8 L/d      380 / 37               411 (1021%)
-partial central DI   142.4 / 390 / 2.1 L/d      304 / 799              1148 (44%)
-nephrogenic (lithium)156.0 / 80 / 10.3 L/d      372 / 81               83 (3%)
-partial nephrogenic  143.6 / 292 / 2.8 L/d      310 / 347              359 (4%)
-primary polydipsia   137.5 / 56 / 15.2 L/d      294 / 1226             1232 (1%)
-```
-
-Rose's criteria: a 100–800% rise in complete central DI, 15–50% in partial central DI, little or none in nephrogenic DI, none in normals. The patches used for these states are in the regression tests (see step 1 below).
-
-**Correcting hypernatraemia.** A run starting from Na 185 (central DI, no thirst, 1.2 L/day intake; TBW 32 L; Rose water deficit = TBW × (Na/140 − 1) ≈ 10 L) now works, after commit 4f8209c fixed the survivability guard. With desmopressin + quarter-isotonic saline 4 L/day, the sodium fell 15 mmol/L/day. That is faster than Rose's maximum safe rate of 0.5 mmol/L/h (12 mmol/L/day). The page should let the reader choose a regimen and see whether it breaches that limit.
-
-### Next steps for chapter 24
-1. ~~Regression tests for the water-restriction test~~ Done: `tests/renal/physiology.test.ts`, "the water-restriction test (Fig. 24-6, Table 24-4)". The protocol lives in `renal/src/sim/deprivation.ts` (`waterDeprivationTest`, `DEPRIVATION_PATIENTS`) and runs in the worker through `useDeprivation(patch)` in `sim/hooks.ts`.
-2. ~~Thirst~~ Fixed: the engine's thirst gain was too shallow, so untreated central DI *with thirst* reached Na 185. It is now about 3 L/day per mOsm/kg above threshold (`thirstDrive` in `engine/simulate.ts`, mirrored in `sim/osmoregulation.ts`). DI now sits at Na 142–144 and primary polydipsia at 137.5, as Rose says.
-3. ~~`ch24.ts`~~ Done, with three verified modern updates (copeptin, `fenske2018copeptin`; the AVP-D/AVP-R renaming, `arima2022rename`; the correction rate in adults, `chauhan2019hypernat`).
-4. ~~Build `WaterDisorders.tsx`~~ Done (tabs `thirst`, `deprivation`, `correct`, `polyuria`; the correction runs through `hypernatraemiaCorrection` / `useCorrection`). Notes kept for reference: with tabs `thirst`, `deprivation`, `correct`, `polyuria`.
-   - `deprivation`: `useDeprivation(DEPRIVATION_PATIENTS[i].patch)` gives hourly samples (Posm, Uosm, flow, Na, weight loss), the stop reason and the % rise with desmopressin.
-   - `correct`: complete central DI with no thirst has **no steady state**, so it cannot be the start. Build the start by withholding water (`thirstIntact: false, waterIntake: 0`) from a settled patient until Na ≈ 165, then treat for 72 h. Fluids available as params: `ivD5W`, `ivNS` (L/day); quarter-isotonic saline = 0.75 D5W + 0.25 NS. Show the Na trajectory against the 12 mmol/L/day line, and Rose's deficit estimate.
-   - `polyuria`: water vs solute diuresis from steady states of `{centralDI: 1}`, `{waterIntake: 12}`, `{ivNS: 6}`, `{proteinIntake: 260}`, `{glucose: 30}`.
-
-### After chapter 24
-- **Next:** ch25 hyperglycaemia / DKA / HHS → `/hyperglycemia` (route registered; page `Hyperglycemia.tsx` not written). Note the engine's `glucose` parameter is in **mg/dL** (30 mmol/L = 540). At glucose 540 the model already gives a glucose diuresis (3.4 L/day, 1079 mOsm/kg) and a translocational fall in sodium to 129. Book text is at the local scratchpad only (not in the repo, for copyright), so a new session must work from the book itself.
-- ch26–28 potassium → `/hypokalemia`, `/hyperkalemia` (with ECG)
-- ch29–30 → `/minerals`
-- Disease modules: AKI, obstruction, CKD, glomerular, tubulointerstitial, inherited
-- Laboratory: sandbox, break-the-kidney, what-if, knowledge graph, equation explorer, lab interpreter, cases, lessons, challenges, tutor
-- Final: `npm run build`, a browser smoke test across all routes, merge.
+### What a next session could still do
+The spec is broad; genuine polish items remain rather than missing modules:
+- Liddle syndrome is only partially reproduced (the ENaC gain suppresses renin/aldosterone but does not fully produce the hypertension/hypokalaemia, because escape and other loops compensate). Same for Gordon's blood pressure.
+- Nephrotic oedema is under-represented (the model lacks a primary nephrotic Na-avidity mechanism; it is discussed on `/edema` and `/glomerular` rather than simulated).
+- Deeper "open in simulator" wiring: the clinical cases link to modules but do not yet pre-load their exact parameters into the target page's controls.
+- More clinical cases and challenges from Rose ch. 29's problem set.
 
 ## 5. Known model limitations (keep documented, don't tune away)
 - The anion gap runs a few mmol/L high in distal/type 4 RTA, NH₄Cl loading and diarrhoea. Chloride is tracked by mass balance so it can cause chloride-depletion alkalosis.
 - Angiotensin-II thirst is omitted, because it destabilised oedematous states.
 - Chronic respiratory compensation takes longer than 3–5 days.
+- The glomerulus over-estimates the hyperfiltration of isolated hypoalbuminaemia (buffered by a half-rate oncotic term, but still present); nephrotic diseases are modelled with a matching Kf reduction.
+- The emergency-hyperkalaemia treatment curves and the hyperkalaemia adaptation constants are fitted to Rose's stated effect sizes and time scales, not derived from first principles.
