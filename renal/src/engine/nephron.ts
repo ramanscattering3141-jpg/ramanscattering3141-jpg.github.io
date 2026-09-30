@@ -95,6 +95,15 @@ function glomerularRetention(p: Params) {
   return 1 + 0.9 * clamp(p.proteinuria / 6, 0, 1);
 }
 
+/** Minimum urine K⁺ concentration, mmol/L (IMCD leak). */
+const IMCD_MIN_K = 5;
+/**
+ * How total ammoniagenesis scales with nephron mass. Remaining nephrons adapt, producing several
+ * times more NH₄⁺ each, so total ammonium excretion is preserved until the GFR is well reduced and
+ * the acidosis of renal failure appears late (Rose ch. 19). A near-linear scaling put the
+ * bicarbonate at 13 mmol/L at a GFR of 48 mL/min.
+ */
+const AMMONIA_NEPHRON_EXP = 0.65;
 const PT_BASE = 0.63; // reference fractional proximal reabsorption before modulation
 const MD_REF = 0.609; // normal macula densa NaCl uptake signal (dimensionless)
 const MD_DELIVERY_REF = 1.09; // mmol/min of Cl delivered past the macula densa when normal
@@ -264,7 +273,7 @@ export function runNephron(inp: NephronInput): NephronResult {
   const acidStim = clamp(Math.pow(10, 3.0 * (7.4 - pl.pH)), 0.4, 6);
   const kStim = clamp(1 + 0.35 * (4.2 - pl.K), 0.6, 2.2);
   const ammoniagenesis =
-    40 * acidStim * kStim * Math.pow(inp.nephronFraction, 0.85) * (1 - 0.5 * injury) * (pl.pH > 7.5 ? 0.5 : 1); // mmol/day
+    40 * acidStim * kStim * Math.pow(inp.nephronFraction, AMMONIA_NEPHRON_EXP) * (1 - 0.5 * injury) * (pl.pH > 7.5 ? 0.5 : 1); // mmol/day
   const nh4Prod = ammoniagenesis / 1440; // mmol/min secreted into the proximal lumen
 
   // Creatinine secretion by the organic cation pathway (10-20% of excreted creatinine,
@@ -565,7 +574,14 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
       0.95,
     );
   dctOut.Ca = Math.max(0, inLoad.Ca - caDct);
-  const mgDct = inLoad.Mg * clamp(0.45 * t.TRPM6 * (1 - 0.3 * d.thiazide) * clamp(1 + 0.2 * (pl.K - 4.2), 0.6, 1.2), 0, 0.9);
+  // TRPM6-mediated Mg²⁺ reabsorption in the DCT falls when NaCl transport there fails: thiazides
+  // and Gitelman syndrome reduce TRPM6 expression and the DCT atrophies, which is why
+  // hypomagnesaemia is a feature of Gitelman but not usually of Bartter syndrome (Rose ch. 27).
+  const nccMg = clamp((1 - 0.3 * d.thiazide) * (0.25 + 0.75 * clamp(t.NCC, 0, 1.5)), 0.15, 1.3);
+  // Hypomagnesaemia upregulates TRPM6, so the DCT recaptures more of what the loop lets through —
+  // the compensation that keeps the magnesium near normal in most Bartter syndrome.
+  const mgAvid = clamp(1 + 2.5 * (0.85 - pl.Mg), 1, 2.2);
+  const mgDct = inLoad.Mg * clamp(0.45 * t.TRPM6 * nccMg * mgAvid * clamp(1 + 0.2 * (pl.K - 4.2), 0.6, 1.2), 0, 0.9);
   dctOut.Mg = Math.max(0, inLoad.Mg - mgDct);
 
   // --- CNT + CCD principal cells: ENaC-mediated Na entry creates the lumen-negative voltage
@@ -621,7 +637,12 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // the deficit of diabetic ketoacidosis builds up at 3–5 mmol/kg over several days (Rose ch. 25).
   const flowGain = flowRel <= 2 ? Math.pow(flowRel, 0.55) : Math.pow(2, 0.55) * Math.pow(flowRel / 2, 0.12);
   const kChannels = clamp(t.ROMK * Math.pow(Math.max(mr, 0.02), 0.6) + 0.35 * t.BK * clamp(Math.pow(Math.min(flowRel, 2.5), 0.8), 0, 3), 0, 7);
+  // A blocked sodium channel generates no voltage however many channels aldosterone inserts, so
+  // amiloride and trimethoprim reduce K⁺ secretion even when aldosterone rises to compensate —
+  // the reason both cause hyperkalaemia, trimethoprim at ordinary doses (Rose ch. 28).
+  const channelBlock = clamp(1 - 0.45 * d.amiloride - 0.35 * d.trimethoprim, 0.2, 1);
   const kSecretion = clamp(
+    channelBlock *
     KSEC_GAIN * kChannels * (0.4 + 0.9 * voltage) * clamp(flowGain, 0.25, 2.5) * (pl.K >= 4.2 ? clamp(1 + 0.9 * (pl.K - 4.2), 1, 3.5) : Math.max(0.02, Math.pow(pl.K / 4.2, 5))) /* K+ depletion withdraws ROMK and lowers cell K+ */ * (pl.pH > 7.45 ? 1.2 : pl.pH < 7.3 ? 0.8 : 1),
     0,
     2.5,
@@ -811,6 +832,11 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // Final water equilibration with the papillary interstitium: this is the step that sets the
   // maximum urine osmolality.
   imcdOut.water = equilibrate(imcdOut, medullaTarget, perm);
+  // The urine K⁺ cannot be driven much below 5–15 mmol/L, unlike sodium: K⁺ leaks into the lumen
+  // down its gradient through a nonselective cation channel in the inner medullary collecting duct
+  // (Rose ch. 26, 27). It rarely matters — except in polyuria, where 10 L/day or more of urine at
+  // that floor carries 50–150 mmol of K⁺ however hard the kidney conserves.
+  imcdOut.K = Math.max(imcdOut.K, (IMCD_MIN_K * imcdOut.water) / 1000);
 
   // Titratable acid: phosphate (pKa 6.8) is the main urinary buffer.
   const piLoad = imcdOut.Pi;

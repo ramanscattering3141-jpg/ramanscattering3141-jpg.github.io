@@ -1870,12 +1870,20 @@ describe('hyponatraemia: water excretion and what limits it (Rose ch. 23)', () =
     // is appropriately suppressed and the excess water leaves in a maximally dilute urine.
     const poly = at({ waterIntake: 19 }, 20);
     expect(poly.ev.kidney.urine.osm).toBeLessThan(100);
+    // At 19 L/day the obligatory urinary K+ loss (urine [K+] cannot fall below ~5 meq/L, Rose
+    // ch. 27) adds solute to the urine and limits how much water is retained, so the
+    // hyponatraemia is mild; the point is that it corrects completely within a day.
     const polyFixed = from(poly.state.body, { waterIntake: 1.5 }, 2).points.find((p) => p.day >= 1)!;
-    expect(polyFixed.Na - poly.ev.plasma.Na).toBeGreaterThan(6);
+    const polyRise = polyFixed.Na - poly.ev.plasma.Na;
+    expect(poly.ev.plasma.Na).toBeLessThan(138);
+    expect(polyFixed.Na).toBeGreaterThan(140);
 
     const siadh = at({ adhAutonomous: 5, waterIntake: 1.35, naIntake: 100 });
     const siadhFixed = from(siadh.state.body, { adhAutonomous: 5, waterIntake: 0.8, naIntake: 100 }, 2).points.find((p) => p.day >= 1)!;
-    expect(siadhFixed.Na - siadh.ev.plasma.Na).toBeLessThan(4);
+    const siadhRise = siadhFixed.Na - siadh.ev.plasma.Na;
+    expect(siadhRise).toBeLessThan(4);
+    expect(siadhFixed.Na).toBeLessThan(135);
+    expect(polyRise).toBeGreaterThan(2 * siadhRise);
   });
 
   test('arterial underfilling raises ADH where the pressure looks normal', () => {

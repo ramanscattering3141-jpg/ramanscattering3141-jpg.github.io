@@ -100,7 +100,11 @@ export function ureaGeneration(p: Params) {
 export function acidProduction(p: Params) {
   const diet = clamp(0.8 * p.proteinIntake - 10, 10, 160);
   const organic = (p.lacticAcid + p.ketoAcid + p.toxicAcid) * 24;
-  return diet + p.extraAcid + organic - p.drugs.sodiumBicarbonate - p.drugs.potassiumCitrate;
+  // Potassium in food comes as citrate and other organic salts, whose anions are metabolised to
+  // bicarbonate (Rose ch. 27). The diet term already includes a normal 80 mmol; extra fruit and
+  // vegetable potassium beyond that brings its alkali with it.
+  const extraFoodAlkali = 0.5 * Math.max(0, p.kIntake - 80);
+  return diet + p.extraAcid + organic - p.drugs.sodiumBicarbonate - p.drugs.potassiumCitrate - extraFoodAlkali;
 }
 
 export function evaluate(body: BodyState, params: Params, prevReg?: RegulationState, prevKidney?: KidneyResult): Evaluation {
@@ -550,7 +554,9 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   const caOut = k.urine.exc.Ca + 20;
   const boneBuffer = clamp(ev.reg.hormones.pth, 0.1, 20);
   b.ca = clamp(b.ca + (((caIntake - caOut) / 100) * dt + 0.02 * (boneBuffer - 1) * dt) * 0.3, 1.2, 4.0);
-  const mgIntake = 12;
+  // Fractional intestinal Mg²⁺ absorption rises when the body is depleted (active TRPM6 transport
+  // in the gut), roughly doubling as the plasma level falls toward 0.5 mmol/L.
+  const mgIntake = 12 * clamp(1 + 2 * (0.85 - b.mg), 0.6, 2.2);
   b.mg = clamp(b.mg + ((mgIntake - k.urine.exc.Mg) / 200) * dt, 0.2, 2.5);
 
   // How fast is the fastest store moving, as a fraction of itself per day? The integrator uses

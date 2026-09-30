@@ -199,9 +199,11 @@ export function plasmaPotassium(kE: number, weightKg: number, p: Params, pH: num
   const insulinEffect = clamp(p.insulin + p.drugs.insulinDrip, 0.05, 5);
   const insulinShift = insulinEffect < 1 ? -0.3 * Math.log(insulinEffect) : -1.1 * Math.log(insulinEffect);
   const betaShift = -0.55 * Math.log(clamp(p.beta2 + 1.5 * p.drugs.albuterol, 0.1, 5)) + 0.35 * p.drugs.betaBlocker;
-  // Mineral acidosis shifts K out of cells (~0.6 mmol/L per 0.1 pH); organic acidoses much less.
+  // Mineral acidosis shifts K out of cells (~0.6 mmol/L per 0.1 pH, within Rose's 0.2–1.7);
+  // organic acidoses much less. Alkalaemia moves it the other way but by less: under 0.4 mmol/L
+  // per 0.1 pH (Rose ch. 27), so the hypokalaemia of an alkalosis is mostly real depletion.
   const mineralFraction = clamp(1 - p.lacticAcid / 8 - p.ketoAcid / 8, 0, 1);
-  const pHShift = 0.6 * mineralFraction * ((7.4 - pH) / 0.1);
+  const pHShift = pH < 7.4 ? 0.6 * mineralFraction * ((7.4 - pH) / 0.1) : 0.3 * ((7.4 - pH) / 0.1);
   const tonicityShift = 0.35 * clamp((effOsm - 285) / 10, -1.5, 4);
   return clamp(k + insulinShift + betaShift + pHShift + tonicityShift, 1.2, 9.5);
 }
