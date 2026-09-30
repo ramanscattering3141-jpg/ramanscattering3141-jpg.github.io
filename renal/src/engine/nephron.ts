@@ -47,6 +47,8 @@ export interface NephronInput {
   ureaProduction: number;
   /** NH3 available to the collecting duct from proximal ammoniagenesis, mmol/min */
   nh4Supply?: number;
+  /** potassium adaptation of the secreting cells, relative to normal */
+  kAdapt?: number;
 }
 
 export interface NephronResult {
@@ -98,12 +100,22 @@ function glomerularRetention(p: Params) {
 /** Minimum urine K⁺ concentration, mmol/L (IMCD leak). */
 const IMCD_MIN_K = 5;
 /**
- * How total ammoniagenesis scales with nephron mass. Remaining nephrons adapt, producing several
- * times more NH₄⁺ each, so total ammonium excretion is preserved until the GFR is well reduced and
- * the acidosis of renal failure appears late (Rose ch. 19). A near-linear scaling put the
- * bicarbonate at 13 mmol/L at a GFR of 48 mL/min.
+ * How total ammoniagenesis scales with nephron mass. The remaining nephrons adapt, each making
+ * more NH₄⁺, up to three to four times normal — the most a normal kidney reaches after an acid
+ * load. Total ammonium excretion is therefore preserved until the GFR falls below 40–50 mL/min,
+ * and only then declines in proportion to the nephrons left (Rose ch. 19, Fig. 19-3). A smooth
+ * minimum of 1 and 3 × the nephron fraction reproduces that. The earlier power law put the
+ * bicarbonate at 17 mmol/L at a GFR of 73 mL/min.
  */
-const AMMONIA_NEPHRON_EXP = 0.65;
+const AMMONIA_PER_NEPHRON_MAX = 4;
+function ammoniaNephronScale(nf: number) {
+  const adapted = AMMONIA_PER_NEPHRON_MAX * clamp(nf, 0.01, 1);
+  return Math.pow(1 + Math.pow(adapted, -4), -0.25);
+}
+/** Upper limit of potassium adaptation (Rose: intake raised slowly to ~400 mmol/day is tolerated). */
+const KADAPT_MAX = 3.5;
+/** Fraction of apical K⁺ channel activity that does not depend on mineralocorticoid. */
+const ROMK_BASAL = 0.2;
 const PT_BASE = 0.63; // reference fractional proximal reabsorption before modulation
 const MD_REF = 0.609; // normal macula densa NaCl uptake signal (dimensionless)
 const MD_DELIVERY_REF = 1.09; // mmol/min of Cl delivered past the macula densa when normal
@@ -273,7 +285,7 @@ export function runNephron(inp: NephronInput): NephronResult {
   const acidStim = clamp(Math.pow(10, 3.0 * (7.4 - pl.pH)), 0.4, 6);
   const kStim = clamp(1 + 0.35 * (4.2 - pl.K), 0.6, 2.2);
   const ammoniagenesis =
-    40 * acidStim * kStim * Math.pow(inp.nephronFraction, AMMONIA_NEPHRON_EXP) * (1 - 0.5 * injury) * (pl.pH > 7.5 ? 0.5 : 1); // mmol/day
+    40 * acidStim * kStim * ammoniaNephronScale(inp.nephronFraction) * (1 - 0.5 * injury) * (pl.pH > 7.5 ? 0.5 : 1); // mmol/day
   const nh4Prod = ammoniagenesis / 1440; // mmol/min secreted into the proximal lumen
 
   // Creatinine secretion by the organic cation pathway (10-20% of excreted creatinine,
@@ -635,14 +647,24 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // channels and the pump. Above about twice normal distal flow the gain flattens. Without the
   // ceiling, the six-fold distal flow of an osmotic diuresis wasted 600 mmol of K⁺ a day, where
   // the deficit of diabetic ketoacidosis builds up at 3–5 mmol/kg over several days (Rose ch. 25).
-  const flowGain = flowRel <= 2 ? Math.pow(flowRel, 0.55) : Math.pow(2, 0.55) * Math.pow(flowRel / 2, 0.12);
-  const kChannels = clamp(t.ROMK * Math.pow(Math.max(mr, 0.02), 0.6) + 0.35 * t.BK * clamp(Math.pow(Math.min(flowRel, 2.5), 0.8), 0, 3), 0, 7);
+  // Below normal flow the dependence steepens (Rose Fig. 12-5 is nearly linear at low flow): with
+  // little fluid reaching the collecting duct, secreted K⁺ accumulates in the lumen and stops
+  // further secretion however much aldosterone there is — the reason volume depletion in a patient
+  // with few nephrons produces hyperkalaemia (Rose ch. 28).
+  const flowGain = flowRel <= 1 ? Math.pow(flowRel, 0.8) : flowRel <= 2 ? Math.pow(flowRel, 0.55) : Math.pow(2, 0.55) * Math.pow(flowRel / 2, 0.12);
+  // Part of the apical K⁺ conductance is present without aldosterone: hyperkalaemia stimulates
+  // secretion directly, which is how an adrenalectomised animal or a patient with
+  // hypoaldosteronism still reaches a (higher) steady state (Rose ch. 12, 28).
+  const kChannels = clamp(t.ROMK * (ROMK_BASAL + (1 - ROMK_BASAL) * Math.pow(Math.max(mr, 0.02), 0.6)) + 0.35 * t.BK * clamp(Math.pow(Math.min(flowRel, 2.5), 0.8), 0, 3), 0, 7);
   // A blocked sodium channel generates no voltage however many channels aldosterone inserts, so
   // amiloride and trimethoprim reduce K⁺ secretion even when aldosterone rises to compensate —
   // the reason both cause hyperkalaemia, trimethoprim at ordinary doses (Rose ch. 28).
-  const channelBlock = clamp(1 - 0.45 * d.amiloride - 0.35 * d.trimethoprim, 0.2, 1);
+  // Loss-of-function ENaC (pseudohypoaldosteronism type 1) acts the same way: aldosterone rises
+  // but cannot insert channels that do not work.
+  const channelBlock = clamp(1 - 0.45 * d.amiloride - 0.35 * d.trimethoprim - 0.8 * Math.max(0, 1 - t.ENaC), 0.2, 1);
+  const kAdapt = clamp(inp.kAdapt ?? 1, 1, KADAPT_MAX);
   const kSecretion = clamp(
-    channelBlock *
+    channelBlock * kAdapt *
     KSEC_GAIN * kChannels * (0.4 + 0.9 * voltage) * clamp(flowGain, 0.25, 2.5) * (pl.K >= 4.2 ? clamp(1 + 0.9 * (pl.K - 4.2), 1, 3.5) : Math.max(0.02, Math.pow(pl.K / 4.2, 5))) /* K+ depletion withdraws ROMK and lowers cell K+ */ * (pl.pH > 7.45 ? 1.2 : pl.pH < 7.3 ? 0.8 : 1),
     0,
     2.5,

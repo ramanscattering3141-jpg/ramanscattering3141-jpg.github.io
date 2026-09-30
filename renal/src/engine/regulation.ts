@@ -32,6 +32,8 @@ export interface RegulationInput {
   /** pressure drop across a renal artery stenosis for left & right kidney (mmHg) */
   stenosisDrop: [number, number];
   nephronFraction: number;
+  /** escape from antidiuresis: fraction of aquaporin-2 lost (BodyState.adhEscape) */
+  adhEscape?: number;
 }
 
 export interface RegulationState {
@@ -44,6 +46,8 @@ export interface RegulationState {
 }
 
 const MAP_REF = 93;
+/** Largest fraction of aquaporin-2 lost in escape from antidiuresis. */
+export const ADH_ESCAPE_MAX = 0.6;
 
 /** Cardiac output from central blood volume on a Frank–Starling-type curve (Rose Fig. 16-6). */
 export function cardiacOutput(cardiacFunction: number, cbv: number) {
@@ -188,7 +192,7 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
     const slope = 0.38 * (1 + 3 * (deficit / 0.1));
     const adhOsm = slope * Math.max(0, inp.effOsm - threshold);
     const adhBaro = 0.6 * (Math.exp(8 * deficit) - 1);
-    const adhOther = 4 * p.adhNonosmotic + 3 * (1 - p.glucocorticoid);
+    const adhOther = 4 * p.adhNonosmotic + 1.6 * (1 - p.glucocorticoid);
     const adhNew = Math.max(p.adhAutonomous, (1 - p.centralDI) * (adhOsm + adhBaro + adhOther));
     adh = 0.5 * adh + 0.5 * adhNew;
 
@@ -205,6 +209,7 @@ export function evaluateRegulation(inp: RegulationInput, prev?: RegulationState)
       (1 - 0.7 * d.lithium) *
       kFactor *
       caFactor *
+      (1 - clamp(inp.adhEscape ?? 0, 0, ADH_ESCAPE_MAX)) *
       // The dose-response between plasma vasopressin and collecting-duct water permeability is
       // half-maximal near 2 pg/mL and close to maximal by 5 pg/mL (Rose ch. 9, Fig. 9-3):
       // a normally hydrated person sits on the steep part of this curve, which is why small

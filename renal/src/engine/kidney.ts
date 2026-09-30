@@ -15,6 +15,8 @@ export interface KidneyInput {
   ureaProduction: number;
   /** previous macula densa signal: seeds the fixed point so it converges in one or two passes */
   mdSeed?: number;
+  /** potassium adaptation of the secreting cells (BodyState.kAdapt) */
+  kAdapt?: number;
 }
 
 /**
@@ -171,6 +173,7 @@ export function runKidney(inp: KidneyInput): KidneyResult {
     vasaRecta: 1,
     perfusionPressure: inp.MAP,
     ureaProduction: inp.ureaProduction,
+    kAdapt: inp.kAdapt,
   });
 
   // Fixed point: GFR -> macula densa Cl delivery -> afferent tone -> GFR.
@@ -194,6 +197,7 @@ export function runKidney(inp: KidneyInput): KidneyResult {
       perfusionPressure: 0.5 * (left.Pa + right.Pa),
       ureaProduction: inp.ureaProduction,
       nh4Supply: nephron.ammoniagenesis / 1440,
+      kAdapt: inp.kAdapt,
     });
     const next = 0.55 * mdSignal + 0.45 * nephron.maculaDensa;
     if (Math.abs(next - mdSignal) < 1e-4) {

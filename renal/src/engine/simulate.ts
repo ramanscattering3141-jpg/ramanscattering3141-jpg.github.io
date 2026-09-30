@@ -17,7 +17,7 @@ import {
   type BodyState,
   type PlasmaDerived,
 } from './body';
-import { evaluateRegulation, type RegulationState } from './regulation';
+import { evaluateRegulation, ADH_ESCAPE_MAX, type RegulationState } from './regulation';
 import { runKidney } from './kidney';
 import type { KidneyResult, Params } from './types';
 
@@ -82,6 +82,16 @@ const ORG_CLEARANCE_KETO = 9; // ketoacid anions: filtered beyond the tubule's c
 /** Rate at which an organic anion no longer being produced is metabolised back to bicarbonate. */
 const ORG_METABOLISM = 1.5; // per day
 const UREA_VOL_FRACTION = 1.0;
+/** Potassium adaptation: rise in secretory capacity per mmol/L of sustained hyperkalaemia, and its time constant (days). */
+const K_ADAPT_GAIN = 2;
+const K_ADAPT_TAU = 3;
+/**
+ * Escape from antidiuresis: aquaporin-2 lost per unit of retained water above a threshold, and its
+ * time constant (days). The threshold (see below) keeps a normally hydrated person, and the modest
+ * expansion of a water-restricted SIADH, from escaping; only a sustained several-litre surplus does.
+ */
+const ADH_ESCAPE_GAIN = 5;
+const ADH_ESCAPE_TAU = 3;
 
 /** Creatinine generation (mg/day) from age, sex and muscle mass (Cockcroft–Gault style). */
 export function creatinineGeneration(p: Params) {
@@ -100,11 +110,9 @@ export function ureaGeneration(p: Params) {
 export function acidProduction(p: Params) {
   const diet = clamp(0.8 * p.proteinIntake - 10, 10, 160);
   const organic = (p.lacticAcid + p.ketoAcid + p.toxicAcid) * 24;
-  // Potassium in food comes as citrate and other organic salts, whose anions are metabolised to
-  // bicarbonate (Rose ch. 27). The diet term already includes a normal 80 mmol; extra fruit and
-  // vegetable potassium beyond that brings its alkali with it.
-  const extraFoodAlkali = 0.5 * Math.max(0, p.kIntake - 80);
-  return diet + p.extraAcid + organic - p.drugs.sodiumBicarbonate - p.drugs.potassiumCitrate - extraFoodAlkali;
+  // Extra K⁺ intake is treated as KCl (salt substitutes, supplements, the loading experiments);
+  // K⁺ given with an alkali is potassiumCitrate.
+  return diet + p.extraAcid + organic - p.drugs.sodiumBicarbonate - p.drugs.potassiumCitrate;
 }
 
 export function evaluate(body: BodyState, params: Params, prevReg?: RegulationState, prevKidney?: KidneyResult): Evaluation {
@@ -123,6 +131,7 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
       mdSignal: 1,
       stenosisDrop: [0, 0],
       nephronFraction: params.nephronFraction,
+        adhEscape: body.adhEscape,
     },
     prevReg,
   );
@@ -137,6 +146,7 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
     MAP: reg.MAP,
     ureaProduction: ureaGeneration(params) / 1440,
     mdSeed,
+    kAdapt: body.kAdapt,
   });
 
   // Close the loop between the kidney's macula densa signal and the hormone system. The two
@@ -156,6 +166,7 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
         mdSignal: mdBlend,
         stenosisDrop: [stenosisDrop(params.stenosisL, reg.MAP), stenosisDrop(params.stenosisR, reg.MAP)],
         nephronFraction: params.nephronFraction,
+        adhEscape: body.adhEscape,
       },
       reg,
     );
@@ -166,6 +177,7 @@ export function evaluate(body: BodyState, params: Params, prevReg?: RegulationSt
       MAP: regNext.MAP,
       ureaProduction: ureaGeneration(params) / 1440,
       mdSeed: kidney.maculaDensa,
+      kAdapt: body.kAdapt,
     });
     const converged = Math.abs(kidneyNext.GFR - kidney.GFR) < 0.3 && Math.abs(regNext.MAP - reg.MAP) < 0.2;
     reg = regNext;
@@ -469,6 +481,33 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   const leakTendency = clamp(0.45 + starlingStress, 0.45, 0.95);
   b.edema = clamp(Math.max(0, excessEcf - safetyMargin) * leakTendency, 0, 40);
 
+  // Potassium adaptation (Rose ch. 12, 28). A sustained rise in plasma K⁺ adds Na⁺-K⁺-ATPase and
+  // basolateral membrane to the secreting cells over days, so excretion stays high while the
+  // plasma K⁺ and aldosterone drift back towards normal. The same process lets the remaining
+  // nephrons in renal failure each excrete several times their normal share, which is why
+  // hyperkalaemia there usually waits for oliguria or a second insult. It depends in part on
+  // aldosterone: with little mineralocorticoid effect it is blunted, and a hypoaldosteronism
+  // that a normal kidney absorbs with a small rise in K⁺ becomes hyperkalaemia once nephrons
+  // are lost. The half-time of about two days is a modelling choice; the book says "days".
+  const mrGate = clamp(ev.reg.hormones.mr, 0.1, 1);
+  const kAdaptTarget = 1 + K_ADAPT_GAIN * clamp(ev.plasma.K - 4.2, 0, 2.5) * mrGate;
+  const kAdaptNow = state.body.kAdapt ?? 1;
+  b.kAdapt = kAdaptNow + (kAdaptTarget - kAdaptNow) * (1 - Math.exp(-dt / K_ADAPT_TAU));
+
+  // Escape from antidiuresis (Rose ch. 23). When ADH persists and water is retained, the
+  // collecting tubules become partly resistant to it through reduced aquaporin-2 expression,
+  // unrelated to the plasma osmolality; the urine osmolality falls and a new steady state is
+  // reached within one to two weeks. Keyed to the retained water (excluding oedema) and gated off
+  // when the arterial circulation is underfilled, so that heart failure and cirrhosis — where ADH
+  // is defending perfusion — do not escape. Rose attributes the escape to the ensuing volume
+  // expansion; here the natriuresis leaves the extracellular volume nearly normal, so the retained
+  // water is the more usable signal.
+  const waterExcess = (b.tbw - b.edema) / initialBody(p).tbw - 1;
+  const perfused = clamp((ev.reg.eabv - 0.9) / 0.08, 0, 1);
+  const escapeTarget = clamp(ADH_ESCAPE_GAIN * (waterExcess - 0.16), 0, ADH_ESCAPE_MAX) * perfused;
+  const escapeNow = state.body.adhEscape ?? 0;
+  b.adhEscape = escapeNow + (escapeTarget - escapeNow) * (1 - Math.exp(-dt / ADH_ESCAPE_TAU));
+
   // Acid-base: net acid balance changes the bicarbonate pool (ECF + cell buffering).
   // Bone is a large, slowly exchangeable alkali reservoir: in chronic acidosis it releases
   // carbonate, which is why uraemic and distal-RTA acidosis plateaus instead of falling without
@@ -658,6 +697,10 @@ export interface TrajectoryPoint {
   urineNH4: number;
   /** net acid excretion, mmol/day */
   nae: number;
+  /** potassium adaptation of the secreting cells, relative to normal */
+  kAdapt: number;
+  /** escape from antidiuresis: fraction of aquaporin-2 lost */
+  adhEscape: number;
 }
 
 export function simulate(params: Params, days: number, dt = 0.25, start?: BodyState): { points: TrajectoryPoint[]; final: Evaluation; state: SimState } {
@@ -704,6 +747,8 @@ export function simulate(params: Params, days: number, dt = 0.25, start?: BodySt
       urineAnionGap: ev.derived.urineAnionGap,
       urineNH4: ev.kidney.urine.exc.NH4,
       nae: ev.kidney.urine.exc.NAE,
+      kAdapt: state.body.kAdapt ?? 1,
+      adhEscape: state.body.adhEscape ?? 0,
     });
     if (i === steps || state.outOfRange) break;
     const next = stepDay(state, params, dt, ev.reg, h);

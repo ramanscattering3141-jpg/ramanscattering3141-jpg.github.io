@@ -64,6 +64,17 @@ export interface BodyState {
   mg: number;
   /** interstitial fluid sequestered as oedema/ascites, L */
   edema: number;
+  /**
+   * Potassium adaptation: the K⁺-secretory capacity of the principal cells relative to normal
+   * (1). Sustained K⁺ loading adds Na⁺-K⁺-ATPase and basolateral membrane over days (Rose
+   * ch. 12, 28). Absent means 1.
+   */
+  kAdapt?: number;
+  /**
+   * Escape from antidiuresis: the fraction of collecting-duct aquaporin-2 lost when ADH persists
+   * in a volume-expanded patient (Rose ch. 23). Absent means 0.
+   */
+  adhEscape?: number;
 }
 
 // Edelman 1958 regression: [Na]p = 1.11 x (Na_e + K_e)/TBW - 25.6
