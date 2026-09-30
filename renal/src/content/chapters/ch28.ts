@@ -1,0 +1,177 @@
+import type { ChapterContent } from './types';
+
+export const chapter: ChapterContent = {
+  n: 28,
+  title: 'Hyperkalaemia',
+  thesis:
+    'A normal person almost cannot become hyperkalaemic: cells absorb a load within minutes, the kidney excretes it within hours, and chronic loading only makes excretion more efficient. So acute hyperkalaemia means a large load or a shift out of cells, and chronic hyperkalaemia always means that excretion has failed — too few nephrons, too little distal flow, or too little aldosterone effect. The danger is to the heart, and it is not reliably predicted by the number. Treatment follows the physiology in order: antagonise the membrane effect with calcium, shift K⁺ into cells with insulin and β₂-agonists, and then remove it.',
+  concepts: [
+    {
+      heading: 'The defence, and potassium adaptation',
+      body: [
+        'A 40-mmol load in 15 to 17 litres of extracellular fluid could raise the plasma K⁺ by 2.4 mmol/L; in practice the rise is usually under 1, because insulin, β₂-stimulation and the K⁺ itself move most of it into cells, and the small rise in plasma K⁺ then drives excretion of most of it within 6 to 8 hours, directly and through aldosterone.',
+        'Chronic loading strengthens the defence. Intake raised slowly to 400 mmol/day is tolerated; plasma K⁺ and aldosterone rise for a few days, then fall back while excretion stays high, because Na⁺-K⁺-ATPase activity and basolateral membrane area in the secreting cells increase. Colonic secretion rises too. This adaptation is what keeps patients with chronic renal failure normokalaemic: each remaining nephron excretes more, as long as the urine output (and so distal flow) is adequate and aldosterone can rise. In patients on dialysis, colonic secretion may remove 30 to 50 per cent of dietary K⁺.',
+      ],
+      chain: ['K⁺ load', 'Cellular uptake (insulin, β₂, K⁺ itself)', 'Small rise in plasma K⁺ → aldosterone', 'Distal secretion; with time, more pump and membrane in secreting cells', 'Balance restored at almost the same plasma K⁺'],
+      points: ['Adaptation allows ~400 mmol/day', 'Renal failure: more excretion per nephron, if flow and aldosterone allow', 'Dialysis: colon can remove 30–50% of intake'],
+      cite: { rose: [28, 12, 26], evidence: 'physiology' },
+      route: '/potassium',
+    },
+    {
+      heading: 'Too much in, or out of cells',
+      body: [
+        'An acute oral load of 135–160 mmol raises the plasma K⁺ by 2.5–3.5 mmol/L; more than 160 can be fatal even with normal kidneys. Rapid intravenous K⁺, K⁺-penicillin, salt substitutes and old stored blood (K⁺ up to 30 mmol/L in whole blood and 90 in packed cells by three weeks) are dangerous, especially in infants and in anyone who cannot excrete.',
+        'Shifts out of cells are the common cause of acute hyperkalaemia: pseudohyperkalaemia (haemolysis, fist clenching, and K⁺ released from white cells or platelets during clotting when counts are very high — the plasma, not serum, level is then normal); mineral acidosis (0.2–1.7 mmol/L per 0.1 pH, variable; organic acidoses much less); insulin deficiency and, more importantly, hyperosmolality in uncontrolled diabetes, or after hypertonic mannitol; tissue breakdown (trauma, tumour lysis, haemolysis, hypothermic necrosis); β-blockade (usually under 0.5 mmol/L on its own); severe exercise (up to 2 mmol/L, reversing within minutes); digitalis overdose (up to 13 mmol/L); hyperkalaemic periodic paralysis; rewarming after cardiac surgery; succinylcholine in burns and trauma (up to 6 mmol/L); and arginine hydrochloride.',
+      ],
+      points: ['Oral > 160 mmol can be lethal', 'Mineral acidosis: 0.2–1.7 mmol/L per 0.1 pH', 'Serum K⁺ exceeds plasma by 0.15 per 100 × 10⁹/L platelets'],
+      cite: { rose: [28], evidence: 'clinical' },
+      route: '/potassium',
+    },
+    {
+      heading: 'Decreased excretion: nephrons, flow, aldosterone',
+      body: [
+        'Persistent hyperkalaemia needs impaired excretion, and there are three routes to it. Renal failure: excretion per nephron rises, so a non-oliguric patient usually stays in balance unless something else is added — tissue breakdown, a K⁺ load, hypoaldosteronism, or a drug. Once oliguria reduces distal flow, K⁺ is retained. Cellular uptake is impaired as well, by retained toxins reducing Na⁺-K⁺-ATPase and by acidosis, though the K⁺-lowering effect of insulin is preserved.',
+        'Effective circulating volume depletion: a low GFR and avid proximal reabsorption leave little distal flow, so K⁺ secretion falls despite high aldosterone. Diarrhoea with a diet of orange juice and fruit, severe heart failure with KCl supplements, and chronic renal failure with salt restriction are the book\'s examples.',
+        'Hypoaldosteronism: reduced production (hyporeninaemic hypoaldosteronism, NSAIDs, ACE inhibitors, cyclosporine, heparin, primary adrenal insufficiency, congenital enzyme defects, the months after removing an aldosterone-producing adenoma) or reduced effect (K⁺-sparing diuretics, trimethoprim and pentamidine — which close ENaC — and pseudohypoaldosteronism). Na⁺ wasting and a mild metabolic acidosis (type 4 RTA) accompany the hyperkalaemia; the acidosis is partly caused by the hyperkalaemia itself, which reduces ammonium production and loop ammonium reabsorption, and corrects when the K⁺ is lowered.',
+      ],
+      chain: ['Too few nephrons, too little distal flow, or too little aldosterone effect', 'Distal K⁺ secretion falls', 'Plasma K⁺ rises until excretion again matches intake', 'Hyperkalaemia suppresses ammoniagenesis → mild acidosis (type 4 RTA)'],
+      points: ['Renal failure: hyperkalaemia usually needs oliguria or a second factor', 'Hyporeninaemic hypoaldosteronism: 50–75% of unexplained adult hyperkalaemia', 'Trimethoprim at normal doses: mean +1.2 mmol/L at 4–5 days in one study'],
+      cite: { rose: [28, 19], evidence: 'clinical', refs: ['batlle2018', 'palmer2004'] },
+      route: '/hyperkalemia',
+    },
+    {
+      heading: 'Hyporeninaemic hypoaldosteronism',
+      body: [
+        'The commonest cause of otherwise unexplained hyperkalaemia in adults: mild to moderate renal insufficiency (creatinine clearance 20–75 mL/min), diabetes in about half and chronic interstitial nephritis in most of the rest, low renin in about 85 per cent, and asymptomatic hyperkalaemia. Several mechanisms have been proposed and may combine — low renin, an intra-adrenal defect in the response to angiotensin II, reduced prostaglandins (NSAIDs reproduce it), a defect in converting prorenin to renin, and volume expansion suppressing renin through atrial natriuretic peptide.',
+        'Renal insufficiency is what exposes it. A patient with normal renal function compensates for low aldosterone with a small rise in plasma K⁺, which drives secretion directly; add renal insufficiency and the compensation fails. Treatment is usually a low-K⁺ diet and a loop or thiazide diuretic; fludrocortisone works, but in the large doses needed it worsens hypertension and oedema.',
+      ],
+      points: ['CrCl 20–75 mL/min; diabetes ~50%; low renin ~85%', 'Normal renal function compensates; renal insufficiency unmasks it', 'Low-K⁺ diet + diuretic; fludrocortisone rarely'],
+      cite: { rose: [28], evidence: 'clinical' },
+      route: '/hyperkalemia',
+    },
+    {
+      heading: 'The heart and muscle',
+      body: [
+        'Hyperkalaemia partly depolarises cells, and sustained depolarisation inactivates sodium channels. Muscle weakness, ascending from the legs and sparing respiratory and cranial muscles, usually waits until the K⁺ exceeds 8 mmol/L (lower in periodic paralysis).',
+        'The ECG changes in a sequence (Fig. 28-4): first peaked, narrow T waves with a short QT (rapid repolarisation), prominent above about 6 mmol/L; above 7 to 8, slowed depolarisation — a longer PR, a wider QRS without change in shape, a flatter and then absent P wave — and finally a sine wave as QRS and T merge, followed by ventricular fibrillation or standstill. The relation is loose: the ECG can be nearly normal above 9. Hypocalcaemia, hyponatraemia, acidaemia and a rapid rise make it more dangerous — all common in renal failure — while hypercalcaemia and hypernatraemia protect.',
+      ],
+      points: ['Peaked T, short QT: > ~6 mmol/L', 'PR ↑, QRS wide, P lost: > 7–8', 'Sine wave → VF or asystole', 'Worse with ↓Ca²⁺, ↓Na⁺, acidaemia, rapid rise'],
+      cite: { rose: [28, 26], evidence: 'clinical', refs: ['montague2008'] },
+      route: '/hyperkalemia',
+    },
+    {
+      heading: 'Diagnosis: exclude artefact, then ask about excretion',
+      body: [
+        'History (diet, salt substitutes, K⁺-sparing drugs, diabetes, kidney disease, episodes of weakness), examination (volume status, weakness), ECG, and blood for pH, urea, creatinine, glucose, Na⁺ and Ca²⁺. Suspect pseudohyperkalaemia when there is no cause and no ECG change at 6.5–7.0; repeat without a tourniquet and measure plasma K⁺.',
+        'Persistent hyperkalaemia means reduced excretion. The urine K⁺ concentration alone is unhelpful; the transtubular K⁺ gradient — urine K⁺ ÷ plasma K⁺, divided by urine/plasma osmolality to remove the effect of medullary water reabsorption — estimates the K⁺ gradient at the end of the cortical collecting tubule, where aldosterone acts. It is valid when the urine is not dilute and urine Na⁺ exceeds 25. Normal is 8–9, above 11 after a K⁺ load; below 7, and particularly below 5, in a hyperkalaemic patient suggests hypoaldosteronism. Renin, aldosterone and cortisol then separate the causes (Table 28-3).',
+      ],
+      points: ['No ECG change at K⁺ 6.5–7: think artefact', 'TTKG < 7 (esp. < 5) with high K⁺: aldosterone deficiency or resistance', 'Low renin + low aldo: hyporeninism; high renin + low aldo + low cortisol: adrenal insufficiency; high both: resistance'],
+      cite: { rose: [28], evidence: 'reasoning', update: 'The TTKG\'s assumptions — no K⁺ handling beyond the cortical collecting duct and no osmole reabsorption there — were later questioned by its own originators, because urea recycling in the medulla adds osmoles; the urine K⁺/creatinine ratio is now often used instead.', refs: ['kamel2011ttkg'] },
+      route: '/hyperkalemia',
+      equation: 'ttkg',
+    },
+    {
+      heading: 'Treatment follows the physiology',
+      body: [
+        'Severity sets urgency. A K⁺ above 8, severe weakness or marked ECG change is an emergency needing almost everything in Table 28-4; an asymptomatic 6.5 can be treated with a resin alone.',
+        'Calcium antagonises the membrane effect within minutes but briefly: 10 mL of 10% calcium gluconate over 2–3 minutes, repeated after 5 if the ECG is unchanged, with care in digitalised patients. Insulin (10 units with 30–50 g of glucose, then a dextrose infusion to prevent late hypoglycaemia) lowers the K⁺ by 0.5–1.5 mmol/L within an hour, and its K⁺-lowering effect survives the insulin resistance of renal failure; insulin alone suffices in the hyperglycaemic. Sodium bicarbonate drives K⁺ into cells mainly when there is significant acidaemia; in dialysis patients with little acidosis it achieved almost nothing in the first hours. Albuterol, 10–20 mg nebulised, lowers the K⁺ 0.5–1.5 mmol/L, peaking at about 90 minutes; about four in ten dialysis patients respond by less than 0.5, so it is added to insulin rather than used alone. In one study of dialysis patients the fall at an hour was nil with bicarbonate, 0.3 with adrenaline, 0.85 with insulin–glucose and 1.3 with haemodialysis.',
+        'These shifts last hours. Removal follows: diuretics where the kidney can respond, sodium polystyrene sulfonate (1 mmol K⁺ bound per gram, exchanging Na⁺, with a risk of Na⁺ retention and of intestinal necrosis, particularly with sorbitol after surgery), or dialysis — haemodialysis much faster than peritoneal, and essential in hypercatabolic acute renal failure.',
+      ],
+      chain: ['Calcium: restores excitability in minutes, lowers K⁺ not at all', 'Insulin + glucose, β₂-agonist (± bicarbonate if acidaemic): shift K⁺ into cells within an hour', 'Diuretic, resin or dialysis: remove K⁺ from the body'],
+      points: ['Calcium gluconate 10% 10 mL over 2–3 min', 'Insulin 10 U + glucose: −0.5 to −1.5 mmol/L within 1 h', 'Albuterol 10–20 mg nebulised: similar, less reliable in ESRD', 'Bicarbonate: only with acidaemia'],
+      cite: { rose: [28], evidence: 'clinical', refs: ['allon1989', 'clase2020'] },
+      route: '/hyperkalemia',
+    },
+  ],
+  numbers: [
+    { label: 'Acute oral load raising K⁺ by 2.5–3.5', value: '135–160 mmol' },
+    { label: 'Tolerated with adaptation', value: '≈ 400 mmol/day' },
+    { label: 'Mineral acidosis shift', value: '0.2–1.7 mmol/L per 0.1 pH' },
+    { label: 'Exercise', value: '+0.3 (walking) to +2.0 mmol/L (exhaustion)' },
+    { label: 'Muscle weakness', value: 'usually > 8 mmol/L' },
+    { label: 'Peaked T waves', value: 'usually > 6 mmol/L' },
+    { label: 'Conduction changes', value: 'usually > 7–8 mmol/L' },
+    { label: 'TTKG, normal diet', value: '8–9 (> 11 after K⁺ load)' },
+    { label: 'TTKG suggesting hypoaldosteronism', value: '< 7, especially < 5' },
+    { label: 'Insulin–glucose effect', value: '−0.5 to −1.5 mmol/L in ~1 h' },
+    { label: 'Resin binding', value: '≈ 1 mmol K⁺ per g' },
+  ],
+  equations: ['ttkg', 'ukcr'],
+  clinical: [
+    'First exclude pseudohyperkalaemia if nothing explains the result and the ECG is normal.',
+    'With ECG changes, give calcium before anything else; it buys minutes, not a solution.',
+    'Insulin–glucose is the most reliable shift; add albuterol; give bicarbonate only for real acidaemia.',
+    'Plan removal while the shift lasts: diuretic, resin or dialysis.',
+    'Chronic hyperkalaemia is an excretory problem: look for drugs (ACE inhibitors, ARBs, MRAs, NSAIDs, trimethoprim, heparin, calcineurin inhibitors), oliguria, volume depletion and hypoaldosteronism.',
+    'Hyperkalaemia itself causes a mild acidosis by suppressing ammonium excretion; lowering the K⁺ can correct it.',
+  ],
+  pathology: [
+    { name: 'Oliguric renal failure', broken: 'Too few nephrons and too little distal flow', consequence: 'K⁺ retained from the diet; worse with tissue breakdown', route: '/ckd' },
+    { name: 'Hyporeninaemic hypoaldosteronism', broken: 'Low renin and an adrenal defect, unmasked by renal insufficiency', consequence: 'Asymptomatic hyperkalaemia with mild hyperchloraemic acidosis', route: '/rta' },
+    { name: 'Primary adrenal insufficiency', broken: 'Aldosterone and cortisol both absent', consequence: 'Hyperkalaemia, hyponatraemia, volume depletion, high renin', route: '/hyperkalemia' },
+    { name: 'Trimethoprim, amiloride, triamterene', broken: 'ENaC blocked: no lumen-negative voltage', consequence: 'Hyperkalaemia despite normal aldosterone', route: '/distal' },
+    { name: 'Pseudohypoaldosteronism type 1', broken: 'ENaC or mineralocorticoid-receptor loss of function', consequence: 'Salt wasting, hyperkalaemia, very high renin and aldosterone', route: '/inherited' },
+    { name: 'Gordon syndrome (PHA type 2)', broken: 'Excess distal NaCl reabsorption (now known: WNK/NCC)', consequence: 'Hyperkalaemia with hypertension and low renin; thiazides correct it', route: '/inherited' },
+    { name: 'Hyperglycaemia on dialysis', broken: 'Hyperosmolality shifts K⁺ out; no renal excretion', consequence: 'K⁺ can exceed 8–9 mmol/L', route: '/hyperglycemia' },
+  ],
+  questions: [
+    {
+      q: 'A man with a creatinine of 186 µmol/L starts a low-sodium diet and two weeks later has K⁺ 7.8 with peaked T waves and a wide QRS. What caused it?',
+      options: ['The diet contained more potassium', 'Volume depletion reduced distal flow in a kidney with few nephrons — often with a salt substitute containing KCl', 'Primary aldosteronism', 'Laboratory artefact'],
+      answer: 1,
+      explanation: 'Rose problem 28-1: renal insufficiency plus salt restriction reduces distal delivery; salt substitutes add a K⁺ load. With ECG changes, treat with calcium, then insulin–glucose, then removal.',
+      route: '/hyperkalemia',
+    },
+    {
+      q: 'Which treatment lowers the plasma K⁺ by the most within an hour in a dialysis patient?',
+      options: ['Sodium bicarbonate', 'Adrenaline', 'Insulin with glucose', 'Calcium gluconate'],
+      answer: 2,
+      explanation: 'About 0.85 mmol/L at an hour in the study Rose cites (haemodialysis 1.3, adrenaline 0.3, bicarbonate nil). Calcium protects the heart but does not lower the K⁺.',
+      route: '/hyperkalemia',
+    },
+    {
+      q: 'A hyperkalaemic patient has U_K 30, P_K 6.5, U_osm 560, P_osm 280. The TTKG is:',
+      options: ['2.3', '4.6', '9.2', '18.5'],
+      answer: 0,
+      explanation: '(30 ÷ 6.5) ÷ (560 ÷ 280) = 4.6 ÷ 2 = 2.3. A TTKG well below 7 at a high K⁺ suggests hypoaldosteronism (Rose\'s worked example).',
+      route: '/hyperkalemia',
+    },
+    {
+      q: 'A hyperkalaemic patient has fatigue, low blood pressure, pigmented skin and becomes hypoglycaemic on insulin–glucose. Most likely diagnosis?',
+      options: ['Hyporeninaemic hypoaldosteronism', 'Primary adrenal insufficiency', 'Pseudohypoaldosteronism', 'Renal failure'],
+      answer: 1,
+      explanation: 'Rose problem 28-2: aldosterone and cortisol deficiency together — hyperkalaemia, hypotension, pigmentation from ACTH, and loss of cortisol\'s defence against hypoglycaemia.',
+      route: '/hyperkalemia',
+    },
+    {
+      q: 'Why does a patient with hyporeninaemic hypoaldosteronism and normal renal function usually have a normal K⁺?',
+      options: ['Aldosterone is irrelevant', 'A small rise in plasma K⁺ drives distal secretion directly and restores balance', 'The colon excretes it all', 'Insulin is increased'],
+      answer: 1,
+      explanation: 'Plasma K⁺ is a regulator of secretion in its own right. Renal insufficiency removes the reserve that lets this compensation work.',
+      route: '/potassium',
+    },
+  ],
+  updates: [
+    {
+      topic: 'New potassium binders',
+      text: 'Patiromer and sodium zirconium cyclosilicate lower plasma K⁺ in hyperkalaemic patients, including those on RAAS inhibitors, in randomised trials, and have largely displaced sodium polystyrene sulfonate for chronic use; the evidence for polystyrene sulfonate itself was always thin, and its gastrointestinal toxicity is the reason for caution Rose describes.',
+      cite: { refs: ['weir2015', 'packham2015', 'clase2020'], evidence: 'clinical' },
+    },
+    {
+      topic: 'Keeping RAAS blockade',
+      text: 'Because ACE inhibitors, ARBs and mineralocorticoid antagonists are prognostically important in CKD and heart failure, current KDIGO guidance favours managing moderate hyperkalaemia (diet, diuretics, binders) so that these drugs can be continued, rather than stopping them at the first raised value. The hazard of combining them without monitoring was shown after RALES, when prescriptions rose and hyperkalaemia admissions and deaths rose with them.',
+      cite: { refs: ['clase2020', 'juurlink2004', 'kdigo2024ckd'], evidence: 'guideline' },
+    },
+    {
+      topic: 'The ECG is insensitive',
+      text: 'Series of hyperkalaemic patients show that ECG changes are absent in a substantial fraction even at high levels, confirming Rose\'s warning that a normal ECG does not make a high K⁺ safe.',
+      cite: { refs: ['montague2008'], evidence: 'clinical' },
+    },
+    {
+      topic: 'Gordon syndrome explained',
+      text: 'The "enhanced distal chloride reabsorption" Rose inferred for pseudohypoaldosteronism type 2 is caused by mutations in the WNK kinases (and later KLHL3 and CUL3) that activate the thiazide-sensitive cotransporter — which is why thiazides correct it.',
+      cite: { refs: ['wilson2001', 'hoorn2011wnk'], evidence: 'experimental' },
+    },
+  ],
+  modules: ['/potassium', '/hyperkalemia', '/rta', '/ckd', '/raas'],
+};

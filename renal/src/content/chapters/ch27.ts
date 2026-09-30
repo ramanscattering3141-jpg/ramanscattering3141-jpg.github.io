@@ -1,0 +1,187 @@
+import type { ChapterContent } from './types';
+
+export const chapter: ChapterContent = {
+  n: 27,
+  title: 'Hypokalaemia',
+  thesis:
+    'Hypokalaemia comes from too little intake, a shift into cells, or losses through the gut or the kidney, and the kidney is usually where the diagnosis is made. A kidney conserving normally excretes less than 25 mmol of K⁺ a day, so more than that in a hypokalaemic patient means renal wasting — and renal wasting almost always means that distal flow and mineralocorticoid activity have risen together, or that sodium is reaching the secretory site with an anion it cannot take back. Add the acid–base status and the blood pressure and the cause usually falls out. Treatment gets the patient out of danger first, with KCl, and remembers that the deficit behind a given plasma level is large and uncertain.',
+  concepts: [
+    {
+      heading: 'Four ways to become hypokalaemic',
+      body: [
+        'The causes sort by the step of K⁺ balance that fails (Table 27-1). Low intake alone rarely does it, because the kidney can cut excretion to 5–25 mmol/day, but it adds to other causes — a poor rural diet of 25 mmol/day, liquid protein diets, clay ingestion. Shifts into cells cause transient hypokalaemia with normal stores: alkalaemia (usually less than 0.4 mmol/L per 0.1 pH), insulin, β₂-agonists and stress adrenaline, periodic paralysis, rapid haematopoiesis after vitamin B₁₂ or GM-CSF, hypothermia, chloroquine, and pseudohypokalaemia from leukaemic cells taking up K⁺ in the tube.',
+        'Gastrointestinal loss: 3 to 6 litres of secretions enter the gut daily and all contain K⁺. Diarrhoea, fistulas, villous adenomas and laxatives can each deplete it; cholera may lose 130 mmol a day. Yet faecal losses must exceed about 55–65 mmol/day before they deplete a patient eating 80 mmol, so many patients have help from low intake or aldosterone. Renal loss is the largest group: diuretics, mineralocorticoid excess, Liddle, Bartter and Gitelman syndromes, salt-wasting nephropathies, non-reabsorbable anions, amphotericin, hypomagnesaemia and polyuria.',
+      ],
+      points: ['Low intake: rarely alone', 'Shift into cells: transient, stores normal', 'GI: urine K⁺ < 25 mmol/day', 'Renal: urine K⁺ > 25 mmol/day'],
+      cite: { rose: [27], evidence: 'clinical' },
+      route: '/hypokalemia',
+    },
+    {
+      heading: 'Diuretics: flow and aldosterone rise together',
+      body: [
+        'Loop and thiazide diuretics waste K⁺ because they raise distal flow and, through volume depletion (and often the underlying heart failure or cirrhosis), aldosterone. Hypomagnesaemia and, with loop diuretics, reduced K⁺ reabsorption on NKCC2 add to it. The loss is dose-related: hydrochlorothiazide 50 mg lowers the plasma K⁺ by about 0.5 mmol/L, chlorthalidone by 0.8–0.9. Low-dose thiazide (12.5 mg) gives most of the antihypertensive effect with little K⁺ loss.',
+        'With a constant dose and diet, all the K⁺ is lost in the first two weeks. A new steady state follows because the volume depletion lowers distal flow and hypokalaemia itself spares K⁺. Even mild diuretic hypokalaemia is usually treated in hypertension with left ventricular hypertrophy and in heart failure, because it has been associated with arrhythmic death that a K⁺-sparing diuretic prevents; KCl 40 mmol/day raises the level by about 0.5 mmol/L.',
+      ],
+      chain: ['Diuretic blocks NaCl reabsorption upstream', 'Distal flow and Na⁺ delivery rise', 'Volume depletion raises aldosterone', 'Both at once: K⁺ secretion rises', 'Loss over ~2 weeks, then a new steady state at a lower K⁺'],
+      points: ['HCTZ 50 mg: −0.5 mmol/L; chlorthalidone 50 mg: −0.8 to −0.9', 'All the loss in the first 2 weeks', 'KCl 40 mmol/day ≈ +0.5 mmol/L'],
+      cite: { rose: [27, 15], evidence: 'clinical' },
+      route: '/diuretics',
+    },
+    {
+      heading: 'Mineralocorticoid excess: hypokalaemia, alkalosis and hypertension',
+      body: [
+        'Excess aldosterone (or any mineralocorticoid) increases Na⁺ reabsorption and K⁺ and H⁺ secretion, so hypokalaemia comes with metabolic alkalosis. Oedema does not develop, because aldosterone escape — pressure natriuresis and atrial natriuretic peptide — limits Na⁺ retention; the mild volume expansion raises the blood pressure and resets the osmostat, so the sodium sits near 145.',
+        'The causes separate on renin and aldosterone. Primary aldosteronism (adenoma about 65 per cent, hyperplasia most of the rest, glucocorticoid-remediable forms) has low renin and high aldosterone. Renal artery stenosis, malignant hypertension and renin-secreting tumours have high renin and high aldosterone. Low renin with low aldosterone points to another mineralocorticoid: Cushing\'s syndrome with very high cortisol (especially ectopic ACTH), congenital adrenal hyperplasia (11β- or 17α-hydroxylase deficiency, through deoxycorticosterone), liquorice or apparent mineralocorticoid excess (cortisol reaching the receptor because 11β-hydroxysteroid dehydrogenase is inhibited or defective), fludrocortisone, and Liddle syndrome (a gain-of-function mutation in the collecting-duct sodium channel itself).',
+        'For hypokalaemia to appear there must be enough distal delivery. Hypovolaemia (urine Na⁺ below 25) can hide the K⁺ wasting of hyperaldosteronism; a high-salt diet unmasks it, which is why sodium-induced hypokalaemia strongly suggests non-suppressible aldosterone.',
+      ],
+      chain: ['Autonomous mineralocorticoid activity', 'ENaC-mediated Na⁺ reabsorption ↑; lumen more negative', 'K⁺ and H⁺ secretion ↑', 'Hypokalaemia + metabolic alkalosis', 'Mild volume expansion → hypertension, escape, Na⁺ ≈ 145, renin suppressed'],
+      points: ['High aldo, low renin: primary aldosteronism', 'High aldo, high renin: renovascular, renin tumour', 'Low aldo, low renin: other mineralocorticoid, liquorice/AME, Liddle'],
+      cite: { rose: [27, 6], evidence: 'clinical', refs: ['funder2016', 'shimkets1994', 'mune1995', 'lifton1992'] },
+      route: '/raas',
+    },
+    {
+      heading: 'Bartter and Gitelman: a diuretic the patient cannot stop',
+      body: [
+        'Both present with hypokalaemia and metabolic alkalosis without hypertension. Bartter syndrome is a defect in the thick ascending limb — NKCC2, the ROMK channel that recycles K⁺, or the basolateral chloride channel — and so behaves like a loop diuretic: early onset, polyuria and a concentrating defect, hypercalciuria, a normal or mildly low magnesium, and high prostaglandins that help keep the pressure normal. Gitelman syndrome is a defect in the thiazide-sensitive NaCl cotransporter and behaves like a thiazide: later, milder, often found incidentally or with tetany, with hypomagnesaemia and low urinary calcium, and a preserved concentrating ability.',
+        'The diagnosis is one of exclusion. Surreptitious diuretic use (urine assay) and vomiting (low urine chloride) reproduce most of the findings. Treatment cannot correct the transport defect, so it blunts its consequences: an NSAID and a K⁺-sparing diuretic, or an ACE inhibitor, with K⁺ and magnesium supplements.',
+      ],
+      points: ['Bartter ≈ loop diuretic: hypercalciuria, polyuria', 'Gitelman ≈ thiazide: hypomagnesaemia, hypocalciuria', 'Exclude diuretic abuse and vomiting first'],
+      cite: { rose: [27], evidence: 'clinical', refs: ['simon1996bartter', 'simon1996gitelman', 'blanchard2017', 'konrad2021'] },
+      route: '/inherited',
+    },
+    {
+      heading: 'Sodium delivered with an anion it cannot keep',
+      body: [
+        'Increased distal delivery wastes more K⁺ if the sodium comes with an anion other than chloride, because the lumen-negative voltage created by Na⁺ reabsorption cannot then be dissipated by chloride following it. Bicarbonate after vomiting or in treated proximal RTA, β-hydroxybutyrate in ketoacidosis, hippurate after toluene, and high-dose penicillins all do it; a quarter of patients with toluene acidosis have a K⁺ below 2 mmol/L. The effect is greatest with volume depletion, when chloride delivery is low and aldosterone high.',
+        'Vomiting is the clearest example. Gastric juice holds only 5–10 mmol/L of K⁺; the deficit is mostly urinary. Losing HCl raises the plasma and filtered bicarbonate beyond what the proximal tubule can take back, so NaHCO₃ reaches the collecting duct and K⁺ is secreted. Within 48–72 hours hypovolaemia raises proximal reabsorption, bicarbonaturia stops and K⁺ excretion falls. Type 1 RTA wastes K⁺ differently: with distal H⁺ secretion impaired, Na⁺ has to be reabsorbed in exchange for K⁺, and the plasma K⁺ can fall below 2.',
+      ],
+      points: ['Anion ≠ Cl⁻ → more negative lumen → more K⁺ secretion', 'Vomiting: K⁺ lost in urine, not in gastric juice, for 48–72 h', 'Distal RTA: Na⁺ reabsorbed in exchange for K⁺'],
+      cite: { rose: [27, 18, 19], evidence: 'physiology' },
+      route: '/metabolic-alkalosis',
+    },
+    {
+      heading: 'Magnesium, polyuria, and other renal losses',
+      body: [
+        'Hypomagnesaemia is present in up to 40 per cent of hypokalaemic patients and causes renal K⁺ wasting of its own, probably at the loop and collecting tubule. Unexplained hypokalaemia with hypocalcaemia strongly suggests it. The K⁺ deficit usually will not correct until the magnesium does; start with magnesium chloride or lactate, since sulfate acts as a non-reabsorbable anion and increases K⁺ loss.',
+        'Polyuria wastes K⁺ by arithmetic: the urine K⁺ cannot fall below about 5–15 mmol/L, so 10 L/day of urine carries 50–150 mmol however hard the kidney conserves. Amphotericin B increases membrane permeability (and causes a distal RTA); salt-wasting nephropathies behave like chronic diuretics; L-dopa causes mild losses.',
+      ],
+      points: ['Hypomagnesaemia in up to 40%: correct it first', 'Minimum urine K⁺ 5–15 mmol/L: polyuria alone can deplete', 'Magnesium sulfate can worsen K⁺ loss'],
+      cite: { rose: [27], evidence: 'clinical', refs: ['debaaij2015'] },
+      route: '/minerals',
+    },
+    {
+      heading: 'What hypokalaemia does',
+      body: [
+        'Muscle weakness usually starts below 2.5 mmol/L, legs first, then trunk and arms, and in severe cases the respiratory muscles; cranial nerves are spared. Ileus, cramps, and rhabdomyolysis below 2.5 (K⁺ release normally dilates exercising muscle) can follow. Chronic loss causes fewer symptoms than an acute shift at the same level.',
+        'The heart is the danger. Hypokalaemia slows ventricular repolarisation and prolongs the relative refractory period, favouring re-entry, and increases automaticity. The ECG shows ST depression, a lower T wave and a growing U wave, usually from 3.0 mmol/L and in about 90 per cent of patients below 2.7; severe depletion adds a larger P wave, a longer PR and a wider QRS. Digitalis, ischaemia, left ventricular hypertrophy, stress adrenaline and QT-prolonging drugs all raise the risk; digitalis toxicity can occur at normal levels when K⁺ is low.',
+        'The kidney is affected too: ADH resistance and polyuria (the maximum urine osmolality falls once the deficit passes 200 mmol, but stays above 300), more ammonia production (which can precipitate hepatic encephalopathy in cirrhosis and makes the urine less acid), increased bicarbonate reabsorption that maintains alkalosis, NaCl retention with a small rise in blood pressure, and, with chronic depletion, vacuolar and interstitial damage and cysts.',
+      ],
+      points: ['Weakness usually < 2.5 mmol/L', 'ECG from < 3.0: ST↓, T↓, U↑', 'Renal: concentrating defect, ↑NH₃, ↑HCO₃⁻ reabsorption, cysts'],
+      cite: { rose: [27, 26], evidence: 'clinical' },
+      route: '/hypokalemia',
+    },
+    {
+      heading: 'Diagnosis: urine K⁺, acid–base, blood pressure',
+      body: [
+        'First measure urinary K⁺. Extrarenal loss (or a diuretic that has worn off) should leave less than 25 mmol/day; more means renal wasting. A random urine K⁺ below 15 mmol/L points the same way, but a higher concentration is not proof of wasting — 20 mmol/day in 400 mL of urine is 50 mmol/L. Volume depletion (urine Na⁺ below 25) can mask renal wasting.',
+        'Then the acid–base state (Table 27-4). Hypokalaemia with metabolic acidosis: diarrhoea or laxatives (low urine K⁺), ketoacidosis, renal tubular acidosis (urine pH usually above 5.3), salt-wasting nephropathy with renal failure. Hypokalaemia with metabolic alkalosis: diuretics, vomiting, mineralocorticoid excess, Bartter, Gitelman, Liddle. Here the urine chloride helps: below 25 mmol/L suggests vomiting or a diuretic that has worn off; above 40, test for diuretics, and if negative the blood pressure divides Bartter/Gitelman (normal) from mineralocorticoid excess (high), which is then sorted by renin and aldosterone.',
+      ],
+      points: ['Urine K⁺ < 25 mmol/day: extrarenal', 'Urine Cl⁻ < 25: vomiting or past diuretic; > 40: diuretic assay', 'Hypertensive + renal K⁺ wasting: renin and aldosterone'],
+      cite: { rose: [27, 13], evidence: 'reasoning', refs: ['funder2016'] },
+      route: '/urine-chemistry',
+      equation: 'ukcr',
+    },
+    {
+      heading: 'Treatment: out of danger first, with KCl',
+      body: [
+        'The deficit can only be estimated: about 200–400 mmol takes the plasma K⁺ from 4 to 3, and another 200–400 to 2, after which cells can hold the plasma near 2 despite further losses. Shifts invalidate the estimate — nothing is missing in periodic paralysis, and acidaemia or hyperosmolality can hide a large deficit that correction then unmasks.',
+        'KCl is the salt of choice. Most hypokalaemic patients are also chloride-depleted (vomiting, diuretics), and chloride is needed to correct both the alkalosis and the K⁺ deficit; other anions are non-reabsorbable and promote K⁺ and H⁺ loss. KCl also raises the extracellular K⁺ more than KHCO₃, because bicarbonate takes K⁺ into cells with it. Bicarbonate or citrate suit RTA with acidosis. Potassium-rich foods are poorer: they carry phosphate and citrate, not chloride, and calories.',
+        'Mild hypokalaemia (3.0–3.5) is treated orally, 60–80 mmol/day to start. In urgent cases oral K⁺ acts fast — 40–60 mmol raises the level 1.0–1.5 mmol/L, 135–160 mmol by 2.5–3.5 — but transiently, as it enters cells. Intravenous K⁺ is usually given at no more than 10–20 mmol/h, 40–60 mmol/L in a peripheral vein, in saline rather than dextrose (glucose-stimulated insulin can drop the K⁺ by 0.2–1.4 mmol/L). Up to 40–100 mmol/h has been given for paralysis or life-threatening arrhythmia, with continuous ECG monitoring; 80 mmol in 15 minutes turned one ECG from hypokalaemic to hyperkalaemic.',
+      ],
+      points: ['KCl, because chloride is also depleted', 'Oral 60–80 mmol/day for mild cases', 'IV ≤ 10–20 mmol/h, ≤ 60 mmol/L peripherally, not in dextrose', 'Primary aldosteronism: K⁺-sparing diuretic, not supplements'],
+      cite: { rose: [27], evidence: 'clinical', refs: ['clase2020'] },
+      route: '/hypokalemia',
+    },
+  ],
+  numbers: [
+    { label: 'Minimum urinary K⁺', value: '5–25 mmol/day' },
+    { label: 'Renal wasting suggested by', value: 'urine K⁺ > 25 mmol/day' },
+    { label: 'Deficit for 4 → 3 mmol/L', value: '200–400 mmol', note: 'another 200–400 for 3 → 2' },
+    { label: 'Alkalaemia shift', value: '< 0.4 mmol/L per 0.1 pH' },
+    { label: 'HCTZ 50 mg/day', value: '≈ −0.5 mmol/L' },
+    { label: 'Muscle weakness', value: 'usually < 2.5 mmol/L' },
+    { label: 'ECG changes', value: 'from < 3.0; in ~90% < 2.7 mmol/L' },
+    { label: 'Hypomagnesaemia among hypokalaemic patients', value: 'up to 40%' },
+    { label: 'Maximum IV rate (usual)', value: '10–20 mmol/h', note: '≤ 60 mmol/L peripheral' },
+    { label: 'Adenoma share of primary aldosteronism', value: '≈ 65%' },
+  ],
+  equations: ['ukcr', 'ttkg'],
+  clinical: [
+    'Urinary K⁺ first: below 25 mmol/day means the kidney is conserving and the loss is elsewhere.',
+    'Hypokalaemia with alkalosis and a low urine chloride is vomiting (possibly concealed) or a diuretic that has worn off.',
+    'Hypertension with unexplained hypokalaemia: measure renin and aldosterone.',
+    'Check the magnesium in any refractory hypokalaemia.',
+    'Correct the potassium before, or with, the acidosis — bicarbonate or insulin will lower it.',
+    'Never add KCl to dextrose for a severely hypokalaemic patient.',
+  ],
+  pathology: [
+    { name: 'Diuretic hypokalaemia', broken: 'Upstream NaCl transport blocked: distal flow and aldosterone rise together', consequence: 'Renal K⁺ loss over two weeks, alkalosis', route: '/diuretics' },
+    { name: 'Primary aldosteronism', broken: 'Autonomous aldosterone', consequence: 'Hypokalaemia, alkalosis, hypertension, Na⁺ ≈ 145, suppressed renin', route: '/raas' },
+    { name: 'Liddle syndrome', broken: 'Gain-of-function ENaC mutation', consequence: 'Hyperaldosteronism phenotype with low renin and low aldosterone; amiloride works, spironolactone does not', route: '/inherited' },
+    { name: 'Apparent mineralocorticoid excess / liquorice', broken: '11β-HSD2 inactive: cortisol occupies the mineralocorticoid receptor', consequence: 'Same picture with suppressed aldosterone', route: '/inherited' },
+    { name: 'Bartter syndrome', broken: 'NKCC2, ROMK or ClC-Kb loss of function', consequence: 'Loop-diuretic phenotype: hypercalciuria, polyuria, hypokalaemic alkalosis', route: '/inherited' },
+    { name: 'Gitelman syndrome', broken: 'NCC loss of function', consequence: 'Thiazide phenotype: hypomagnesaemia, hypocalciuria', route: '/inherited' },
+    { name: 'Vomiting', broken: 'HCl loss → bicarbonaturia → Na⁺ with a non-reabsorbable anion distally', consequence: 'Urinary K⁺ wasting for 48–72 h; low urine Cl⁻', route: '/metabolic-alkalosis' },
+    { name: 'Hypokalaemic periodic paralysis', broken: 'Episodic K⁺ entry into muscle (Ca²⁺ channel mutation, thyrotoxicosis)', consequence: 'K⁺ 1.5–2.5 with normal stores; treat with KCl carefully, prevent with a non-selective β-blocker', route: '/potassium' },
+  ],
+  questions: [
+    {
+      q: 'A normotensive young woman has K⁺ 2.8, HCO₃⁻ 32, urine K⁺ 45 mmol/L and urine Cl⁻ 8 mmol/L. Most likely cause?',
+      options: ['Gitelman syndrome', 'Surreptitious vomiting', 'Primary aldosteronism', 'Diarrhoea'],
+      answer: 1,
+      explanation: 'Alkalosis with a very low urine chloride is chloride depletion — vomiting (or a diuretic that has worn off). Bartter/Gitelman and current diuretic use keep the urine chloride above 40.',
+      route: '/metabolic-alkalosis',
+    },
+    {
+      q: 'A hypertensive man has K⁺ 3.0 with urinary K⁺ wasting, low renin and low aldosterone. Which is NOT a candidate?',
+      options: ['Liddle syndrome', 'Liquorice', 'Ectopic ACTH syndrome', 'Aldosterone-producing adenoma'],
+      answer: 3,
+      explanation: 'An adenoma makes aldosterone, so it would be high. Low renin with low aldosterone means the mineralocorticoid effect is coming from something else.',
+      route: '/raas',
+    },
+    {
+      q: 'Why is KCl preferred to potassium citrate in a patient with diuretic-induced hypokalaemic alkalosis?',
+      options: ['Citrate is toxic', 'Chloride is also depleted and needed to correct the alkalosis; citrate acts as a non-reabsorbable anion and base', 'KCl is absorbed faster', 'Citrate causes hyperkalaemia'],
+      answer: 1,
+      explanation: 'Correcting a chloride-depletion alkalosis needs chloride. Other anions promote further K⁺ and H⁺ secretion.',
+      route: '/hypokalemia',
+    },
+    {
+      q: 'A patient with K⁺ 2.4 is given 20 mmol KCl in a litre of 5% dextrose. What may happen in the first hour?',
+      options: ['K⁺ rises to about 3', 'K⁺ may fall further as glucose-stimulated insulin drives K⁺ into cells', 'Nothing', 'Hyperkalaemia'],
+      answer: 1,
+      explanation: 'Dextrose releases insulin; the plasma K⁺ can fall by 0.2–1.4 mmol/L, risking arrhythmia. Give K⁺ in saline.',
+      route: '/hypokalemia',
+    },
+    {
+      q: 'Refractory hypokalaemia with hypocalcaemia and no obvious cause suggests:',
+      options: ['Hypoaldosteronism', 'Magnesium depletion', 'Periodic paralysis', 'Renal tubular acidosis type 4'],
+      answer: 1,
+      explanation: 'Hypomagnesaemia causes renal K⁺ wasting and impairs PTH secretion and action; K⁺ will not correct until magnesium does.',
+      route: '/minerals',
+    },
+  ],
+  updates: [
+    {
+      topic: 'Screening for primary aldosteronism',
+      text: 'The book suggests screening hypertensive patients with unexplained hypokalaemia or resistant hypertension. The Endocrine Society guideline widens this considerably — sustained hypertension above 150/100, resistant hypertension, hypertension with hypokalaemia (spontaneous or diuretic-induced), adrenal incidentaloma, sleep apnoea, or a family history of early hypertension — using the aldosterone-to-renin ratio, and confirms lateralisation by adrenal vein sampling before surgery. It also recognises that most patients are normokalaemic.',
+      cite: { refs: ['funder2016'], evidence: 'guideline' },
+    },
+    {
+      topic: 'The genetics of Bartter and Gitelman syndromes',
+      text: 'The transporter defects Rose inferred have been identified: Bartter types 1–4 (NKCC2, ROMK, ClC-Kb, barttin), the antenatal forms, and SLC12A3 (NCC) in Gitelman syndrome. KDIGO and European consensus documents now guide diagnosis and supplementation.',
+      cite: { refs: ['simon1996bartter', 'simon1996gitelman', 'blanchard2017', 'konrad2021'], evidence: 'guideline' },
+    },
+  ],
+  modules: ['/potassium', '/hypokalemia', '/diuretics', '/metabolic-alkalosis', '/inherited'],
+};

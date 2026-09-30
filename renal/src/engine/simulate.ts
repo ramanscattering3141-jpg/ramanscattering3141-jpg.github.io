@@ -10,6 +10,8 @@ import {
   ecfVolume,
   extracellular,
   normalKStore,
+  CELL_NA_PER_K,
+  CELL_H_PER_K,
   initialBody,
   oncoticGradientRel,
   type BodyState,
@@ -76,7 +78,7 @@ const CREAT_VOL_FRACTION = 0.6; // creatinine distributes in total body water
 /** Renal clearance of the retained organic anions, L/day at a normal GFR. */
 const ORG_CLEARANCE_SLOW = 1.5; // lactate: reabsorbed by the proximal Na+-lactate cotransporter, and the
 //                                hypoperfusion that produces it leaves little urine to lose it in
-const ORG_CLEARANCE_KETO = 5; // ketoacid anions: filtered beyond the tubule's capacity and readily lost
+const ORG_CLEARANCE_KETO = 9; // ketoacid anions: filtered beyond the tubule's capacity and readily lost (about 30% of what is made, Rose ch. 25)
 /** Rate at which an organic anion no longer being produced is metabolised back to bicarbonate. */
 const ORG_METABOLISM = 1.5; // per day
 const UREA_VOL_FRACTION = 1.0;
@@ -474,13 +476,18 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   // As cells give up K⁺ to replete the extracellular stores, Na⁺ and H⁺ enter in its place to keep
   // them electroneutral: an intracellular acidosis and an extracellular alkalosis (Rose ch. 18,
   // 27). This is one reason K⁺ depletion generates and maintains a metabolic alkalosis, and why
-  // KCl helps to correct one. The book gives no ratio; a fifth of the lost K⁺ replaced by H⁺ puts
-  // the rise in bicarbonate at about 1 mmol/L per 100 mmol of deficit, the mild alkalosis K⁺
-  // depletion produces on its own. Applied only below the normal store: this is the cellular
-  // response to depletion, not a general K⁺/H⁺ exchanger.
+  // KCl helps to correct one. The book gives no ratio. Here a third of the lost K⁺ is replaced by
+  // Na⁺ (see cellSodiumForPotassium), a fifth by H⁺ — about 1 mmol/L of bicarbonate per 100 mmol
+  // of deficit, the mild alkalosis K⁺ depletion produces on its own — and the rest leaves the cells
+  // with chloride. All three have to be there: with only the first two, each mmol of K⁺ lost or
+  // restored moved charge the extracellular fluid could not account for, and the anion gap drifted
+  // (to −20 during KCl repletion in ketoacidosis). Applied only below the normal store: this is the
+  // cellular response to depletion, not a general exchanger.
   const deficitBefore = Math.max(0, normalKStore(p) - state.body.kE);
   const deficitAfter = Math.max(0, normalKStore(p) - b.kE);
-  b.hco3 = clamp(b.hco3 + (0.2 * (deficitAfter - deficitBefore)) / Math.max(bufferVolume, 5), 3, 60);
+  const deficitChange = deficitAfter - deficitBefore;
+  b.hco3 = clamp(b.hco3 + (CELL_H_PER_K * deficitChange) / Math.max(bufferVolume, 5), 3, 60);
+  b.clE = Math.max(50, b.clE + (1 - CELL_NA_PER_K - CELL_H_PER_K) * deficitChange);
 
   // The organic anion left behind by an organic acid load (Rose ch. 19). Every acid arrives with
   // an anion, and what happens to that anion is what decides whether the acidosis has a high or a

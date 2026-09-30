@@ -136,6 +136,8 @@ export function normalKStore(p: Pick<Params, 'weightKg' | 'female'>) {
  * generates and maintains a metabolic alkalosis).
  */
 export const CELL_NA_PER_K = 1 / 3;
+/** Share replaced by H⁺ (the rest leaves the cells with Cl⁻); see the integrator. */
+export const CELL_H_PER_K = 0.2;
 export function cellSodiumForPotassium(b: BodyState, p: Pick<Params, 'weightKg' | 'female'>) {
   return CELL_NA_PER_K * clamp(normalKStore(p) - b.kE, 0, 0.6 * normalKStore(p));
 }
@@ -259,6 +261,9 @@ export function respiratoryPCO2(hco3Stored: number, p: Params) {
 /** Negative charge on albumin, mEq/L per g/dL — most of the normal anion gap (Rose ch. 19). */
 export const NORMAL_GAP_PER_ALBUMIN = 2.43;
 
+/** Share of an accumulated organic anion that displaces chloride rather than bicarbonate. */
+export const ORGANIC_CL_DISPLACEMENT = 0.4;
+
 export interface PlasmaDerived extends Plasma {
   anionGap: number;
   normalAnionGap: number;
@@ -300,12 +305,14 @@ export function derivePlasma(b: BodyState, p: Params): PlasmaDerived {
   // chloride moves only part of the way, so the calculated gap runs several mEq/L high. The urine
   // anion gap, which is the test the chapter actually teaches for these disorders, is reproduced.
   //
-  // An organic anion that has accumulated occupies part of the extracellular
-  // anion space and displaces chloride from it charge for charge — the kidney and the cells make
-  // room for it. That displacement is what makes the anion gap rise by more than the bicarbonate
-  // falls in lactic acidosis, and it is why chloride comes back as a hyperchloraemic acidosis
-  // once the anions are cleared or metabolised (Rose ch. 19).
-  const cl = clamp(b.clE / Math.max(ecf, 1) - clamp(b.organicAnions, 0, 45), 60, 130);
+  // An organic anion that has accumulated occupies part of the extracellular anion space. Most of
+  // it is matched by the bicarbonate its acid consumed; the rest — the part whose H⁺ was buffered
+  // inside cells, so that the bicarbonate fell by less — has to displace chloride to keep the fluid
+  // electroneutral. That is what makes the anion gap rise by more than the bicarbonate falls in
+  // lactic acidosis (Rose ch. 19). Displacing chloride by the whole anion counted it twice: the
+  // ketoacidosis gap ran near 45, and when insulin cleared the ketones the chloride came back on top
+  // of the regenerated bicarbonate, driving the gap negative.
+  const cl = clamp(b.clE / Math.max(ecf, 1) - ORGANIC_CL_DISPLACEMENT * clamp(b.organicAnions, 0, 45), 60, 130);
   // Computed on the reported plasma bicarbonate, as a laboratory would.
   const anionGap = na - cl - hco3Plasma;
   const agCorrected = anionGap + 2.5 * (4 - albumin);

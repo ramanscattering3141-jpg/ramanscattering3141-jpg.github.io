@@ -13,6 +13,7 @@ import { runNephron } from '../../renal/src/engine/nephron';
 import { initialBody, edelmanNa, respiratoryPCO2, acidBase, oncoticGradientRel } from '../../renal/src/engine/body';
 import { withIsotonicChange } from '../../renal/src/engine/scenarios';
 import { waterDeprivationTest, DEPRIVATION_PATIENTS, hypernatraemiaCorrection, type Regimen } from '../../renal/src/sim/deprivation';
+import { hyperglycemicCrisis, treatCrisis, type Rx } from '../../renal/src/sim/hyperglycemia';
 
 /**
  * One evaluation from the normal body state: the immediate ("before anything has had time to
@@ -2004,5 +2005,101 @@ describe('hypernatraemia and the diabetes insipidus states (Rose ch. 24)', () =>
       const overshoot = rx({ cause: 'cdi', d5w: 5, desmopressin: true });
       expect(overshoot.points[overshoot.points.length - 1].na).toBeLessThan(135);
     });
+  });
+});
+
+/**
+ * Hyperglycaemia (Rose ch. 25): translocation, the osmotic diuresis, the kidney as the brake on the
+ * glucose, the potassium paradox and what insulin does to it.
+ */
+describe('hyperglycaemia: translocation, osmotic diuresis and the potassium paradox (Rose ch. 25)', () => {
+  const settled = runToSteadyState(DEFAULT_PARAMS, 40);
+
+  test('glucose draws water out of cells: the sodium falls within minutes and the ECF expands', () => {
+    const before = evaluate(settled.state.body, DEFAULT_PARAMS);
+    const after = evaluate(settled.state.body, applyPatch(DEFAULT_PARAMS, { glucose: 30 * 18 }));
+    const perStep = (before.plasma.Na - after.plasma.Na) / ((30 - 95 / 18) / 5.6);
+    // Katz's ideal osmometer gives 1.6 per 5.6 mmol/L; Hillier observed up to 2.4
+    expect(perStep).toBeGreaterThan(1.4);
+    expect(perStep).toBeLessThan(2.4);
+    expect(after.plasma.ecf).toBeGreaterThan(before.plasma.ecf + 0.3);
+    expect(after.plasma.effOsm).toBeGreaterThan(before.plasma.effOsm);
+  });
+
+  test('an osmotic diuresis: urine only modestly hyperosmotic, and its Na+ + K+ below the plasma', () => {
+    const ev = runToSteadyState(applyPatch(DEFAULT_PARAMS, { glucose: 30 * 18 }), 30).ev;
+    expect(ev.kidney.urine.volumePerDay).toBeGreaterThan(3);
+    expect(ev.kidney.urine.osm).toBeGreaterThan(300);
+    expect(ev.kidney.urine.osm).toBeLessThan(850);
+    expect(ev.kidney.urine.Na + ev.kidney.urine.K).toBeLessThan(ev.plasma.Na + ev.plasma.K);
+    // and without an acid, the anion gap stays normal
+    expect(ev.plasma.anionGap).toBeLessThan(13);
+  });
+
+  test('without enough water, the osmotic diuresis raises the sodium (water lost in excess of Na+ + K+)', () => {
+    const r = simulate(applyPatch(DEFAULT_PARAMS, { glucose: 30 * 18, thirstIntact: false, waterIntake: 1.5 }), 2, 0.05, settled.state.body).final;
+    const translocated = evaluate(settled.state.body, applyPatch(DEFAULT_PARAMS, { glucose: 30 * 18 }));
+    expect(r.plasma.Na).toBeGreaterThan(translocated.plasma.Na + 3);
+  });
+
+  test('insulin deficiency raises K+ modestly; pharmacological insulin lowers it by more', () => {
+    const k = (insulin: number) => evaluate(settled.state.body, applyPatch(DEFAULT_PARAMS, { insulin })).plasma.K;
+    const k0 = k(1);
+    expect(k(0.1) - k0).toBeGreaterThan(0.3);
+    expect(k(0.1) - k0).toBeLessThan(1.0);
+    expect(k0 - k(3)).toBeGreaterThan(0.5);
+  });
+
+  const dka = hyperglycemicCrisis({ kind: 'dka', hours: 30 }).presentation;
+  const hhs = hyperglycemicCrisis({ kind: 'hhs', hours: 120 }).presentation;
+  const esrd = hyperglycemicCrisis({ kind: 'dialysis', hours: 18 }).presentation;
+
+  test('ketoacidosis: glucose capped below 44 mmol/L by renal excretion; high-gap acidosis; K+ normal despite a deficit', () => {
+    expect(dka.glucose).toBeLessThan(44);
+    expect(dka.glucose).toBeGreaterThan(14);
+    expect(dka.HCO3).toBeLessThan(15);
+    expect(dka.anionGap).toBeGreaterThan(18);
+    expect(dka.K).toBeGreaterThan(4.0);
+    expect(dka.kDeficit / 70).toBeGreaterThan(2);
+    expect(dka.kDeficit / 70).toBeLessThan(10);
+  });
+
+  test('non-ketotic hyperglycaemia: higher glucose and osmolality at a lower GFR, and no acidosis', () => {
+    expect(hhs.glucose).toBeGreaterThan(dka.glucose);
+    expect(hhs.effOsm).toBeGreaterThan(dka.effOsm + 10);
+    expect(hhs.ketones).toBeLessThan(1);
+    expect(hhs.HCO3).toBeGreaterThan(18);
+    expect(hhs.waterDeficit).toBeGreaterThan(dka.waterDeficit);
+  });
+
+  test('on dialysis: very high glucose, diluted sodium, no dehydration, and hyperkalaemia', () => {
+    expect(esrd.glucose).toBeGreaterThan(45);
+    expect(esrd.Na).toBeLessThan(125);
+    expect(esrd.effOsm).toBeLessThan(300);
+    expect(esrd.waterDeficit).toBeLessThan(0.5);
+    expect(esrd.K).toBeGreaterThan(5.8);
+  });
+
+  const rx: Rx = { bolusRate: 1, later: 'half', laterRate: 0.25, insulin: true, kcl: 30, kBelow: 5.0, bicarbonate: false };
+
+  test('insulin unmasks the potassium deficit; the gap closes as ketoacid anions regenerate bicarbonate', () => {
+    const t = treatCrisis({ kind: 'dka', hours: 30 }, rx).points;
+    const minK = Math.min(...t.map((p) => p.K));
+    expect(minK).toBeLessThan(t[0].K - 0.7);
+    const closed = t.find((p) => p.hour > 0 && p.anionGap <= 14 && p.HCO3 >= 15);
+    expect(closed).toBeDefined();
+    expect(closed!.hour).toBeLessThan(18);
+    const noK = treatCrisis({ kind: 'dka', hours: 30 }, { ...rx, kcl: 0 }).points;
+    expect(Math.min(...noK.map((p) => p.K))).toBeLessThan(minK);
+  });
+
+  test('without insulin the ketoacidosis continues whatever fluid is given', () => {
+    // Rose also expects saline alone to lower the glucose by 2-4 mmol/L/h, by dilution and by
+    // restoring the GFR. The model does not reproduce the second part: its GFR is better defended
+    // in volume depletion than a patient's, so there is little filtration for saline to restore.
+    const t = treatCrisis({ kind: 'dka', hours: 30 }, { ...rx, insulin: false }).points;
+    const at12 = t.find((p) => p.hour === 12)!;
+    expect(at12.HCO3).toBeLessThan(t[0].HCO3 + 1);
+    expect(at12.anionGap).toBeGreaterThan(18);
   });
 });

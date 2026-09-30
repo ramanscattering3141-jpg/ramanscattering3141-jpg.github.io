@@ -54,6 +54,8 @@ export interface CrisisPoint {
   creat: number; // µmol/L
   urineL: number; // L/day
   urineNaK: number; // mmol/L
+  urineGlucose: number; // g/day
+  gfr: number; // mL/min
   kDeficit: number; // mmol
   waterDeficit: number; // L of total body water lost since the start
   ecf: number;
@@ -95,9 +97,9 @@ const PATIENTS: Record<CrisisKind, Patient> = {
   // Older patient with type 2 diabetes and mildly reduced renal function; insulin reduced but
   // present, so no ketoacidosis; confused and drinking little.
   hhs: {
-    base: { ageY: 72, nephronFraction: 0.4, naIntake: 100, kIntake: 60, proteinIntake: 60 },
+    base: { ageY: 72, nephronFraction: 0.35, naIntake: 100, kIntake: 60, proteinIntake: 60 },
     insulin: 0.3,
-    sensitivity: 0.45,
+    sensitivity: 0.3,
     ketoMax: 11,
     ill: { naIntake: 20, kIntake: 15, proteinIntake: 20, waterIntake: 0.9, thirstIntact: false },
   },
@@ -144,6 +146,8 @@ function point(ev: Evaluation, hour: number, glucose: number, body: BodyState, t
     creat: ev.body.creat * 88.4,
     urineL: u.volumePerDay,
     urineNaK: u.Na + u.K,
+    urineGlucose: u.exc.glucose,
+    gfr: ev.kidney.GFR,
     kDeficit: normalKStore(params) - body.kE,
     waterDeficit: tbw0 - body.tbw,
     ecf: ev.plasma.ecf,
@@ -178,8 +182,12 @@ function advance(c: Clock, patient: Patient, patch: ParamPatch, hours: number, e
   const ev = r.final;
   const renal = ev.kidney.urine.exc.glucose; // g/day
   const net = production(insulinEffect) + dextroseGPerDay - uptake(c.glucose, insulinEffect, patient.sensitivity) - renal; // g/day
+  // Glucose is tracked as an amount in its distribution volume (the ECF and a little more), so
+  // expanding the ECF with saline dilutes it as well as restoring its renal excretion.
+  const vdBefore = Math.max(c.ev.plasma.ecf * 1.25, 6);
   const vd = Math.max(ev.plasma.ecf * 1.25, 6);
-  const glucose = Math.min(120, Math.max(3.5, c.glucose + (net * GRAMS_TO_MMOL * (hours / 24)) / vd));
+  const mass = c.glucose * vdBefore + net * GRAMS_TO_MMOL * (hours / 24);
+  const glucose = Math.min(120, Math.max(3.5, mass / vd));
   return { body: r.state.body, glucose, ev, hour: c.hour + hours, outOfRange: r.state.outOfRange };
 }
 
@@ -225,7 +233,7 @@ export function treatCrisis(spec: CrisisSpec, rx: Rx): CrisisResult {
     const half = !early && rx.later === 'half';
     // Once the glucose is below about 14 mmol/L (250 mg/dL) the fluid carries 5% dextrose and the
     // insulin is halved, so that insulin can continue to clear the ketones without hypoglycaemia.
-    if (clock.glucose < 13.9) dextrose = true;
+    if (rx.insulin && clock.glucose < 13.9) dextrose = true;
     const litresPerDay = rate * 24;
     const k = clock.ev.plasma.K < rx.kBelow ? rx.kcl * litresPerDay : 0;
     if (rx.bicarbonate && clock.ev.plasma.pH < 7.0 && bicarbHours === 0) bicarbHours = 2;
@@ -243,7 +251,8 @@ export function treatCrisis(spec: CrisisSpec, rx: Rx): CrisisResult {
     };
     // An insulin infusion takes an hour or two to reach its full effect on hepatic glucose output.
     const onsetFactor = 1 - Math.exp(-(h + 0.5) / 1.5);
-    const drip = rx.insulin ? (dextrose ? 0.75 : 1.5) * onsetFactor : 0;
+    // In the dextrose phase the infusion is titrated to hold the glucose near 8–12 mmol/L.
+    const drip = rx.insulin ? (dextrose ? Math.min(1.5, Math.max(0.6, 1 + 0.15 * (clock.glucose - 10))) : 2.5) * onsetFactor : 0;
     // Dextrose goes into the maintenance fluid, not the resuscitation bolus: 5% at up to 150 mL/h.
     const dextroseG = dextrose ? 50 * 24 * Math.min(early ? 0.15 : rate, 0.15) : 0;
     clock = advance(clock, patient, patch, 1, patient.insulin, drip, dextroseG);
