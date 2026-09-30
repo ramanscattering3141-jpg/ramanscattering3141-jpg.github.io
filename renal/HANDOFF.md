@@ -2,23 +2,13 @@
 
 This file lets a new session (or a person) pick up the work without the chat history. Update it with every commit that changes the plan.
 
-Branch: `claude/compassionate-mayer-vl169d`. Everything is committed and pushed. Nothing lives only in a local checkout. The build is content-complete — see section 4.
+Branch: `claude/renal-physiology-lab`. Everything is committed and pushed. Nothing lives only in a local checkout. The build is content-complete — see section 4.
 
-## 1. Getting it live (needs a person)
+## 1. Getting it live
 
-GitHub Pages deploys from the repository's default branch, `claude/flight-simulator-architecture-ck2cgq` (see `.github/workflows/deploy.yml`). That branch has since added the ECG app, so merging this branch into it conflicts in three files. Each conflict is two apps both adding themselves as a second entry point:
+GitHub Pages deploys from the repository's default branch, `claude/flight-simulator-architecture-ck2cgq` (see `.github/workflows/deploy.yml`). The default branch (with the ECG app) has been merged into this branch and the three entry-point conflicts resolved: `vite.config.ts` has `main`, `ecg` and `renal` inputs under one `rolldownOptions` key plus the `oxc` Preact JSX setting, and `package.json` lists `cesium`, `preact` and `three`. `npm test` (425 tests, all three apps) and `npm run build` pass on the merged result.
 
-| File | Resolution |
-|---|---|
-| `vite.config.ts` | Keep **all three** inputs: `main` (index.html), `ecg` (ecg/index.html), `renal` (renal/index.html). The default branch uses `rolldownOptions` with `import.meta.dirname`, and this branch uses `rollupOptions` with `__dirname`. Use one key for all three (`rolldownOptions` + `import.meta.dirname` matches Vite 8). Keep this branch's `oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } }`. The ECG app has no JSX, so it is unaffected. |
-| `package.json` | Take the union of dependencies: `cesium`, `preact`, `three`, and in devDependencies `@types/three`. |
-| `package-lock.json` | Don't hand-merge. Take either side, then run `npm install` to regenerate it. |
-
-Then run `npm test && npm run build`. Both must pass, since the deploy workflow runs them. Merge into the default branch, and the lab appears at https://ramanscattering3141-jpg.github.io/renal/.
-
-**This merge has been performed and verified** (2026-09-30). Checking the default branch out and merging `claude/compassionate-mayer-vl169d` into it gives exactly the three conflicts above; resolving them as described, running `npm install`, then `npm run build` produces `dist/{index,ecg/index,renal/index}.html`, and `npm test` passes **425 tests across all three apps**. The resolved `vite.config.ts` uses `rolldownOptions` + `import.meta.dirname` with the three inputs and keeps the `oxc` Preact config; `package.json` lists `cesium`, `preact`, `three` in dependencies and adds `@types/three` in devDependencies. The merge result is a clean fast-forward of the default branch.
-
-**Only the push to the default (deploy) branch remains, and it needs a person.** The session's auto-mode classifier allows pushing to this feature branch but blocks pushing to any other branch as a "shared resource", so the agent cannot publish. To finish, from a checkout: `git checkout claude/flight-simulator-architecture-ck2cgq && git merge origin/claude/compassionate-mayer-vl169d`, resolve the three files as above, `npm install && npm run build && npm test`, then `git push`. (Or grant the agent a push permission and it will complete the fast-forward.)
+To publish, merge this branch's pull request into the default branch. The deploy workflow then tests, builds and publishes, and the lab appears at https://ramanscattering3141-jpg.github.io/renal/. Pages must be set to **Settings → Pages → Source: GitHub Actions** (one-time).
 
 ## 2. Standing rules for the content
 

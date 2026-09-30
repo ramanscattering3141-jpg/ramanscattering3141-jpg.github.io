@@ -1,6 +1,6 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { resolve } from 'node:path';
 
 // Cesium ships web workers, shaders and assets that must be served as static
 // files; CESIUM_BASE_URL tells the library where to find them.
@@ -24,12 +24,12 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 6000,
     target: 'es2022',
-    // Two independent apps share this site: the flight simulator at the root and
-    // the renal physiology laboratory under /renal/.
-    rollupOptions: {
+    // Three independent apps: the flight simulator (/), the ECG lab (/ecg/) and the renal lab (/renal/).
+    rolldownOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        renal: resolve(__dirname, 'renal/index.html'),
+        main: resolve(import.meta.dirname, 'index.html'),
+        ecg: resolve(import.meta.dirname, 'ecg/index.html'),
+        renal: resolve(import.meta.dirname, 'renal/index.html'),
       },
     },
   },
