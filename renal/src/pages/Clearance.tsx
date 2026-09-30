@@ -74,10 +74,10 @@ export default function Clearance() {
           <Panel title={`Handling of ${base.name.toLowerCase()}`}>
             <div class="handling">
               {[
-                ['Filtered', r.filtered, '#6aa9e8'],
-                ['Reabsorbed', r.reabsorbed, '#7bc47f'],
-                ['Secreted', r.secreted, '#b08ee0'],
-                ['Excreted', r.excreted, '#f2b134'],
+                ['Filtered', r.filtered, 'var(--c-blue)'],
+                ['Reabsorbed', r.reabsorbed, 'var(--c-green)'],
+                ['Secreted', r.secreted, 'var(--c-violet)'],
+                ['Excreted', r.excreted, 'var(--c-amber)'],
               ].map(([label, v, color]) => (
                 <div key={label as string} class="handling-row">
                   <span>{label as string}</span>

@@ -48,6 +48,14 @@ Engine work done alongside these (all covered by the regression suite):
 - CKD minerals: realistic phosphate intake, phosphate reabsorption floored at ~20% (so Pi rises below GFR ~30), and a stronger PTH bone-calcium defence.
 - Obstruction: Bowman's-space pressure scaled for a graded GFR fall; glomerulus: effective oncotic pressure falls at half rate in hypoalbuminaemia so nephrotic hyperfiltration is modest, not doubled.
 
+### Added on 2026-09-30 (second pass)
+- Light theme with a Light / Dark / Auto switch; every hard-coded colour became a theme variable.
+- Nephron drawing: dark text on a halo instead of tubule-coloured labels, values in pills, marked sites glow in a colour distinct from the tubule, optional side callouts (`callouts`), `dimUnmarked`, `heat` and `tubeColor` props. The hormones page uses it full width with per-site action notes (`SITE_ACTIONS` in `content/hormones.ts`); the explorer diagram is larger and sticky.
+- Flow simulator: pause, 0.1×–2× speed, particles visibly crossing out (reabsorbed) or in (secreted), and a green/red band under each segment scaled to its share.
+- Charts: real axis titles everywhere; the rescaled series were split into stacked panels via `Series.axis`. The GFR Starling chart was redrawn with axis titles, % ticks and a legend.
+- Body water: 100 kg / 60 L reference person (ch. 7 worked examples redone in round numbers, noting Rose’s 70 kg).
+- New `/iv-fluids` (`sim/ivfluids.ts`, regression tests in `tests/renal/ivfluids.test.ts`, checked against Lobo 2001 and Hahn 2010) and `/drug-map` (`content/drugmap.ts`). 22 new PubMed references, each checked by PMID.
+
 ### What a next session could still do
 The spec is broad; genuine polish items remain rather than missing modules:
 - Liddle syndrome is only partially reproduced (the ENaC gain suppresses renin/aldosterone but does not fully produce the hypertension/hypokalaemia, because escape and other loops compensate). Same for Gordon's blood pressure.

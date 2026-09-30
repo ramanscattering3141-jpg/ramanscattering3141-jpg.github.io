@@ -142,8 +142,8 @@ export default function Arterioles() {
               <LineChart
                 xLabel="efferent resistance (× normal, log scale)"
                 series={[
-                  { label: 'GFR', points: effSweep.map((p) => ({ x: Math.log2(p.e), y: p.gfr })), color: '#5ecfba' },
-                  { label: 'RPF ÷ 5', points: effSweep.map((p) => ({ x: Math.log2(p.e), y: p.rpf / 5 })), color: '#6aa9e8' },
+                  { label: 'GFR', axis: 'GFR (mL/min)', points: effSweep.map((p) => ({ x: Math.log2(p.e), y: p.gfr })), color: 'var(--c-teal)' },
+                  { label: 'Renal plasma flow', axis: 'Renal plasma flow (mL/min)', points: effSweep.map((p) => ({ x: Math.log2(p.e), y: p.rpf })), color: 'var(--c-blue)' },
                 ]}
                 marker={Math.log2(Math.max(0.3, s.eff))}
                 yMin={0}
@@ -154,8 +154,8 @@ export default function Arterioles() {
               <LineChart
                 xLabel="afferent resistance (× normal, log scale)"
                 series={[
-                  { label: 'GFR', points: affSweep.map((p) => ({ x: Math.log2(p.a), y: p.gfr })), color: '#5ecfba' },
-                  { label: 'RPF ÷ 5', points: affSweep.map((p) => ({ x: Math.log2(p.a), y: p.rpf / 5 })), color: '#6aa9e8' },
+                  { label: 'GFR', axis: 'GFR (mL/min)', points: affSweep.map((p) => ({ x: Math.log2(p.a), y: p.gfr })), color: 'var(--c-teal)' },
+                  { label: 'Renal plasma flow', axis: 'Renal plasma flow (mL/min)', points: affSweep.map((p) => ({ x: Math.log2(p.a), y: p.rpf })), color: 'var(--c-blue)' },
                 ]}
                 marker={Math.log2(Math.max(0.4, s.aff))}
                 yMin={0}

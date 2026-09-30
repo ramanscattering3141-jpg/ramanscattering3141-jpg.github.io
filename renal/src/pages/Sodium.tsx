@@ -35,17 +35,17 @@ function StepTab() {
   const series = useMemo(() => {
     if (!pts) return null;
     const out: Series[] = [
-      { label: 'Na⁺ intake', points: pts.map((q) => ({ x: q.day, y: to })), color: '#8aa0b4', dashed: true },
-      { label: 'Na⁺ output (urine + ~10 skin and stool)', points: pts.map((q) => ({ x: q.day, y: q.urineNa + 10 })), color: '#f2b134' },
+      { label: 'Na⁺ intake', points: pts.map((q) => ({ x: q.day, y: to })), color: 'var(--ink-faint)', dashed: true },
+      { label: 'Na⁺ output (urine + ~10 skin and stool)', points: pts.map((q) => ({ x: q.day, y: q.urineNa + 10 })), color: 'var(--c-amber)' },
     ];
     const vol: Series[] = [
-      { label: 'Change in ECF (L)', points: pts.map((q) => ({ x: q.day, y: q.ecf - pts[0].ecf })), color: '#6aa9e8' },
-      { label: 'Cumulative Na⁺ balance ÷ 140 (L equivalent)', points: pts.map((q) => ({ x: q.day, y: q.naBalance / 140 })), color: '#b08ee0', dashed: true },
+      { label: 'Change in ECF volume', axis: 'Change in ECF volume (L)', points: pts.map((q) => ({ x: q.day, y: q.ecf - pts[0].ecf })), color: 'var(--c-blue)' },
+      { label: 'Cumulative Na⁺ balance', axis: 'Cumulative Na⁺ retained (mmol)', points: pts.map((q) => ({ x: q.day, y: q.naBalance })), color: 'var(--c-violet)', dashed: true },
     ];
     const hormones: Series[] = [
-      { label: 'Renin', points: pts.map((q) => ({ x: q.day, y: q.renin })), color: '#e07b6a' },
-      { label: 'Aldosterone', points: pts.map((q) => ({ x: q.day, y: q.aldo })), color: '#f2b134' },
-      { label: 'ANP', points: pts.map((q) => ({ x: q.day, y: q.anp })), color: '#5ecfba' },
+      { label: 'Renin', points: pts.map((q) => ({ x: q.day, y: q.renin })), color: 'var(--c-coral)' },
+      { label: 'Aldosterone', points: pts.map((q) => ({ x: q.day, y: q.aldo })), color: 'var(--c-amber)' },
+      { label: 'ANP', points: pts.map((q) => ({ x: q.day, y: q.anp })), color: 'var(--c-teal)' },
     ];
     return { out, vol, hormones };
   }, [pts, to]);
@@ -89,14 +89,14 @@ function StepTab() {
         </div>
         <div>
           <Panel title="Na⁺ in and out, day by day" note="Output lags intake until enough Na⁺ (and the water it holds) has been retained to change the volume signals. The difference between the curves is the Na⁺ being retained or lost.">
-            {series && <LineChart xLabel="day" series={series.out} yMin={0} height={220} />}
+            {series && <LineChart yLabel="Na⁺ (mmol/day)" xLabel="day" series={series.out} yMin={0} height={220} />}
           </Panel>
           <div class="grid grid-2">
             <Panel title="Volume: the persistent signal">
               {series && <LineChart xLabel="day" series={series.vol} height={180} />}
             </Panel>
             <Panel title="The hormones that carry the signal (× normal)">
-              {series && <LineChart xLabel="day" series={series.hormones} yMin={0} height={180} />}
+              {series && <LineChart yLabel="× normal" xLabel="day" series={series.hormones} yMin={0} height={180} />}
             </Panel>
           </div>
           <p class="note caution">
@@ -147,10 +147,10 @@ function DayToDay() {
 // 2. Pressure natriuresis curves (Rose Fig. 8-8, after Guyton)
 
 const CURVES: { id: string; label: string; patch: ParamPatch; color: string }[] = [
-  { id: 'normal', label: 'Normal (AII free to vary)', patch: {}, color: '#5ecfba' },
-  { id: 'acei', label: 'AII blocked (ACE inhibitor)', patch: { drugs: { acei: 1 } }, color: '#6aa9e8' },
-  { id: 'high', label: 'AII fixed high (autonomous renin)', patch: { reninAutonomous: 3 }, color: '#e07b6a' },
-  { id: 'ckd', label: 'Nephron loss (25% remaining)', patch: { nephronFraction: 0.25 }, color: '#b08ee0' },
+  { id: 'normal', label: 'Normal (AII free to vary)', patch: {}, color: 'var(--c-teal)' },
+  { id: 'acei', label: 'AII blocked (ACE inhibitor)', patch: { drugs: { acei: 1 } }, color: 'var(--c-blue)' },
+  { id: 'high', label: 'AII fixed high (autonomous renin)', patch: { reninAutonomous: 3 }, color: 'var(--c-coral)' },
+  { id: 'ckd', label: 'Nephron loss (25% remaining)', patch: { nephronFraction: 0.25 }, color: 'var(--c-violet)' },
 ];
 const INTAKES = [20, 75, 150, 250, 400];
 
@@ -214,7 +214,7 @@ function CurveTab() {
         </div>
         <div>
           <Panel title="Steady-state Na⁺ intake (= excretion) against mean arterial pressure" note="Guyton’s way of drawing it: at steady state, excretion equals intake, so each curve shows the pressure at which the kidney can excrete a given salt load. A steep curve means salt barely changes pressure.">
-            {series.length > 0 ? <LineChart xLabel="mean arterial pressure (mmHg)" series={series} yMin={0} height={280} /> : <p class="busy">computing…</p>}
+            {series.length > 0 ? <LineChart yLabel="Steady-state Na⁺ intake = excretion (mmol/day)" xLabel="mean arterial pressure (mmHg)" series={series} yMin={0} height={280} /> : <p class="busy">computing…</p>}
           </Panel>
           <div class="grid grid-2">
             <Panel title="Reading the curves">
@@ -268,14 +268,14 @@ function ClampTab() {
   const chart = useMemo(() => {
     if (!pts || !free.points) return null;
     const naOut: Series[] = [
-      { label: 'Intake', points: pts.map((q) => ({ x: q.day, y: 250 })), color: '#8aa0b4', dashed: true },
-      { label: clamped ? 'Na⁺ excretion (pressure clamped)' : 'Na⁺ excretion', points: pts.map((q) => ({ x: q.day, y: q.urineNa })), color: clamped ? '#e07b6a' : '#5ecfba' },
+      { label: 'Intake', points: pts.map((q) => ({ x: q.day, y: 250 })), color: 'var(--ink-faint)', dashed: true },
+      { label: clamped ? 'Na⁺ excretion (pressure clamped)' : 'Na⁺ excretion', points: pts.map((q) => ({ x: q.day, y: q.urineNa })), color: clamped ? 'var(--c-coral)' : 'var(--c-teal)' },
     ];
-    if (clamped) naOut.push({ label: 'Na⁺ excretion if pressure could rise', points: free.points.map((q) => ({ x: q.day, y: q.urineNa })), color: '#5ecfba', dashed: true });
+    if (clamped) naOut.push({ label: 'Na⁺ excretion if pressure could rise', points: free.points.map((q) => ({ x: q.day, y: q.urineNa })), color: 'var(--c-teal)', dashed: true });
     const volume: Series[] = [
-      { label: 'ECF (L)', points: pts.map((q) => ({ x: q.day, y: q.ecf })), color: '#6aa9e8' },
-      { label: 'Oedema (L)', points: pts.map((q) => ({ x: q.day, y: q.edema })), color: '#b08ee0' },
-      { label: 'MAP ÷ 10 (mmHg)', points: pts.map((q) => ({ x: q.day, y: q.MAP / 10 })), color: '#f2b134' },
+      { label: 'ECF', axis: 'Volume (L)', points: pts.map((q) => ({ x: q.day, y: q.ecf })), color: 'var(--c-blue)' },
+      { label: 'Oedema', axis: 'Volume (L)', points: pts.map((q) => ({ x: q.day, y: q.edema })), color: 'var(--c-violet)' },
+      { label: 'Mean arterial pressure', axis: 'Mean arterial pressure (mmHg)', points: pts.map((q) => ({ x: q.day, y: q.MAP })), color: 'var(--c-amber)' },
     ];
     return { naOut, volume };
   }, [pts, free.points, clamped]);
@@ -315,7 +315,7 @@ function ClampTab() {
         </div>
         <div>
           <Panel title="Sodium excretion against intake" note="Escape is the point where excretion climbs back to intake despite the aldosterone still being infused.">
-            {chart && <LineChart xLabel="day" series={chart.naOut} yMin={0} height={220} />}
+            {chart && <LineChart yLabel="Na⁺ (mmol/day)" xLabel="day" series={chart.naOut} yMin={0} height={220} />}
           </Panel>
           <Panel title="Volume, oedema and pressure">
             {chart && <LineChart xLabel="day" series={chart.volume} height={200} />}

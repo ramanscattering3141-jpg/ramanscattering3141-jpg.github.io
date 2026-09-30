@@ -34,7 +34,7 @@ export function CellDiagram(props: {
     const y = top + 20 + i * rowH + rowH / 2 - 10;
     const x = side === 'a' ? x0 : x1;
     const on = Math.max(0, Math.min(1.5, c.activity));
-    const color = c.blocked ? '#b08ee0' : c.color ?? '#5ecfba';
+    const color = c.blocked ? 'var(--c-violet)' : c.color ?? 'var(--c-teal)';
     const arrowIn = side === 'a' ? c.dir !== 'out' : c.dir === 'out';
     // Arrow runs horizontally through the carrier.
     const ax0 = side === 'a' ? x - 70 : x + 70;
@@ -45,20 +45,20 @@ export function CellDiagram(props: {
       <g key={`${side}${i}`} style={{ cursor: c.onClick ? 'pointer' : undefined }} onClick={c.onClick} role={c.onClick ? 'button' : undefined} aria-label={c.onClick ? `Toggle ${c.label}` : undefined}>
         <line x1={from} x2={to} y1={y} y2={y} stroke={color} stroke-width={1 + 3 * on} opacity={0.25 + 0.6 * Math.min(1, on)} marker-end="url(#cell-arr)" />
         {c.dir === 'both' && <line x1={to} x2={from} y1={y + 7} y2={y + 7} stroke={color} stroke-width={1 + 2 * on} opacity={0.2 + 0.5 * Math.min(1, on)} marker-end="url(#cell-arr)" />}
-        <circle cx={x} cy={y} r="21" fill={color} opacity={0.25 + 0.75 * Math.min(1, on)} stroke="#0b1b27" />
-        <text x={x} y={y + 3.5} text-anchor="middle" style={{ fontSize: c.label.length > 6 ? 7.5 : c.label.length > 4 ? 8.5 : 10, fontWeight: 700, fill: '#0b1b27' }}>
+        <circle cx={x} cy={y} r="21" fill={color} opacity={0.25 + 0.75 * Math.min(1, on)} stroke="var(--c-deep)" />
+        <text x={x} y={y + 3.5} text-anchor="middle" style={{ fontSize: c.label.length > 6 ? 7.5 : c.label.length > 4 ? 8.5 : 10, fontWeight: 700, fill: 'var(--c-deep)' }}>
           {c.label}
         </text>
         <text x={side === 'a' ? 4 : 596} y={y - 9} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 10 }}>
           {c.moves}
         </text>
         {c.blocked && (
-          <text x={side === 'a' ? 4 : 596} y={y + 18} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 9.5, fill: '#b08ee0' }}>
+          <text x={side === 'a' ? 4 : 596} y={y + 18} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 9.5, fill: 'var(--c-violet)' }}>
             ✕ {c.blocked}
           </text>
         )}
         {on < 0.05 && (
-          <text x={x} y={y - 22} text-anchor="middle" style={{ fontSize: 9, fill: '#e4696b' }}>
+          <text x={x} y={y - 22} text-anchor="middle" style={{ fontSize: 9, fill: 'var(--c-red)' }}>
             off
           </text>
         )}
@@ -69,7 +69,7 @@ export function CellDiagram(props: {
     <svg viewBox={`0 0 600 ${H}`} width="100%" role="img" aria-label={props.title ?? 'Tubular epithelial cell with apical and basolateral transporters'}>
       <defs>
         <marker id="cell-arr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="#a3b9c9" />
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-dim)" />
         </marker>
       </defs>
       <text x="80" y="22" text-anchor="middle" class="svg-label" style={{ letterSpacing: '0.08em' }}>
@@ -81,7 +81,7 @@ export function CellDiagram(props: {
       <text x="520" y="22" text-anchor="middle" class="svg-label" style={{ letterSpacing: '0.08em' }}>
         BLOOD / INTERSTITIUM
       </text>
-      <rect x={x0} y={top} width={x1 - x0} height={cellH} rx="14" fill="#16303f" stroke="#2f7f73" stroke-width="1.5" />
+      <rect x={x0} y={top} width={x1 - x0} height={cellH} rx="14" fill="var(--panel-2)" stroke="var(--accent-dim)" stroke-width="1.5" />
       {props.cellNote && (
         <text x="300" y={top + cellH - 8} text-anchor="middle" class="svg-label" style={{ fontSize: 9.5 }}>
           {props.cellNote}
@@ -91,13 +91,13 @@ export function CellDiagram(props: {
       {props.basolateral.map((c, i) => carrier(c, i, 'b'))}
       {props.paracellular?.length ? (
         <g>
-          <rect x={x0} y={top + cellH + 6} width={x1 - x0} height="8" fill="#0b1b27" stroke="#2f7f7366" />
+          <rect x={x0} y={top + cellH + 6} width={x1 - x0} height="8" fill="var(--c-deep)" stroke="color-mix(in srgb, var(--accent-dim) 40%, transparent)" />
           <text x="300" y={top + cellH + 30} text-anchor="middle" class="svg-label">
             tight junction / paracellular route
           </text>
           {props.paracellular.map((pc, i) => (
             <g key={pc.label}>
-              <line x1={x0 - 40} x2={x1 + 40} y1={top + cellH + 44 + i * 14} y2={top + cellH + 44 + i * 14} stroke="#f2b134" stroke-width={0.5 + 2.5 * Math.min(1, pc.activity)} opacity={0.2 + 0.7 * Math.min(1, pc.activity)} marker-end="url(#cell-arr)" />
+              <line x1={x0 - 40} x2={x1 + 40} y1={top + cellH + 44 + i * 14} y2={top + cellH + 44 + i * 14} stroke="var(--c-amber)" stroke-width={0.5 + 2.5 * Math.min(1, pc.activity)} opacity={0.2 + 0.7 * Math.min(1, pc.activity)} marker-end="url(#cell-arr)" />
               <text x={x0 - 46} y={top + cellH + 48 + i * 14} text-anchor="end" class="svg-label">
                 {pc.label}
               </text>

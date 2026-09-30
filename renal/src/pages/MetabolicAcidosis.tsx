@@ -186,17 +186,18 @@ function Buffers() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#6aa9e8' },
-                    { label: 'PCO₂ (mmHg) ÷ 2', points: points.map((p) => ({ x: p.day, y: p.PCO2 / 2 })), color: '#e07b6a' },
+                    { label: 'Bicarbonate', axis: 'Plasma HCO₃⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-blue)' },
+                    { label: 'PCO₂', axis: 'Arterial PCO₂ (mmHg)', points: points.map((p) => ({ x: p.day, y: p.PCO2 })), color: 'var(--c-coral)' },
                   ] as Series[]}
                   height={165}
                 />
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Ammonium excretion (mmol/day)', points: points.map((p) => ({ x: p.day, y: p.urineNH4 })), color: '#7bc47f' },
-                    { label: 'Net acid excretion (mmol/day)', points: points.map((p) => ({ x: p.day, y: p.nae })), color: '#f2b134' },
+                    { label: 'Ammonium excretion', points: points.map((p) => ({ x: p.day, y: p.urineNH4 })), color: 'var(--c-green)' },
+                    { label: 'Net acid excretion', points: points.map((p) => ({ x: p.day, y: p.nae })), color: 'var(--c-amber)' },
                   ] as Series[]}
+                  yLabel="Urinary excretion (mmol/day)"
                   height={165}
                 />
                 <p class="control-hint">
@@ -283,9 +284,9 @@ function Gap() {
             </p>
           </Panel>
           <Panel title="Why the gap is albumin">
-            <BarRow label="Albumin charge" value={normalGap} max={16} unit=" mmol/L" color="#6aa9e8" />
-            <BarRow label="Phosphate, sulfate, organic anions" value={7} max={16} unit=" mmol/L" color="#f2b134" />
-            <BarRow label="K⁺, Ca²⁺, Mg²⁺ (unmeasured cations, subtracted)" value={7} max={16} unit=" mmol/L" color="#7bc47f" />
+            <BarRow label="Albumin charge" value={normalGap} max={16} unit=" mmol/L" color="var(--c-blue)" />
+            <BarRow label="Phosphate, sulfate, organic anions" value={7} max={16} unit=" mmol/L" color="var(--c-amber)" />
+            <BarRow label="K⁺, Ca²⁺, Mg²⁺ (unmeasured cations, subtracted)" value={7} max={16} unit=" mmol/L" color="var(--c-green)" />
             <p class="control-hint">
               The unmeasured anions other than albumin are very nearly cancelled by the unmeasured cations, which is why the gap tracks albumin so closely. It is also why a patient with an albumin of
               20 g/L and a gap of 15 has a markedly raised gap, not a mildly raised one: their baseline was about 5.
@@ -382,17 +383,17 @@ function Causes() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#6aa9e8' },
-                    { label: 'Anion gap (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.anionGap })), color: '#c08d20' },
-                    { label: 'Chloride − 90 (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Cl - 90 })), color: '#7bc47f' },
+                    { label: 'Bicarbonate', axis: 'HCO₃⁻ and anion gap (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-blue)' },
+                    { label: 'Anion gap', axis: 'HCO₃⁻ and anion gap (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.anionGap })), color: 'var(--c-amber-dk)' },
+                    { label: 'Chloride', axis: 'Plasma Cl⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Cl })), color: 'var(--c-green)' },
                   ] as Series[]}
                   height={175}
                 />
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Ammonium excretion (mmol/day)', points: points.map((p) => ({ x: p.day, y: p.urineNH4 })), color: '#5ecfba' },
-                    { label: 'Urine anion gap (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.urineAnionGap })), color: '#e07b6a' },
+                    { label: 'Ammonium excretion', axis: 'NH₄⁺ excretion (mmol/day)', points: points.map((p) => ({ x: p.day, y: p.urineNH4 })), color: 'var(--c-teal)' },
+                    { label: 'Urine anion gap', axis: 'Urine anion gap (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.urineAnionGap })), color: 'var(--c-coral)' },
                   ] as Series[]}
                   height={175}
                 />
@@ -493,7 +494,7 @@ function Treat() {
               <Readout label="pH now" value={phNow} digits={2} tone={phNow < 7.1 ? 'danger' : 'low'} />
               <Readout label="pH at target" value={phAfter} digits={2} tone={phAfter < 7.2 ? 'low' : 'good'} />
             </div>
-            <BarRow label="Space as a fraction of body weight" value={space} max={0.9} unit="" color="#6aa9e8" />
+            <BarRow label="Space as a fraction of body weight" value={space} max={0.9} unit="" color="var(--c-blue)" />
             <p class="control-hint">
               At a normal bicarbonate the space is about half of body weight. Below 8–10 mmol/L it exceeds 70 per cent, because almost all the added alkali is going onto cell and bone buffers rather
               than staying in the extracellular fluid. Drag the bicarbonate down and watch the space grow.
@@ -525,29 +526,29 @@ function Treat() {
             <Busy on={b1 || b2} />
             {sickPts && recPts && (
               <>
-                <LineChart
+                <LineChart yLabel="mmol/L"
                   xLabel="days (production stops at day 1)"
                   series={[
                     {
                       label: 'Bicarbonate (mmol/L)',
                       points: [...sickPts.map((p) => ({ x: p.day, y: p.HCO3 })), ...recPts.map((p) => ({ x: p.day + 1, y: p.HCO3 }))],
-                      color: '#6aa9e8',
+                      color: 'var(--c-blue)',
                     },
                     {
                       label: 'Anion gap (mmol/L)',
                       points: [...sickPts.map((p) => ({ x: p.day, y: p.anionGap })), ...recPts.map((p) => ({ x: p.day + 1, y: p.anionGap }))],
-                      color: '#c08d20',
+                      color: 'var(--c-amber-dk)',
                     },
                   ] as Series[]}
                   height={180}
                 />
-                <LineChart
+                <LineChart yLabel="Arterial pH"
                   xLabel="days"
                   series={[
                     {
                       label: 'Arterial pH',
                       points: [...sickPts.map((p) => ({ x: p.day, y: p.pH })), ...recPts.map((p) => ({ x: p.day + 1, y: p.pH }))],
-                      color: '#e07b6a',
+                      color: 'var(--c-coral)',
                     },
                   ] as Series[]}
                   height={150}

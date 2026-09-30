@@ -154,8 +154,8 @@ function Why() {
               <Readout label="Retained every day" value={retained} digits={2} unit="L/day" tone={retained > 0.05 ? 'danger' : 'good'} />
               <Readout label="Sodium falls by, per week" value={retained > 0 ? (140 * retained * 7) / (42 + retained * 7) : 0} digits={1} unit="mmol/L" tone={retained > 0.05 ? 'danger' : 'good'} />
             </div>
-            <BarRow label="Urine volume possible" value={urineVolume} max={12} unit=" L/day" color="#6aa9e8" />
-            <BarRow label="Water coming in" value={netIntake} max={12} unit=" L/day" color="#e07b6a" />
+            <BarRow label="Urine volume possible" value={urineVolume} max={12} unit=" L/day" color="var(--c-blue)" />
+            <BarRow label="Water coming in" value={netIntake} max={12} unit=" L/day" color="var(--c-coral)" />
             <p class="control-hint">
               A urine osmolality of 222 is still hypotonic to plasma — the kidney is diluting. It is nonetheless inappropriately high, and that is the whole point: to stay in balance this patient
               needed 200 mmol/kg, and the shortfall is 200 mL a day, every day. A urine osmolality of 150 in a hyponatraemic patient is not reassurance.
@@ -452,8 +452,8 @@ function Fluids() {
               <LineChart
                 xLabel="days"
                 series={[
-                  { label: 'Plasma sodium (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Na })), color: '#6aa9e8' },
-                  { label: 'Urine osmolality ÷ 10', points: points.map((p) => ({ x: p.day, y: p.urineOsm / 10 })), color: '#f2b134' },
+                  { label: 'Plasma sodium', axis: 'Plasma Na⁺ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Na })), color: 'var(--c-blue)' },
+                  { label: 'Urine osmolality', axis: 'Urine osmolality (mOsm/kg)', points: points.map((p) => ({ x: p.day, y: p.urineOsm })), color: 'var(--c-amber)' },
                 ] as Series[]}
                 height={200}
               />
@@ -550,11 +550,11 @@ function Correct() {
             <Busy on={b1 || b2} />
             {slow && fast && (
               <>
-                <LineChart
+                <LineChart yLabel="Plasma Na⁺ (mmol/L)"
                   xLabel="days"
                   series={[
-                    { label: 'Restricted to 2.2 L (mmol/L)', points: slow.map((p) => ({ x: p.day, y: p.Na })), color: '#5ecfba' },
-                    { label: 'Restricted to 0.6 L (mmol/L)', points: fast.map((p) => ({ x: p.day, y: p.Na })), color: '#e07b6a' },
+                    { label: 'Restricted to 2.2 L (mmol/L)', points: slow.map((p) => ({ x: p.day, y: p.Na })), color: 'var(--c-teal)' },
+                    { label: 'Restricted to 0.6 L (mmol/L)', points: fast.map((p) => ({ x: p.day, y: p.Na })), color: 'var(--c-coral)' },
                   ] as Series[]}
                   height={200}
                 />

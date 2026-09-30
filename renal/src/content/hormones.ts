@@ -201,3 +201,79 @@ export const HORMONES: HormoneInfo[] = [
     cite: { rose: [6], evidence: 'experimental' },
   },
 ];
+
+/**
+ * What each hormone does at each site it acts on, short enough to print on the nephron drawing.
+ * 'up' = stimulates transport or constricts; 'down' = inhibits transport or dilates.
+ */
+export const SITE_ACTIONS: Record<string, Partial<Record<StructureId, { text: string; tone: 'up' | 'down' | 'info' }>>> = {
+  adh: {
+    TAL: { text: 'May stimulate NKCC2, adding to the medullary gradient (clearest in animals)', tone: 'up' },
+    CCD: { text: 'V2 → cAMP → aquaporin-2 inserted: water leaves the tubule', tone: 'up' },
+    OMCD: { text: 'Aquaporin-2: water reabsorbed into the hypertonic medulla', tone: 'up' },
+    IMCD: { text: 'Aquaporin-2 plus UT-A1 urea channels: water and urea reabsorbed, urine concentrated', tone: 'up' },
+  },
+  aldosterone: {
+    CNT: { text: 'MR → more open ENaC and ROMK: Na⁺ in, K⁺ out', tone: 'up' },
+    CCD: { text: 'ENaC ↑, Na⁺-K⁺-ATPase ↑: Na⁺ reabsorbed, lumen more negative, K⁺ secreted', tone: 'up' },
+    OMCD: { text: 'Intercalated cells: H⁺-ATPase ↑, H⁺ secreted', tone: 'up' },
+    IMCD: { text: 'Na⁺ reabsorbed, without K⁺ secretion', tone: 'up' },
+  },
+  angII: {
+    afferent: { text: 'AT1: constricts, less than the efferent', tone: 'up' },
+    efferent: { text: 'AT1: constricts most, holding Pgc and GFR up when flow falls', tone: 'up' },
+    mesangium: { text: 'Contracts at high levels: filtration surface (Kf) falls', tone: 'up' },
+    PT: { text: 'Stimulates NHE3: more Na⁺ and HCO₃⁻ reabsorbed', tone: 'up' },
+  },
+  anp: {
+    afferent: { text: 'Dilates', tone: 'down' },
+    efferent: { text: 'Constricts: Pgc and GFR rise', tone: 'up' },
+    jgCells: { text: 'Suppresses renin (and so aldosterone)', tone: 'down' },
+    IMCD: { text: 'cGMP closes Na⁺ channels: natriuresis; blunts ADH', tone: 'down' },
+  },
+  pg: {
+    afferent: { text: 'PGE₂/PGI₂ dilate: protect flow when angiotensin II and noradrenaline are high', tone: 'down' },
+    efferent: { text: 'Dilates', tone: 'down' },
+    glomerulus: { text: 'Sustain flow and GFR in low effective volume (why NSAIDs cause AKI then)', tone: 'info' },
+    jgCells: { text: 'Mediate renin release from baroreceptor and macula densa signals', tone: 'up' },
+    TAL: { text: 'PGE₂ reduces NaCl transport (and oxygen demand)', tone: 'down' },
+    CCD: { text: 'PGE₂ antagonises ADH: less water reabsorbed', tone: 'down' },
+    IMCD: { text: 'Less Na⁺ and water reabsorbed', tone: 'down' },
+  },
+  pth: {
+    PT: { text: 'Removes NaPi-IIa: phosphaturia. Stimulates 1α-hydroxylase: calcitriol ↑', tone: 'down' },
+    TAL: { text: 'Raises Ca²⁺ and Mg²⁺ reabsorption', tone: 'up' },
+    DCT: { text: 'TRPV5 ↑: active Ca²⁺ reabsorption', tone: 'up' },
+    CNT: { text: 'TRPV5 ↑: active Ca²⁺ reabsorption', tone: 'up' },
+  },
+  calcitriol: {
+    PT: { text: 'Made here by 1α-hydroxylase; suppresses its own synthesis', tone: 'info' },
+    DCT: { text: 'Calbindin and TRPV5 ↑: Ca²⁺ reabsorbed', tone: 'up' },
+    CNT: { text: 'Calbindin ↑: Ca²⁺ reabsorbed', tone: 'up' },
+  },
+  fgf23: {
+    PT: { text: 'Removes NaPi-IIa/IIc: phosphaturia. Suppresses 1α-hydroxylase: calcitriol ↓', tone: 'down' },
+  },
+  catecholamines: {
+    afferent: { text: 'α₁: constricts, renal blood flow falls', tone: 'up' },
+    efferent: { text: 'Constricts', tone: 'up' },
+    jgCells: { text: 'β₁: renin release', tone: 'up' },
+    PT: { text: 'α₁: more Na⁺ reabsorbed', tone: 'up' },
+    TAL: { text: 'More NaCl reabsorbed', tone: 'up' },
+  },
+  dopamine: {
+    afferent: { text: 'Dilates', tone: 'down' },
+    efferent: { text: 'Dilates: renal blood flow rises, GFR little changed', tone: 'down' },
+    PT: { text: 'Inhibits NHE3 and Na⁺-K⁺-ATPase: natriuresis', tone: 'down' },
+  },
+  epo: {
+    peritubular: { text: 'Made by peritubular fibroblasts when oxygen delivery falls', tone: 'info' },
+  },
+  endothelin: {
+    afferent: { text: 'ET-A: strong constriction; NO opposes it tonically', tone: 'up' },
+    efferent: { text: 'ET-A: constricts', tone: 'up' },
+    maculaDensa: { text: 'NO made here blunts tubuloglomerular feedback', tone: 'down' },
+    CCD: { text: 'ET-B: less Na⁺ and water reabsorbed', tone: 'down' },
+    IMCD: { text: 'Local ET-1 (ET-B): natriuresis and diuresis', tone: 'down' },
+  },
+};

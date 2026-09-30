@@ -80,8 +80,8 @@ function InternalTab() {
             </p>
           </Panel>
           <Panel title="Where the load goes, minute by minute">
-            <BarRow label="Into cells (insulin, β₂, Na⁺-K⁺-ATPase)" value={s.load * Math.max(0.05, uptakeFraction)} max={Math.max(10, s.load)} unit=" mmol" color="#5ecfba" />
-            <BarRow label="Left in the extracellular fluid" value={s.load * (1 - Math.max(0.05, uptakeFraction))} max={Math.max(10, s.load)} unit=" mmol" color="#f2b134" />
+            <BarRow label="Into cells (insulin, β₂, Na⁺-K⁺-ATPase)" value={s.load * Math.max(0.05, uptakeFraction)} max={Math.max(10, s.load)} unit=" mmol" color="var(--c-teal)" />
+            <BarRow label="Left in the extracellular fluid" value={s.load * (1 - Math.max(0.05, uptakeFraction))} max={Math.max(10, s.load)} unit=" mmol" color="var(--c-amber)" />
             <p class="control-hint">98% of body K⁺ is already intracellular; moving just 1.5–2% of it outwards would take the plasma level to 8 mmol/L. That asymmetry is why internal balance has to act first.</p>
           </Panel>
           <div class="grid grid-2">
@@ -190,11 +190,11 @@ function SecretionTab() {
             <PrincipalCell aldo={s.aldo} enac={s.enac} romk={s.romk} voltage={r.distalVoltage} secretion={r.kSecretion * 1440} anion={s.nonReabsorbableAnion} />
           </Panel>
           <Panel title="Excretion against plasma K⁺" note="With aldosterone free to rise, excretion climbs steeply above ~4.2 mmol/L. With aldosterone fixed low, a much higher plasma K⁺ is needed for the same excretion — the steady state of hypoaldosteronism.">
-            <LineChart
+            <LineChart yLabel="K⁺ excretion (mmol/day)"
               xLabel="plasma K⁺ (mmol/L)"
               series={[
-                { label: 'Aldosterone free to rise', points: curve.withAldo, color: '#5ecfba' },
-                { label: 'Aldosterone fixed low', points: curve.lowAldo, color: '#e07b6a', dashed: true },
+                { label: 'Aldosterone free to rise', points: curve.withAldo, color: 'var(--c-teal)' },
+                { label: 'Aldosterone fixed low', points: curve.lowAldo, color: 'var(--c-coral)', dashed: true },
               ]}
               yMin={0}
               marker={s.plasmaK}
@@ -232,23 +232,23 @@ function PrincipalCell({ aldo, enac, romk, voltage, secretion, anion }: { aldo: 
       <text x={62} y={20} text-anchor="middle" class="svg-small">LUMEN</text>
       <text x={300} y={20} text-anchor="middle" class="svg-small">PRINCIPAL CELL</text>
       <text x={540} y={20} text-anchor="middle" class="svg-small">BLOOD</text>
-      <rect x={140} y={30} width={320} height={150} rx={12} fill="#16303f" stroke="#2f7f73" />
+      <rect x={140} y={30} width={320} height={150} rx={12} fill="var(--panel-2)" stroke="var(--accent-dim)" />
       {/* ENaC */}
-      <circle cx={140} cy={70} r={21} fill="#f2b134" opacity={op(enac * aldo)} />
-      <text x={140} y={74} text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>ENaC</text>
+      <circle cx={140} cy={70} r={21} fill="var(--c-amber)" opacity={op(enac * aldo)} />
+      <text x={140} y={74} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>ENaC</text>
       <text x={62} y={74} text-anchor="middle" class="svg-small">Na⁺ in</text>
       {/* K channels */}
-      <circle cx={140} cy={140} r={21} fill="#5ecfba" opacity={op(romk * aldo)} />
-      <text x={140} y={144} text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>ROMK</text>
+      <circle cx={140} cy={140} r={21} fill="var(--c-teal)" opacity={op(romk * aldo)} />
+      <text x={140} y={144} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>ROMK</text>
       <text x={62} y={144} text-anchor="middle" class="svg-small">K⁺ out</text>
       {/* pump */}
-      <circle cx={460} cy={105} r={23} fill="#b08ee0" opacity={op(aldo)} />
-      <text x={460} y={102} text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>Na⁺-K⁺</text>
-      <text x={460} y={114} text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>ATPase</text>
+      <circle cx={460} cy={105} r={23} fill="var(--c-violet)" opacity={op(aldo)} />
+      <text x={460} y={102} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>Na⁺-K⁺</text>
+      <text x={460} y={114} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>ATPase</text>
       <text x={540} y={100} text-anchor="middle" class="svg-small">3 Na⁺ out</text>
       <text x={540} y={116} text-anchor="middle" class="svg-small">2 K⁺ in</text>
-      <line x1={162} x2={436} y1={70} y2={95} stroke="#f2b134" stroke-width={Math.max(1.5, 7 * Math.min(1.4, enac * aldo))} opacity={0.75} />
-      <line x1={436} x2={162} y1={118} y2={140} stroke="#5ecfba" stroke-width={Math.max(1.5, 7 * Math.min(1.4, romk * aldo))} opacity={0.75} />
+      <line x1={162} x2={436} y1={70} y2={95} stroke="var(--c-amber)" stroke-width={Math.max(1.5, 7 * Math.min(1.4, enac * aldo))} opacity={0.75} />
+      <line x1={436} x2={162} y1={118} y2={140} stroke="var(--c-teal)" stroke-width={Math.max(1.5, 7 * Math.min(1.4, romk * aldo))} opacity={0.75} />
       <text x={300} y={168} text-anchor="middle" class="svg-small">
         lumen {(-15 - 35 * Math.min(1.2, voltage)).toFixed(0)} mV · secreting {secretion.toFixed(0)} mmol/day{anion ? ' · non-reabsorbable anion raises the voltage' : ''}
       </text>

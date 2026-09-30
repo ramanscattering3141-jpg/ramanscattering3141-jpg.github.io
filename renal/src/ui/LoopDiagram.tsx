@@ -21,12 +21,12 @@ export function LoopDiagram({ s, p, highlight }: { s: CCState; p: CCParams; high
   const w = 90;
   const box = (x: number, y: number, v: number, label?: string, stroke?: string) => (
     <g>
-      <rect x={x} y={y} width={w} height={h - 4} rx="6" fill={heat(v)} opacity="0.85" stroke={stroke ?? '#0b1b27'} stroke-width={stroke ? 2.5 : 1} />
-      <text x={x + w / 2} y={y + h / 2 + 2} text-anchor="middle" class="svg-value" style={{ fill: '#0b1b27', fontWeight: 700, fontSize: 13 }}>
+      <rect x={x} y={y} width={w} height={h - 4} rx="6" fill={heat(v)} opacity="0.85" stroke={stroke ?? 'var(--c-deep)'} stroke-width={stroke ? 2.5 : 1} />
+      <text x={x + w / 2} y={y + h / 2 + 2} text-anchor="middle" class="svg-value" style={{ fill: 'var(--c-deep)', fontWeight: 700, fontSize: 13 }}>
         {Math.round(v)}
       </text>
       {label && (
-        <text x={x + w / 2} y={y + h - 8} text-anchor="middle" style={{ fontSize: 8, fill: '#0b1b27' }}>
+        <text x={x + w / 2} y={y + h - 8} text-anchor="middle" style={{ fontSize: 8, fill: 'var(--c-deep)' }}>
           {label}
         </text>
       )}
@@ -52,36 +52,36 @@ export function LoopDiagram({ s, p, highlight }: { s: CCState; p: CCParams; high
         const y = top + i * h;
         return (
           <g key={i}>
-            {box(col.desc, y, s.desc[i], undefined, highlight === 'equilibrate' ? '#ffffff' : undefined)}
+            {box(col.desc, y, s.desc[i], undefined, highlight === 'equilibrate' ? 'var(--c-strong)' : undefined)}
             {box(col.int, y, inter[i], s.urea[i] > 20 ? `NaCl ${Math.round(s.nacl[i])} + urea ${Math.round(s.urea[i])}` : undefined)}
-            {box(col.asc, y, s.asc[i], undefined, highlight === 'pump' ? '#ffffff' : undefined)}
+            {box(col.asc, y, s.asc[i], undefined, highlight === 'pump' ? 'var(--c-strong)' : undefined)}
             {box(col.cd, y, s.cd[i])}
             {/* pump arrows */}
-            <path d={`M${col.asc - 4},${y + h / 2 - 2} L${col.int + w + 4},${y + h / 2 - 2}`} stroke={highlight === 'pump' ? '#f2b134' : '#f2b13488'} stroke-width="2" marker-end="url(#cc-arr)" />
-            <path d={`M${col.desc + w + 4},${y + h / 2 + 8} L${col.int - 4},${y + h / 2 + 8}`} stroke={highlight === 'equilibrate' ? '#6aa9e8' : '#6aa9e855'} stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#cc-arr-b)" />
+            <path d={`M${col.asc - 4},${y + h / 2 - 2} L${col.int + w + 4},${y + h / 2 - 2}`} stroke={highlight === 'pump' ? 'var(--c-amber)' : 'color-mix(in srgb, var(--c-amber) 53%, transparent)'} stroke-width="2" marker-end="url(#cc-arr)" />
+            <path d={`M${col.desc + w + 4},${y + h / 2 + 8} L${col.int - 4},${y + h / 2 + 8}`} stroke={highlight === 'equilibrate' ? 'var(--c-blue)' : 'color-mix(in srgb, var(--c-blue) 33%, transparent)'} stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#cc-arr-b)" />
           </g>
         );
       })}
       {/* hairpin */}
-      <path d={`M${col.desc + w / 2},${top + n * h} C${col.desc + w / 2},${top + n * h + 40} ${col.asc + w / 2},${top + n * h + 40} ${col.asc + w / 2},${top + n * h}`} fill="none" stroke={highlight === 'flow' ? '#ffffff' : '#7fd1c1'} stroke-width="3" marker-end="url(#cc-arr-w)" />
+      <path d={`M${col.desc + w / 2},${top + n * h} C${col.desc + w / 2},${top + n * h + 40} ${col.asc + w / 2},${top + n * h + 40} ${col.asc + w / 2},${top + n * h}`} fill="none" stroke={highlight === 'flow' ? 'var(--c-strong)' : 'var(--c-mint)'} stroke-width="3" marker-end="url(#cc-arr-w)" />
       <text x={(col.desc + col.asc + w) / 2} y={top + n * h + 55} text-anchor="middle" class="svg-label">
         hairpin: papilla ≈ {Math.round(inter[n - 1])} mOsm/kg · final urine {Math.round(s.cd[n - 1])}
       </text>
-      <text x={col.int + w + 6} y={top + 12} class="svg-label" style={{ fill: '#f2b134', fontSize: 9 }}>
+      <text x={col.int + w + 6} y={top + 12} class="svg-label" style={{ fill: 'var(--c-amber)', fontSize: 9 }}>
         NaCl
       </text>
-      <text x={col.desc + w + 6} y={top + 36} class="svg-label" style={{ fill: '#6aa9e8', fontSize: 9 }}>
+      <text x={col.desc + w + 6} y={top + 36} class="svg-label" style={{ fill: 'var(--c-blue)', fontSize: 9 }}>
         H₂O
       </text>
       <defs>
         <marker id="cc-arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="#f2b134" />
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--c-amber)" />
         </marker>
         <marker id="cc-arr-b" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="#6aa9e8" />
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--c-blue)" />
         </marker>
         <marker id="cc-arr-w" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="#7fd1c1" />
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--c-mint)" />
         </marker>
       </defs>
     </svg>

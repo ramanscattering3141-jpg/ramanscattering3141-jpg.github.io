@@ -60,8 +60,8 @@ function LoadTab() {
             </div>
           </Panel>
           <Panel title="Where the load went" note="Rose ch. 10: about 43% of an acute acid load is taken up by extracellular bicarbonate and 57% by cells and bone — and the cellular share rises as bicarbonate is used up.">
-            <BarRow label="Extracellular bicarbonate" value={Math.abs(r.extracellular)} max={Math.max(1, Math.abs(r.mmol))} unit=" mmol" color="#6aa9e8" sub={`${((Math.abs(r.extracellular) / Math.max(1, Math.abs(r.mmol))) * 100).toFixed(0)}%`} />
-            <BarRow label="Cells and bone" value={Math.abs(r.cellular)} max={Math.max(1, Math.abs(r.mmol))} unit=" mmol" color="#b08ee0" sub={`${((Math.abs(r.cellular) / Math.max(1, Math.abs(r.mmol))) * 100).toFixed(0)}%`} />
+            <BarRow label="Extracellular bicarbonate" value={Math.abs(r.extracellular)} max={Math.max(1, Math.abs(r.mmol))} unit=" mmol" color="var(--c-blue)" sub={`${((Math.abs(r.extracellular) / Math.max(1, Math.abs(r.mmol))) * 100).toFixed(0)}%`} />
+            <BarRow label="Cells and bone" value={Math.abs(r.cellular)} max={Math.max(1, Math.abs(r.mmol))} unit=" mmol" color="var(--c-violet)" sub={`${((Math.abs(r.cellular) / Math.max(1, Math.abs(r.mmol))) * 100).toFixed(0)}%`} />
             <p class="control-hint">
               Of the cellular share, roughly two-thirds is exchanged for Na⁺ and a third for K⁺, with a little chloride entering cells alongside H⁺ — which is why the plasma K⁺ rises in acidaemia and falls in alkalaemia.
             </p>
@@ -132,10 +132,10 @@ function OpenTab() {
         </div>
         <div>
           <Panel title="A buffer works best near its pKa" note="Titration of a phosphate buffer (pKa 6.80). The curve is flat within about one pH unit of the pKa and steep outside it — where a small amount of acid moves the pH a long way.">
-            <LineChart
+            <LineChart yLabel="pH"
               xLabel="strong acid added (mmol/L)"
-              series={[{ label: 'pH', points: curve.map((p) => ({ x: p.added, y: p.pH })), color: '#5ecfba' }]}
-              bands={[{ from: 5.8, to: 7.8, label: 'within 1 pH unit of the pKa: efficient buffering', color: '#5ecfba18' }]}
+              series={[{ label: 'pH', points: curve.map((p) => ({ x: p.added, y: p.pH })), color: 'var(--c-teal)' }]}
+              bands={[{ from: 5.8, to: 7.8, label: 'within 1 pH unit of the pKa: efficient buffering', color: 'color-mix(in srgb, var(--c-teal) 9%, transparent)' }]}
               height={230}
             />
           </Panel>
@@ -193,7 +193,7 @@ function MapTab() {
     for (const p of [7.0, 7.2, 7.4, 7.6]) {
       const pts = [];
       for (let c = 10; c <= 80; c += 2) pts.push({ x: c, y: 0.03 * c * Math.pow(10, p - 6.1) });
-      lines.push({ label: `pH ${p.toFixed(1)}`, points: pts, color: p === 7.4 ? '#5ecfba' : '#44607a', dashed: p !== 7.4 });
+      lines.push({ label: `pH ${p.toFixed(1)}`, points: pts, color: p === 7.4 ? 'var(--c-teal)' : 'var(--c-dim)', dashed: p !== 7.4 });
     }
     return lines;
   }, []);
@@ -221,9 +221,9 @@ function MapTab() {
       </div>
       <div>
         <Panel title="The acid–base map" note="Every point is one combination of bicarbonate and PCO₂; the diagonals are lines of equal pH. Compensation moves a patient along a line of shifting pH, never across one to the opposite side.">
-          <LineChart
+          <LineChart yLabel="Plasma HCO₃⁻ (mmol/L)"
             xLabel="PCO₂ (mmHg)"
-            series={[...isoLines, { label: 'this patient', points: [{ x: pco2, y: hco3 }], color: '#f2b134' }]}
+            series={[...isoLines, { label: 'this patient', points: [{ x: pco2, y: hco3 }], color: 'var(--c-amber)' }]}
             yMin={0}
             yMax={50}
             height={300}

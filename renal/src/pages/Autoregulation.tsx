@@ -108,13 +108,12 @@ export default function Autoregulation() {
             <LineChart
               xLabel="renal perfusion pressure (mmHg)"
               series={[
-                { label: 'GFR (mL/min)', points: curve.map((p) => ({ x: p.m, y: p.gfr })), color: '#5ecfba' },
-                { label: 'RBF ÷ 8 (mL/min)', points: curve.map((p) => ({ x: p.m, y: p.rbf / 8 })), color: '#6aa9e8' },
-                { label: 'normal GFR', points: normalCurve.map((p) => ({ x: p.m, y: p.gfr })), color: '#5ecfba', dashed: true },
-                { label: 'normal RBF ÷ 8', points: normalCurve.map((p) => ({ x: p.m, y: p.rbf / 8 })), color: '#6aa9e8', dashed: true },
+                { label: 'GFR, your settings', axis: 'GFR (mL/min)', points: curve.map((p) => ({ x: p.m, y: p.gfr })), color: 'var(--c-teal)' },
+                { label: 'GFR, normal kidney', axis: 'GFR (mL/min)', points: normalCurve.map((p) => ({ x: p.m, y: p.gfr })), color: 'var(--c-teal)', dashed: true },
+                { label: 'RBF, your settings', axis: 'Renal blood flow (mL/min)', points: curve.map((p) => ({ x: p.m, y: p.rbf })), color: 'var(--c-blue)' },
+                { label: 'RBF, normal kidney', axis: 'Renal blood flow (mL/min)', points: normalCurve.map((p) => ({ x: p.m, y: p.rbf })), color: 'var(--c-blue)', dashed: true },
               ]}
               yMin={0}
-              yMax={Math.max(260, ...curve.map((p) => Math.max(p.gfr, p.rbf / 8)))}
               marker={s.map}
               height={260}
             />

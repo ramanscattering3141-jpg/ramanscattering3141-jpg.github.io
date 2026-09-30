@@ -69,11 +69,11 @@ function StagesTab() {
         </div>
         <div>
           <Panel title="Whole-kidney GFR against nephron mass" note="The dashed line is what filtration would be if each nephron kept its normal rate; the curve stays above it because the survivors hyperfilter.">
-            <LineChart
+            <LineChart yLabel="GFR (mL/min)"
               xLabel="nephrons remaining (%)"
               series={[
-                { label: 'eGFR', points: pts((e) => e.derived.eGFR), color: '#5ecfba' },
-                { label: 'if no adaptation', points: pts((e) => 120 * e.params.nephronFraction), color: '#8b98a5', dashed: true },
+                { label: 'eGFR', points: pts((e) => e.derived.eGFR), color: 'var(--c-teal)' },
+                { label: 'if no adaptation', points: pts((e) => 120 * e.params.nephronFraction), color: 'var(--ink-faint)', dashed: true },
               ]}
               marker={cur ? cur.params.nephronFraction * 100 : undefined}
               xFormat={(x) => x.toFixed(0)}
@@ -85,8 +85,8 @@ function StagesTab() {
             <LineChart
               xLabel="nephrons remaining (%)"
               series={[
-                { label: 'creatinine (µmol/L)', points: pts((e) => si.creat(e.body.creat)), color: '#e07b6a' },
-                { label: 'single-nephron GFR (nL/min)', points: pts((e) => e.kidney.singleNephronGFR), color: '#f2b134' },
+                { label: 'creatinine', axis: 'Serum creatinine (µmol/L)', points: pts((e) => si.creat(e.body.creat)), color: 'var(--c-coral)' },
+                { label: 'single-nephron GFR', axis: 'Single-nephron GFR (nL/min)', points: pts((e) => e.kidney.singleNephronGFR), color: 'var(--c-amber)' },
               ]}
               marker={cur ? cur.params.nephronFraction * 100 : undefined}
               xFormat={(x) => x.toFixed(0)}

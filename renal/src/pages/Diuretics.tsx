@@ -67,7 +67,7 @@ export default function Diuretics({ query }: { query: URLSearchParams }) {
         />
         <Sources cite={{ rose: [15, 4, 5, 8], evidence: 'clinical', refs: ['brater1998', 'wilcox1983', 'loon1989', 'kaissling1988', 'felker2011dose', 'mullens2022advor', 'trullas2023clorotic'] }} />
       </Panel>
-      <Related paths={['/edema', '/transport', '/loop', '/distal', '/hypokalemia', '/metabolic-alkalosis']} />
+      <Related paths={['/drug-map', '/edema', '/transport', '/loop', '/distal', '/hypokalemia', '/metabolic-alkalosis']} />
     </div>
   );
 }
@@ -165,12 +165,12 @@ function Classes() {
                   value={nowPct}
                   max={85}
                   unit="% of filtered Na⁺"
-                  color={marks[id] ? '#b08ee0' : nowPct > wasPct * 1.15 ? '#7bc47f' : '#6aa9e8'}
+                  color={marks[id] ? 'var(--c-violet)' : nowPct > wasPct * 1.15 ? 'var(--c-green)' : 'var(--c-blue)'}
                   sub={`normally ${wasPct.toFixed(1)}%${nowPct > wasPct * 1.15 ? ' — compensating' : ''}`}
                 />
               );
             })}
-            <BarRow label="Excreted" value={ev.derived.FENa} max={85} unit="% of filtered Na⁺" color="#f2b134" sub={`normally ${normal.derived.FENa.toFixed(2)}%`} />
+            <BarRow label="Excreted" value={ev.derived.FENa} max={85} unit="% of filtered Na⁺" color="var(--c-amber)" sub={`normally ${normal.derived.FENa.toFixed(2)}%`} />
           </Panel>
           <Panel title="Rose Table 15-1">
             <div class="table-wrap">
@@ -288,26 +288,26 @@ function TimeCourse() {
         <div>
           <Panel title="Sodium excretion, six hours at a time" note="Rose Fig. 15-1. The dashed line is intake; the blocks below it are the retention that cancels the diuresis.">
             {blocks.map((b) => (
-              <BarRow key={b.label} label={b.label} value={b.mean} max={Math.max(diet * 1.4, ...blocks.map((x) => x.mean))} unit=" mmol/day rate" color={b.mean > diet ? '#7bc47f' : '#e07b6a'} sub={b.mean > diet ? 'above intake — losing sodium' : 'below intake — retaining'} />
+              <BarRow key={b.label} label={b.label} value={b.mean} max={Math.max(diet * 1.4, ...blocks.map((x) => x.mean))} unit=" mmol/day rate" color={b.mean > diet ? 'var(--c-green)' : 'var(--c-coral)'} sub={b.mean > diet ? 'above intake — losing sodium' : 'below intake — retaining'} />
             ))}
-            <BarRow label="Sodium intake" value={diet} max={Math.max(diet * 1.4, ...blocks.map((x) => x.mean))} unit=" mmol/day" color="#8aa4b8" />
+            <BarRow label="Sodium intake" value={diet} max={Math.max(diet * 1.4, ...blocks.map((x) => x.mean))} unit=" mmol/day" color="var(--ink-faint)" />
           </Panel>
           <Panel title="Four days" note="Excretion as a six-hourly mean, the way Rose's figure plots it. The instantaneous peak is many times higher and lasts minutes; what determines balance is the area.">
             {points && (
-              <LineChart
+              <LineChart yLabel="Na⁺ (mmol/day)"
                 xLabel="days"
                 series={[
-                  { label: 'Na⁺ excretion, 6-hourly mean', points: sixHourly(points), color: '#f2b134' },
-                  { label: 'Na⁺ intake', points: points.map((p) => ({ x: p.day, y: diet })), color: '#8aa4b8' },
+                  { label: 'Na⁺ excretion, 6-hourly mean', points: sixHourly(points), color: 'var(--c-amber)' },
+                  { label: 'Na⁺ intake', points: points.map((p) => ({ x: p.day, y: diet })), color: 'var(--ink-faint)' },
                 ] as Series[]}
                 yMin={0}
                 height={200}
               />
             )}
             {points && (
-              <LineChart
+              <LineChart yLabel="Cumulative Na⁺ balance (mmol)"
                 xLabel="days"
-                series={[{ label: 'Cumulative Na⁺ balance (mmol)', points: points.map((p) => ({ x: p.day, y: p.naBalance })), color: '#6aa9e8' }] as Series[]}
+                series={[{ label: 'Cumulative Na⁺ balance (mmol)', points: points.map((p) => ({ x: p.day, y: p.naBalance })), color: 'var(--c-blue)' }] as Series[]}
                 height={170}
               />
             )}
@@ -501,8 +501,8 @@ function Resistance() {
         </div>
         <div>
           <Panel title="Why adding a thiazide to a loop diuretic works" note="Raise the distal adaptation slider — the thiazide's contribution grows, because it is now blocking a segment doing more work.">
-            <BarRow label="Loop alone" value={loopOnly.derived.FENa} max={Math.max(6, ev.derived.FENa * 1.2)} unit="% FENa" color="#6aa9e8" />
-            <BarRow label="The regimen you built" value={ev.derived.FENa} max={Math.max(6, ev.derived.FENa * 1.2)} unit="% FENa" color="#7bc47f" />
+            <BarRow label="Loop alone" value={loopOnly.derived.FENa} max={Math.max(6, ev.derived.FENa * 1.2)} unit="% FENa" color="var(--c-blue)" />
+            <BarRow label="The regimen you built" value={ev.derived.FENa} max={Math.max(6, ev.derived.FENa * 1.2)} unit="% FENa" color="var(--c-green)" />
             <p class="control-hint">
               Increased delivery past the loop causes distal hypertrophy and a rise in Na⁺-K⁺-ATPase activity. In one study the natriuretic response to an added thiazide was about 20% greater in
               patients pre-treated with furosemide than in those given placebo.

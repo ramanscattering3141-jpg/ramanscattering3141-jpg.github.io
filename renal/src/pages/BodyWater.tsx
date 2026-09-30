@@ -34,13 +34,13 @@ function CompartmentBars(props: { icf0: number; ecf0: number; icf: number; ecf: 
 type Tab = 'compartments' | 'starling';
 
 const ADDITIONS: { label: string; patch: Partial<CompartmentInput>; explain: string }[] = [
-  { label: 'Add 420 mOsm NaCl', patch: { nacl: 210 }, explain: 'The book’s example: the salt stays outside cells, osmolality rises to 290, ~0.9 L of water leaves the cells and plasma Na⁺ rises to ~145. Both compartments end up hypertonic.' },
-  { label: 'Drink 1.5 L water', patch: { water: 1.5 }, explain: 'Water distributes in proportion to the compartments: ~60% ends up inside cells. Osmolality ≈270, Na⁺ ≈135.' },
-  { label: 'Infuse 1.5 L saline', patch: { saline: 1.5 }, explain: 'No change in osmolality, so no water crosses cell membranes: all 1.5 L stays extracellular (about ¼ in plasma).' },
-  { label: 'Lose 1.5 L isotonic fluid', patch: { saline: -1.5 }, explain: 'Diarrhoea or bleeding: ECF shrinks, ICF and Na⁺ unchanged. Plasma Na⁺ says nothing about this volume loss.' },
-  { label: 'Lose 300 mmol K⁺', patch: { kLoss: 300 }, explain: 'Edelman: Na⁺ ≈ (Na⁺e + K⁺e)/TBW. Losing cell K⁺ lowers osmolality and plasma Na⁺ even though no Na⁺ was lost — water moves from cells to the ECF.' },
+  { label: 'Add 600 mOsm NaCl', patch: { nacl: 300 }, explain: 'The salt stays outside cells: 16,800 + 600 = 17,400 mOsm in 60 L, so osmolality rises from 280 to 290. About 1.4 L of water leaves the cells (ICF 40 → 38.6 L, ECF 20 → 21.4 L) and plasma Na⁺ rises to ~145. Both compartments end up hypertonic. (Rose’s version: 420 mOsm in a 70 kg man.)' },
+  { label: 'Drink 3 L water', patch: { water: 3 }, explain: 'Water distributes in proportion to the compartments: two-thirds (2 L) ends up inside cells and one-third (1 L) outside, only ¼ L of it in the plasma. 16,800 mOsm in 63 L: osmolality ≈267, Na⁺ ≈133.' },
+  { label: 'Infuse 3 L saline', patch: { saline: 3 }, explain: 'No change in osmolality, so no water crosses cell membranes: all 3 L stays extracellular, and at equilibrium only about ¼ (0.75 L) is still in the plasma. The IV fluids lab follows this over time and in illness.' },
+  { label: 'Lose 3 L isotonic fluid', patch: { saline: -3 }, explain: 'Diarrhoea or bleeding: ECF shrinks, ICF and Na⁺ unchanged. Plasma Na⁺ says nothing about this volume loss.' },
+  { label: 'Lose 300 mmol K⁺', patch: { kLoss: 300 }, explain: 'Edelman: Na⁺ ≈ (Na⁺e + K⁺e)/TBW. Losing 300 mmol of cell K⁺ (600 mOsm with its anion) takes osmolality from 280 to 270 and plasma Na⁺ to 135, although no Na⁺ was lost — water moves from cells to the ECF.' },
   { label: 'Glucose, no insulin', patch: { glucose: 1000 }, explain: 'Glucose is an effective extracellular osmole without insulin: water leaves cells, the ECF expands and its Na⁺ is diluted, although total osmolality is high (translocational hyponatraemia).' },
-  { label: 'Urea 1000 mmol', patch: { urea: 1000 }, explain: 'Urea enters cells: 1000 mmol spread through 42 L raises measured osmolality ~24 mOsm/kg but tonicity, volumes and Na⁺ do not change.' },
+  { label: 'Urea 1000 mmol', patch: { urea: 1000 }, explain: 'Urea enters cells: 1000 mmol spread through 60 L raises measured osmolality ~17 mOsm/kg but tonicity, volumes and Na⁺ do not change.' },
   { label: 'Mannitol', patch: { mannitol: 600 }, explain: 'Mannitol stays extracellular: like glucose without insulin it pulls water from cells (the basis for its use in cerebral oedema) and lowers Na⁺; the osmolal gap rises.' },
 ];
 
@@ -85,7 +85,7 @@ export default function BodyWater() {
           <div class="grid grid-sidebar">
             <div>
               <Panel title="Person">
-                <Slider label="Weight" value={c.weight} min={40} max={120} unit="kg" onInput={(v) => upC({ weight: v })} />
+                <Slider label="Weight" value={c.weight} min={40} max={150} unit="kg" hint="starts at 100 kg: 60 L of water, 40 L in cells, 20 L outside (15 L interstitial, 5 L plasma)" onInput={(v) => upC({ weight: v })} />
                 <Slider label="Water fraction" value={c.waterFraction} min={0.4} max={0.65} step={0.01} unit="" hint="≈0.6 men, 0.5 women, less with age and obesity" onInput={(v) => upC({ waterFraction: v })} />
                 <Slider label="Starting plasma Na⁺" value={c.na0} min={115} max={165} unit="mmol/L" onInput={(v) => upC({ na0: v })} />
               </Panel>
@@ -216,9 +216,9 @@ export default function BodyWater() {
                 </p>
               </Panel>
               <Panel title="How much each safety factor is contributing">
-                <BarRow label="Extra lymph flow" value={st.safety.lymph * 100} max={200} unit="% above normal" color="#6aa9e8" />
-                <BarRow label="Fall in interstitial oncotic pressure" value={st.safety.oncotic} max={10} unit="mmHg" color="#b08ee0" />
-                <BarRow label="Rise in interstitial hydraulic pressure" value={st.safety.pressure} max={10} unit="mmHg" color="#e0a060" />
+                <BarRow label="Extra lymph flow" value={st.safety.lymph * 100} max={200} unit="% above normal" color="var(--c-blue)" />
+                <BarRow label="Fall in interstitial oncotic pressure" value={st.safety.oncotic} max={10} unit="mmHg" color="var(--c-violet)" />
+                <BarRow label="Rise in interstitial hydraulic pressure" value={st.safety.pressure} max={10} unit="mmHg" color="var(--c-orange)" />
               </Panel>
               <div class="grid grid-2">
                 <Panel title="Why hypertension does not cause oedema">
@@ -256,7 +256,7 @@ export default function BodyWater() {
       )}
       <Panel title="The five questions">
         <FiveQuestions
-          normal={<p>All compartments share one osmolality (≈280–290). ECF ≈ 40% of body water, ICF ≈ 60%; plasma is ¼ of the ECF. Capillary filtration slightly exceeds reabsorption and lymph returns the rest.</p>}
+          normal={<p>All compartments share one osmolality (≈280–290). In round numbers for a 100 kg person: 60 L of water, ⅔ (40 L) in cells, ⅓ (20 L) outside them, and of that 15 L interstitial and 5 L plasma. Capillary filtration slightly exceeds reabsorption and lymph returns the rest.</p>}
           why={<p>The Na⁺-K⁺-ATPase keeps Na⁺ salts outside cells and K⁺ salts inside, making each an effective osmole for its compartment. At the capillary, only protein is effective.</p>}
           change={<p>Hypertonic solute confined to the ECF shrinks cells; water swells everything; isotonic saline expands only the ECF. Venous pressure and oncotic pressure shift fluid between plasma and interstitium.</p>}
           abnormal={<p>Water retention (ADH) → hyponatraemia; lack of access to water → hypernatraemia; hyperglycaemia → translocational hyponatraemia; exhausted safety factors → oedema.</p>}

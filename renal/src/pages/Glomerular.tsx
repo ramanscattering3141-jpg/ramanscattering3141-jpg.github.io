@@ -42,10 +42,10 @@ function BarrierTab() {
         </div>
         <div>
           <Panel title="Where filtration selectivity comes from">
-            <BarRow label="Water, ions, glucose, urea" value={100} max={100} unit="% filtered" color="#5ecfba" sub="freely filtered, then handled by the tubule" />
-            <BarRow label="Small proteins (β₂-microglobulin)" value={90} max={100} unit="%" color="#6aa9e8" sub="filtered, then reabsorbed proximally" />
-            <BarRow label="Albumin (69 kDa, anionic)" value={1} max={100} unit="%" color="#f2b134" sub="size + charge: almost entirely retained" />
-            <BarRow label="Immunoglobulin (150 kDa)" value={0.1} max={100} unit="%" color="#e07b6a" sub="too large to pass an intact barrier" />
+            <BarRow label="Water, ions, glucose, urea" value={100} max={100} unit="% filtered" color="var(--c-teal)" sub="freely filtered, then handled by the tubule" />
+            <BarRow label="Small proteins (β₂-microglobulin)" value={90} max={100} unit="%" color="var(--c-blue)" sub="filtered, then reabsorbed proximally" />
+            <BarRow label="Albumin (69 kDa, anionic)" value={1} max={100} unit="%" color="var(--c-amber)" sub="size + charge: almost entirely retained" />
+            <BarRow label="Immunoglobulin (150 kDa)" value={0.1} max={100} unit="%" color="var(--c-coral)" sub="too large to pass an intact barrier" />
           </Panel>
           <Panel title="Two ways the glomerulus fails">
             <p class="muted" style={{ fontSize: '0.9rem', marginTop: 0, lineHeight: 1.7 }}>

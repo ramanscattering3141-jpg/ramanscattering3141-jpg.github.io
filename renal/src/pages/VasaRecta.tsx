@@ -108,13 +108,13 @@ export default function VasaRecta() {
         </div>
         <div>
           <Panel title="Osmolality in the vasa recta and interstitium" note="Descending blood gains solute and loses water; ascending blood gives the solute back. With a hairpin, blood returns to the cortex only slightly hypertonic (~325 mOsm/kg).">
-            <LineChart
+            <LineChart yLabel="Osmolality (mOsm/kg)"
               xLabel="depth: cortex (0) → papilla (100)"
               series={[
-                { label: 'Interstitium', points: depth(inter), color: '#f2b134' },
-                { label: 'Descending vasa recta', points: depth(dvr), color: '#e4696b' },
-                { label: 'Ascending vasa recta', points: depth(avr), color: '#6aa9e8' },
-                { label: 'Normal interstitium', points: depth(interstitium(normal)), color: '#f2b134', dashed: true },
+                { label: 'Interstitium', points: depth(inter), color: 'var(--c-amber)' },
+                { label: 'Descending vasa recta', points: depth(dvr), color: 'var(--c-red)' },
+                { label: 'Ascending vasa recta', points: depth(avr), color: 'var(--c-blue)' },
+                { label: 'Normal interstitium', points: depth(interstitium(normal)), color: 'var(--c-amber)', dashed: true },
               ]}
               yMin={200}
               height={250}
@@ -122,7 +122,7 @@ export default function VasaRecta() {
           </Panel>
           <div class="grid grid-2">
             <Panel title="Whole-kidney model: papillary osmolality vs medullary flow" note="From the integrated nephron model with maximal ADH.">
-              <LineChart xLabel="medullary blood flow (× normal)" series={[{ label: 'Papillary osmolality', points: sweep, color: '#f2b134' }]} marker={flow} />
+              <LineChart yLabel="Papillary osmolality (mOsm/kg)" xLabel="medullary blood flow (× normal)" series={[{ label: 'Papillary osmolality', points: sweep, color: 'var(--c-amber)' }]} marker={flow} />
             </Panel>
             <Panel title="Why flow washes out the gradient">
               <Chain

@@ -8,56 +8,94 @@ import { useMode } from '../ui/mode';
 import type { ProfilePoint } from '../engine/glomerulus';
 
 function ProfileChart({ profile, base }: { profile: ProfilePoint[]; base?: ProfilePoint[] }) {
-  const W = 600;
-  const H = 230;
-  const pad = { l: 42, r: 14, t: 12, b: 30 };
+  const W = 640;
+  const H = 290;
+  const pad = { l: 52, r: 16, t: 30, b: 48 };
   const yMax = 80;
   const sx = (x: number) => pad.l + x * (W - pad.l - pad.r);
   const sy = (y: number) => H - pad.b - (Math.max(0, Math.min(yMax, y)) / yMax) * (H - pad.t - pad.b);
   const resist = profile.map((p) => ({ x: p.x, y: p.Pbs + p.pi }));
   const area = profile.map((p) => `${sx(p.x)},${sy(p.Pgc)}`).join(' ') + ' ' + [...resist].reverse().map((p) => `${sx(p.x)},${sy(Math.min(p.y, profile[0].Pgc))}`).join(' ');
-  const eq = profile.find((p) => p.nfp <= 0.5);
+  const eq = profile.find((p) => p.nfp <= 0.5 && p.x < 0.98);
+  const axis = 'color-mix(in srgb, var(--mix) 40%, transparent)';
+  // Label the net filtration pressure where the gap is widest (the afferent end).
+  const mid = profile[Math.min(profile.length - 1, Math.round(profile.length * 0.08))];
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Pressures along the glomerular capillary">
-      {[0, 20, 40, 60, 80].map((y) => (
-        <g key={y}>
-          <line x1={pad.l} x2={W - pad.r} y1={sy(y)} y2={sy(y)} stroke="#ffffff12" />
-          <text x={pad.l - 6} y={sy(y) + 3} class="svg-label" text-anchor="end">
-            {y}
+    <figure>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Pressure (mmHg) against position along the glomerular capillary">
+        {[0, 20, 40, 60, 80].map((y) => (
+          <g key={y}>
+            <line x1={pad.l} x2={W - pad.r} y1={sy(y)} y2={sy(y)} stroke="color-mix(in srgb, var(--mix) 9%, transparent)" />
+            <text x={pad.l - 7} y={sy(y) + 4} class="svg-label" text-anchor="end">
+              {y}
+            </text>
+          </g>
+        ))}
+        {[0, 0.25, 0.5, 0.75, 1].map((x) => (
+          <g key={x}>
+            <line x1={sx(x)} x2={sx(x)} y1={H - pad.b} y2={H - pad.b + 4} stroke={axis} />
+            <text x={sx(x)} y={H - pad.b + 17} class="svg-label" text-anchor={x === 0 ? 'start' : x === 1 ? 'end' : 'middle'}>
+              {x === 0 ? '0% (afferent end)' : x === 1 ? '100% (efferent end)' : `${x * 100}%`}
+            </text>
+          </g>
+        ))}
+        <polygon points={area} fill="color-mix(in srgb, var(--c-teal) 22%, transparent)" />
+        {base && (
+          <>
+            <polyline points={base.map((p) => `${sx(p.x)},${sy(p.Pgc)}`).join(' ')} fill="none" stroke="var(--c-red)" stroke-dasharray="4 4" opacity="0.5" />
+            <polyline points={base.map((p) => `${sx(p.x)},${sy(p.Pbs + p.pi)}`).join(' ')} fill="none" stroke="var(--c-blue)" stroke-dasharray="4 4" opacity="0.5" />
+          </>
+        )}
+        <polyline points={profile.map((p) => `${sx(p.x)},${sy(p.Pgc)}`).join(' ')} fill="none" stroke="var(--c-red)" stroke-width="2.6" />
+        <polyline points={resist.map((p) => `${sx(p.x)},${sy(p.y)}`).join(' ')} fill="none" stroke="var(--c-blue)" stroke-width="2.6" />
+        <polyline points={profile.map((p) => `${sx(p.x)},${sy(p.Pbs)}`).join(' ')} fill="none" stroke="var(--ink-dim)" stroke-width="1.4" stroke-dasharray="2 3" />
+        {mid && mid.nfp > 3 && (
+          <text x={sx(mid.x) + 6} y={(sy(mid.Pgc) + sy(mid.Pbs + mid.pi)) / 2 + 4} class="svg-label svg-halo" style={{ fill: 'var(--c-teal)', fontWeight: 600 }}>
+            net filtration pressure {mid.nfp.toFixed(0)} mmHg
           </text>
-        </g>
-      ))}
-      <polygon points={area} fill="#5ecfba33" />
-      {base && (
-        <>
-          <polyline points={base.map((p) => `${sx(p.x)},${sy(p.Pgc)}`).join(' ')} fill="none" stroke="#e4696b" stroke-dasharray="4 4" opacity="0.5" />
-          <polyline points={base.map((p) => `${sx(p.x)},${sy(p.Pbs + p.pi)}`).join(' ')} fill="none" stroke="#6aa9e8" stroke-dasharray="4 4" opacity="0.5" />
-        </>
-      )}
-      <polyline points={profile.map((p) => `${sx(p.x)},${sy(p.Pgc)}`).join(' ')} fill="none" stroke="#e4696b" stroke-width="2.4" />
-      <polyline points={resist.map((p) => `${sx(p.x)},${sy(p.y)}`).join(' ')} fill="none" stroke="#6aa9e8" stroke-width="2.4" />
-      <polyline points={profile.map((p) => `${sx(p.x)},${sy(p.Pbs)}`).join(' ')} fill="none" stroke="#a3b9c9" stroke-width="1.2" stroke-dasharray="2 3" />
-      {eq && (
-        <g>
-          <line x1={sx(eq.x)} x2={sx(eq.x)} y1={pad.t} y2={H - pad.b} stroke="#f2b134" stroke-dasharray="3 3" />
-          <text x={eq.x > 0.6 ? sx(eq.x) - 4 : sx(eq.x) + 4} y={pad.t + 12} text-anchor={eq.x > 0.6 ? 'end' : 'start'} class="svg-label" style={{ fill: '#f2b134' }}>
-            filtration equilibrium ({Math.round(eq.x * 100)}% along)
+        )}
+        {!eq && (
+          <text x={W - pad.r - 4} y={pad.t + 12} text-anchor="end" class="svg-label svg-halo" style={{ fill: 'var(--c-amber)', fontWeight: 600 }}>
+            no equilibrium: still filtering at the efferent end
           </text>
-        </g>
-      )}
-      <text x={W - pad.r} y={sy(profile[0].Pgc) - 6} class="svg-label" text-anchor="end" style={{ fill: '#e4696b' }}>
-        Pgc (glomerular capillary hydraulic pressure)
-      </text>
-      <text x={W - pad.r} y={Math.min(H - pad.b - 4, sy(resist[resist.length - 1].y) + 14)} class="svg-label" text-anchor="end" style={{ fill: '#6aa9e8' }}>
-        Pbs + π (forces opposing filtration)
-      </text>
-      <text x={(W + pad.l) / 2} y={H - 6} class="svg-label" text-anchor="middle">
-        distance along the glomerular capillary: afferent → efferent end (shaded = net filtration pressure)
-      </text>
-      <text x={12} y={pad.t + 4} class="svg-label" transform={`rotate(-90 12 ${pad.t + 60})`}>
-        mmHg
-      </text>
-    </svg>
+        )}
+        {eq && (
+          <g>
+            <line x1={sx(eq.x)} x2={sx(eq.x)} y1={pad.t} y2={H - pad.b} stroke="var(--c-amber)" stroke-dasharray="3 3" />
+            <text x={eq.x > 0.6 ? sx(eq.x) - 5 : sx(eq.x) + 5} y={pad.t + 12} text-anchor={eq.x > 0.6 ? 'end' : 'start'} class="svg-label svg-halo" style={{ fill: 'var(--c-amber)', fontWeight: 600 }}>
+              filtration stops here ({Math.round(eq.x * 100)}% along)
+            </text>
+          </g>
+        )}
+        <line x1={pad.l} x2={W - pad.r} y1={H - pad.b} y2={H - pad.b} stroke={axis} />
+        <line x1={pad.l} x2={pad.l} y1={pad.t - 6} y2={H - pad.b} stroke={axis} />
+        <text x={pad.l - 7} y={14} class="svg-label axis-title">
+          ↑ Pressure (mmHg)
+        </text>
+        <text x={(W + pad.l) / 2} y={H - 6} class="svg-label axis-title" text-anchor="middle">
+          Position along the glomerular capillary (% of its length) →
+        </text>
+      </svg>
+      <div class="legend-row" style={{ marginTop: 4 }}>
+        <span>
+          <i style={{ background: 'var(--c-red)' }} /> Pgc: hydraulic pressure in the capillary, pushing fluid out
+        </span>
+        <span>
+          <i style={{ background: 'var(--c-blue)' }} /> Pbs + π: Bowman&apos;s space pressure plus plasma oncotic pressure, holding fluid in
+        </span>
+        <span>
+          <i style={{ background: 'var(--ink-dim)', height: 3 }} /> Pbs alone
+        </span>
+        <span>
+          <i style={{ background: 'color-mix(in srgb, var(--c-teal) 45%, transparent)' }} /> shaded gap = net filtration pressure
+        </span>
+        {base && (
+          <span>
+            <i style={{ background: 'transparent', borderTop: '2px dashed var(--ink-faint)', height: 0 }} /> dashed = normal kidney
+          </span>
+        )}
+      </div>
+    </figure>
   );
 }
 
@@ -135,7 +173,7 @@ export default function Gfr() {
           </Panel>
         </div>
         <div>
-          <Panel title="Forces along the glomerular capillary" note="Hydraulic pressure stays nearly flat; oncotic pressure climbs as protein-free fluid leaves. Filtration stops where the curves meet. Dashed lines show the normal profile.">
+          <Panel title="Forces along the glomerular capillary" note="Read left to right as blood travels from the afferent to the efferent end of one glomerular capillary. The hydraulic pressure pushing fluid out (red) stays nearly flat. The pressure holding fluid in (blue) climbs, because protein-free fluid leaves and the plasma proteins left behind become more concentrated. Filtration stops where the two meet.">
             <ProfileChart profile={profile} base={base.profile} />
             <FiltrationAnimation profile={profile} flow={g.RPF / base.RPF} barrierLeak={0} />
           </Panel>

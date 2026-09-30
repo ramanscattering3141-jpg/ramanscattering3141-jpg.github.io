@@ -43,7 +43,7 @@ export default function Adh() {
       const q = osmoregulation({ ...s, effOsm: o });
       adh.push({ x: o, y: q.adh });
       thirst.push({ x: o, y: q.thirst });
-      uosm.push({ x: o, y: Math.min(1400, 60 + 1340 * q.aqp2) / 100 });
+      uosm.push({ x: o, y: Math.min(1400, 60 + 1340 * q.aqp2) });
     }
     return { adh, thirst, uosm };
   }, [s]);
@@ -93,14 +93,14 @@ export default function Adh() {
             <LineChart
               xLabel="effective plasma osmolality (mOsm/kg)"
               series={[
-                { label: 'ADH (pmol/L)', points: curves.adh.map((p) => ({ x: p.x, y: si.adh(p.y) })), color: '#5ecfba' },
-                { label: 'Thirst (L/day ÷ 4)', points: curves.thirst.map((p) => ({ x: p.x, y: p.y / 4 })), color: '#f2b134' },
-                { label: 'Urine osmolality ÷ 100', points: curves.uosm, color: '#6aa9e8', dashed: true },
+                { label: 'ADH', axis: 'Plasma ADH (pmol/L)', points: curves.adh.map((p) => ({ x: p.x, y: si.adh(p.y) })), color: 'var(--c-teal)' },
+                { label: 'Thirst', axis: 'Thirst: water drunk (L/day)', points: curves.thirst, color: 'var(--c-amber)' },
+                { label: 'Urine osmolality', axis: 'Urine osmolality (mOsm/kg)', points: curves.uosm, color: 'var(--c-blue)', dashed: true },
               ]}
               yMin={0}
               marker={s.effOsm}
               height={250}
-              bands={[{ from: 0, to: 0.5, label: 'ADH absent: maximally dilute urine', color: '#6aa9e820' }]}
+              bands={[{ from: 0, to: 0.5, label: 'ADH absent: maximally dilute urine', color: 'color-mix(in srgb, var(--c-blue) 13%, transparent)' }]}
             />
           </Panel>
           <div class="grid grid-2">

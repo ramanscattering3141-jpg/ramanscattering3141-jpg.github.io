@@ -40,9 +40,10 @@ export default function NephronExplorer({ query }: { query: URLSearchParams }) {
   return (
     <div>
       <PageHead path="/nephron" lede="A juxtamedullary nephron with its blood supply. Click any segment, vessel or cell group. Numbers beside each segment show the share of filtered water still in the tubule as fluid leaves it, and its osmolality (mOsm/kg), in a normally hydrated adult." />
-      <div class="grid grid-main-side" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.15fr)' }}>
+      <div class="grid grid-main-side" style={{ gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)' }}>
+        <div class="sticky-figure">
         <Panel>
-          <NephronDiagram selected={sel} onSelect={setSel} notes={notes} medullaOsm={ev.kidney.medullaTarget} />
+          <NephronDiagram selected={sel} onSelect={setSel} notes={notes} medullaOsm={ev.kidney.medullaTarget} height="calc(100vh - 150px)" />
           <div class="chips">
             {[...SEGMENTS, 'glomerulus', 'bowman', 'afferent', 'efferent', 'maculaDensa', 'jgCells', 'mesangium', 'peritubular', 'vasaRecta', 'renalArtery', 'renalVein'].map((id) => (
               <button key={id} class={sel === id ? 'active' : ''} style={{ fontSize: '0.75rem', padding: '2px 8px' }} onClick={() => setSel(id as StructureId)}>
@@ -51,6 +52,7 @@ export default function NephronExplorer({ query }: { query: URLSearchParams }) {
             ))}
           </div>
         </Panel>
+        </div>
         <div>
           {seg && (
             <Panel title={SEGMENT_INFO[seg].name} actions={<a href={href('/transport', { s: seg })}>Open in transport lab →</a>}>

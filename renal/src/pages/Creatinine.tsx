@@ -119,13 +119,13 @@ export default function Creatinine() {
           </Panel>
         </div>
         <div>
-          <Panel title="Three weeks of serum creatinine" note="The true GFR (scaled into the same chart as GFR × 5) changes instantly; creatinine follows over days. The eGFR calculated from each day's creatinine is shown for comparison.">
+          <Panel title="Three weeks of serum creatinine" note="The true GFR changes instantly; creatinine follows over days. The eGFR calculated from each day's creatinine is shown for comparison: it lags the true GFR for the same reason.">
             <LineChart
               xLabel="day"
               series={[
-                { label: 'Serum creatinine (µmol/L)', points: k.pts.map((p) => ({ x: p.day, y: p.pcr })), color: '#f2b134' },
-                { label: 'True GFR × 5', points: k.pts.map((p) => ({ x: p.day, y: p.gfr * 5 })), color: '#5ecfba' },
-                { label: 'eGFR from that day’s creatinine × 5', points: k.pts.map((p) => ({ x: p.day, y: Math.min(p.egfr, 160) * 5 })), color: '#6aa9e8', dashed: true },
+                { label: 'Serum creatinine', axis: 'Serum creatinine (µmol/L)', points: k.pts.map((p) => ({ x: p.day, y: p.pcr })), color: 'var(--c-amber)' },
+                { label: 'True GFR', axis: 'GFR (mL/min)', points: k.pts.map((p) => ({ x: p.day, y: p.gfr })), color: 'var(--c-teal)' },
+                { label: 'eGFR from that day’s creatinine', axis: 'GFR (mL/min)', points: k.pts.map((p) => ({ x: p.day, y: Math.min(p.egfr, 160) })), color: 'var(--c-blue)', dashed: true },
               ]}
               yMin={0}
               height={250}
@@ -141,11 +141,11 @@ export default function Creatinine() {
           </Panel>
           <div class="grid grid-2">
             <Panel title="The steady-state hyperbola" note="Solid: this patient (filtration plus secretion). Dashed: if creatinine were only filtered. Production shifts the whole curve.">
-              <LineChart
+              <LineChart yLabel="Steady-state serum creatinine (µmol/L)"
                 xLabel="GFR (mL/min)"
                 series={[
-                  { label: 'with secretion', points: hyper, color: '#f2b134' },
-                  { label: 'filtration only', points: pureFiltration, color: '#f2b134', dashed: true },
+                  { label: 'with secretion', points: hyper, color: 'var(--c-amber)' },
+                  { label: 'filtration only', points: pureFiltration, color: 'var(--c-amber)', dashed: true },
                 ]}
                 yMin={0}
                 yMax={Math.min(1300, Math.max(350, k.ssNew * 1.3))}

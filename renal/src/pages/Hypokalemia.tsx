@@ -178,10 +178,10 @@ function CausesTab() {
           {!hidden && (
             <div class="grid grid-2">
               <Panel title="Plasma K⁺ over time">
-                <LineChart xLabel="days" series={[{ label: 'K⁺', points: s((p) => p.K), color: '#5ecfba' }]} bands={[{ from: 3.5, to: 5 }]} height={160} />
+                <LineChart yLabel="Plasma K⁺ (mmol/L)" xLabel="days" series={[{ label: 'K⁺', points: s((p) => p.K), color: 'var(--c-teal)' }]} bands={[{ from: 3.5, to: 5 }]} height={160} />
               </Panel>
               <Panel title="Urinary K⁺ (mmol/day)" note="The loss is front-loaded: as K⁺ falls, secretion slows and a new steady state is reached.">
-                <LineChart xLabel="days" series={[{ label: 'urine K⁺', points: s((p) => p.urineK), color: '#f2b134' }]} yMin={0} height={160} />
+                <LineChart yLabel="Urinary K⁺ (mmol/day)" xLabel="days" series={[{ label: 'urine K⁺', points: s((p) => p.urineK), color: 'var(--c-amber)' }]} yMin={0} height={160} />
               </Panel>
             </div>
           )}
@@ -213,10 +213,10 @@ function DeficitTab() {
       return pts;
     };
     return [
-      { label: 'pH 7.40', points: at(7.4, makeParams()), color: '#5ecfba' },
-      { label: 'pH 7.20 (mineral acidosis)', points: at(7.2, makeParams()), color: '#e07b6a', dashed: true },
-      { label: 'pH 7.55 (alkalosis)', points: at(7.55, makeParams()), color: '#6aa9e8', dashed: true },
-      { label: 'insulin ×3', points: at(7.4, makeParams({ insulin: 3 })), color: '#f2b134', dashed: true },
+      { label: 'pH 7.40', points: at(7.4, makeParams()), color: 'var(--c-teal)' },
+      { label: 'pH 7.20 (mineral acidosis)', points: at(7.2, makeParams()), color: 'var(--c-coral)', dashed: true },
+      { label: 'pH 7.55 (alkalosis)', points: at(7.55, makeParams()), color: 'var(--c-blue)', dashed: true },
+      { label: 'insulin ×3', points: at(7.4, makeParams({ insulin: 3 })), color: 'var(--c-amber)', dashed: true },
     ];
   }, []);
   return (
@@ -244,7 +244,7 @@ function DeficitTab() {
         </div>
         <div>
           <Panel title="Plasma K⁺ against the deficit" note="Rose: 200–400 mmol takes the level from 4 to 3, another 200–400 to about 2. Below that, cells release K⁺ and hold the plasma near 2. Shifts move the whole curve.">
-            <LineChart xLabel="deficit (mmol)" series={curves} bands={[{ from: 3.5, to: 5 }]} marker={deficit} height={240} yMin={1.5} yMax={6} />
+            <LineChart yLabel="Plasma K⁺ (mmol/L)" xLabel="deficit (mmol)" series={curves} bands={[{ from: 3.5, to: 5 }]} marker={deficit} height={240} yMin={1.5} yMax={6} />
           </Panel>
           <Panel title="Same level, different stores">
             <Chain
@@ -319,10 +319,10 @@ function EcgTab() {
 // ---------------------------------------------------------------- treatment
 
 const REGIMENS: { label: string; patch: ParamPatch; color: string }[] = [
-  { label: 'Stop vomiting, diet only', patch: {}, color: '#8b98a5' },
-  { label: '+ KCl 80 mmol/day', patch: { drugs: { potassiumChloride: 80 } }, color: '#5ecfba' },
-  { label: '+ K citrate 80 mmol/day', patch: { drugs: { potassiumCitrate: 80 } }, color: '#f2b134' },
-  { label: '+ saline 2 L/day and KCl 80', patch: { ivNS: 2, drugs: { potassiumChloride: 80 } }, color: '#6aa9e8' },
+  { label: 'Stop vomiting, diet only', patch: {}, color: 'var(--ink-faint)' },
+  { label: '+ KCl 80 mmol/day', patch: { drugs: { potassiumChloride: 80 } }, color: 'var(--c-teal)' },
+  { label: '+ K citrate 80 mmol/day', patch: { drugs: { potassiumCitrate: 80 } }, color: 'var(--c-amber)' },
+  { label: '+ saline 2 L/day and KCl 80', patch: { ivNS: 2, drugs: { potassiumChloride: 80 } }, color: 'var(--c-blue)' },
 ];
 
 function TreatTab() {
@@ -363,10 +363,10 @@ function TreatTab() {
         </div>
         <div>
           <Panel title="Plasma K⁺">
-            <LineChart xLabel="days" series={series((p) => p.K)} bands={[{ from: 3.5, to: 5 }]} height={200} />
+            <LineChart yLabel="Plasma K⁺ (mmol/L)" xLabel="days" series={series((p) => p.K)} bands={[{ from: 3.5, to: 5 }]} height={200} />
           </Panel>
           <Panel title="Bicarbonate" note="Only chloride lets the kidney excrete the excess bicarbonate. Citrate adds base.">
-            <LineChart xLabel="days" series={series((p) => p.HCO3)} bands={[{ from: 22, to: 28 }]} height={200} />
+            <LineChart yLabel="Plasma HCO₃⁻ (mmol/L)" xLabel="days" series={series((p) => p.HCO3)} bands={[{ from: 22, to: 28 }]} height={200} />
           </Panel>
         </div>
       </div>

@@ -318,9 +318,9 @@ function Evolution() {
           <LineChart
             xLabel="days of uncorrected volume depletion"
             series={[
-              { label: 'FENa (%)', points: points.map((p) => ({ x: p.day, y: p.fena })), color: '#f2b134' },
-              { label: 'GFR ÷ 30 (mL/min)', points: points.map((p) => ({ x: p.day, y: p.GFR / 30 })), color: '#6aa9e8' },
-              { label: 'Creatinine ÷ 50 (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) / 50 })), color: '#e07b6a' },
+              { label: 'FENa', axis: 'FENa (%)', points: points.map((p) => ({ x: p.day, y: p.fena })), color: 'var(--c-amber)' },
+              { label: 'GFR', axis: 'GFR (mL/min)', points: points.map((p) => ({ x: p.day, y: p.GFR })), color: 'var(--c-blue)' },
+              { label: 'Creatinine', axis: 'Creatinine (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) })), color: 'var(--c-coral)' },
             ] as Series[]}
             yMin={0}
             height={200}

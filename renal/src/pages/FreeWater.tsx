@@ -156,21 +156,21 @@ function UrineBlocks({ volume, cosm, efwc }: { volume: number; cosm: number; efw
   const returnedWidth = concentrated ? (cosm - volume) * scale : 0;
   return (
     <svg viewBox="0 0 600 140" class="diagram" role="img" aria-label="Urine volume split into isosmotic and free-water parts">
-      <rect x={30} y={36} width={Math.max(2, isoWidth)} height={46} rx={5} fill="#6aa9e8" opacity={0.85} />
-      {freeWidth > 1 && <rect x={30 + isoWidth} y={36} width={freeWidth} height={46} rx={5} fill="#5ecfba" opacity={0.85} />}
-      {returnedWidth > 1 && <rect x={30 + isoWidth} y={36} width={returnedWidth} height={46} rx={5} fill="#e07b6a" opacity={0.25} stroke="#e07b6a" stroke-dasharray="5 3" />}
+      <rect x={30} y={36} width={Math.max(2, isoWidth)} height={46} rx={5} fill="var(--c-blue)" opacity={0.85} />
+      {freeWidth > 1 && <rect x={30 + isoWidth} y={36} width={freeWidth} height={46} rx={5} fill="var(--c-teal)" opacity={0.85} />}
+      {returnedWidth > 1 && <rect x={30 + isoWidth} y={36} width={returnedWidth} height={46} rx={5} fill="var(--c-coral)" opacity={0.25} stroke="var(--c-coral)" stroke-dasharray="5 3" />}
       {isoWidth > 60 && (
-        <text x={30 + isoWidth / 2} y={64} text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>
+        <text x={30 + isoWidth / 2} y={64} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
           {Math.min(cosm, volume).toFixed(2)} L isosmotic
         </text>
       )}
       {freeWidth > 70 && (
-        <text x={30 + isoWidth + freeWidth / 2} y={64} text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>
+        <text x={30 + isoWidth + freeWidth / 2} y={64} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
           {(volume - cosm).toFixed(2)} L free water out
         </text>
       )}
       {returnedWidth > 70 && (
-        <text x={30 + isoWidth + returnedWidth / 2} y={64} text-anchor="middle" class="svg-label" style={{ fill: '#e07b6a' }}>
+        <text x={30 + isoWidth + returnedWidth / 2} y={64} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-coral)' }}>
           {(cosm - volume).toFixed(2)} L returned
         </text>
       )}

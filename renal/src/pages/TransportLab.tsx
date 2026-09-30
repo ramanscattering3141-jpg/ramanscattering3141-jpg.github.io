@@ -8,7 +8,7 @@ import { SEGMENTS, DEFAULT_TRANSPORTERS, type SegmentId, type Transporters } fro
 import { acute, makeParams, NORMAL, useSteady } from '../sim/hooks';
 import { NephronDiagram } from '../ui/NephronDiagram';
 
-const COLORS = ['#5ecfba', '#7bc47f', '#6aa9e8', '#f2b134', '#b08ee0', '#e4a26b'];
+const COLORS = ['var(--c-teal)', 'var(--c-green)', 'var(--c-blue)', 'var(--c-amber)', 'var(--c-violet)', 'var(--c-orange)'];
 
 export default function TransportLab({ query }: { query: URLSearchParams }) {
   const initial = (query.get('s') as SegmentId) || 'TAL';

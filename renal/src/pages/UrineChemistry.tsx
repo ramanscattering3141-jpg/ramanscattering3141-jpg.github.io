@@ -249,12 +249,11 @@ export default function UrineChemistry({ query }: { query: URLSearchParams }) {
               <LineChart
                 xLabel="days since the insult"
                 series={[
-                  { label: 'FENa (%)', points: points.map((p) => ({ x: p.day, y: p.fena })), color: '#f2b134' },
-                  { label: 'Urine Na⁺ (mmol/L ÷ 20)', points: points.map((p) => ({ x: p.day, y: p.urineNa / Math.max(p.urineVolume, 0.01) / 20 })), color: '#6aa9e8' },
-                  { label: 'Urine Cl⁻ (mmol/L ÷ 20)', points: points.map((p) => ({ x: p.day, y: p.urineCl / Math.max(p.urineVolume, 0.01) / 20 })), color: '#7bc47f' },
+                  { label: 'FENa', axis: 'FENa (%)', points: points.map((p) => ({ x: p.day, y: p.fena })), color: 'var(--c-amber)' },
+                  { label: 'Urine Na⁺', axis: 'Urine concentration (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.urineNa / Math.max(p.urineVolume, 0.01) })), color: 'var(--c-blue)' },
+                  { label: 'Urine Cl⁻', axis: 'Urine concentration (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.urineCl / Math.max(p.urineVolume, 0.01) })), color: 'var(--c-green)' },
                 ] as Series[]}
                 yMin={0}
-                yMax={Math.max(4, ...points.map((p) => Math.max(p.fena, p.urineNa / Math.max(p.urineVolume, 0.01) / 20, p.urineCl / Math.max(p.urineVolume, 0.01) / 20))) * 1.1}
                 marker={day}
                 height={230}
               />
@@ -272,9 +271,9 @@ export default function UrineChemistry({ query }: { query: URLSearchParams }) {
                   const k = at.urineK / Math.max(at.urineVolume, 0.01);
                   return (
                     <>
-                      <BarRow label="Urine Na⁺" value={na} max={220} unit=" mmol/L" color="#6aa9e8" />
-                      <BarRow label="Urine Cl⁻" value={cl} max={220} unit=" mmol/L" color="#7bc47f" />
-                      <BarRow label="Urine K⁺" value={k} max={220} unit=" mmol/L" color="#b08ee0" />
+                      <BarRow label="Urine Na⁺" value={na} max={220} unit=" mmol/L" color="var(--c-blue)" />
+                      <BarRow label="Urine Cl⁻" value={cl} max={220} unit=" mmol/L" color="var(--c-green)" />
+                      <BarRow label="Urine K⁺" value={k} max={220} unit=" mmol/L" color="var(--c-violet)" />
                       <p class={Math.abs(na - cl) > 15 ? 'callout' : 'control-hint'} style={{ marginTop: 6 }}>
                         {Math.abs(na - cl) > 15
                           ? `They differ by ${Math.abs(na - cl).toFixed(0)} mmol/L. ${

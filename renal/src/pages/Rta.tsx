@@ -481,9 +481,9 @@ function Diagnose() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#6aa9e8' },
-                    { label: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: '#f2b134' },
-                    { label: 'Potassium (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.K })), color: '#7bc47f' },
+                    { label: 'Bicarbonate', axis: 'Plasma HCO₃⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-blue)' },
+                    { label: 'Urine pH', axis: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: 'var(--c-amber)' },
+                    { label: 'Potassium', axis: 'Plasma K⁺ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.K })), color: 'var(--c-green)' },
                   ] as Series[]}
                   height={210}
                 />
@@ -533,8 +533,8 @@ function Stones() {
               <Readout label="Citrate excretion" value={citrate} digits={2} unit="× normal" tone={citrate < 0.5 ? 'low' : 'normal'} />
               <Readout label="Calcium : citrate" value={risk} digits={2} unit="× normal" tone={risk > 3 ? 'danger' : risk > 1.8 ? 'high' : 'normal'} />
             </div>
-            <BarRow label="Calcium excretion" value={calciuria} max={3.2} unit="×" color="#e07b6a" />
-            <BarRow label="Citrate excretion" value={citrate} max={1.2} unit="×" color="#5ecfba" />
+            <BarRow label="Calcium excretion" value={calciuria} max={3.2} unit="×" color="var(--c-coral)" />
+            <BarRow label="Citrate excretion" value={citrate} max={1.2} unit="×" color="var(--c-teal)" />
             <p class="control-hint">
               These two curves illustrate relationships the chapter states as proportionalities rather than as equations; the slopes span the reported clinical range but are not measured
               coefficients. What they are there to show is the product, not either number on its own.

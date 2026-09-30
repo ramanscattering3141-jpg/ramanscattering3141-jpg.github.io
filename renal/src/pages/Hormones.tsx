@@ -2,8 +2,8 @@ import { si } from '../units';
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, Related } from '../ui/page';
 import { Panel, Readout, Slider, Sources } from '../ui/kit';
-import { NephronDiagram } from '../ui/NephronDiagram';
-import { HORMONES } from '../content/hormones';
+import { NephronDiagram, type Callout, type Mark, type StructureId } from '../ui/NephronDiagram';
+import { HORMONES, SITE_ACTIONS } from '../content/hormones';
 import { acute, makeParams, NORMAL } from '../sim/hooks';
 import { href } from '../router';
 import { readyRoute } from '../routes';
@@ -21,7 +21,31 @@ const DRIVE: Record<string, { label: string; min: number; max: number; step: num
 
 export default function Hormones({ query }: { query: URLSearchParams }) {
   const [id, setId] = useState(query.get('h') ?? 'adh');
+  const all = id === 'all';
   const h = HORMONES.find((x) => x.id === id) ?? HORMONES[0];
+  const short = (x: (typeof HORMONES)[number]) => x.name.split(' (')[0];
+
+  // What goes on the drawing: one hormone's actions site by site, or every hormone at once.
+  const { marks, callouts } = useMemo(() => {
+    const marks: Partial<Record<StructureId, Mark>> = {};
+    const callouts: Callout[] = [];
+    if (all) {
+      const bySite = new Map<StructureId, string[]>();
+      for (const x of HORMONES) for (const s of x.sites) bySite.set(s, [...(bySite.get(s) ?? []), short(x)]);
+      for (const [s, names] of bySite) {
+        marks[s] = 'active';
+        callouts.push({ id: s, text: names.join(' · '), tone: 'info' });
+      }
+    } else {
+      const acts = SITE_ACTIONS[h.id] ?? {};
+      for (const s of h.sites) {
+        const a = acts[s];
+        marks[s] = a?.tone === 'down' ? 'down' : 'active';
+        callouts.push({ id: s, text: a?.text ?? 'Receptors present', tone: a?.tone ?? 'up' });
+      }
+    }
+    return { marks, callouts };
+  }, [id]);
   const drive = DRIVE[h.id];
   const [level, setLevel] = useState<Record<string, number>>({});
   const v = level[h.id] ?? drive?.base ?? 1;
@@ -32,12 +56,38 @@ export default function Hormones({ query }: { query: URLSearchParams }) {
     <div>
       <PageHead path="/hormones" lede="Each hormone acts on particular cells through a particular second messenger. Pick one to see where it acts on the nephron, what controls it, what it does — and, where the model can, drive it and watch the kidney respond." />
       <div class="btn-row">
+        <button class={all ? 'active' : ''} onClick={() => setId('all')}>
+          All hormones
+        </button>
         {HORMONES.map((x) => (
-          <button key={x.id} class={x.id === h.id ? 'active' : ''} onClick={() => setId(x.id)}>
-            {x.name.split(' (')[0]}
+          <button key={x.id} class={x.id === id ? 'active' : ''} onClick={() => setId(x.id)}>
+            {short(x)}
           </button>
         ))}
       </div>
+      <Panel
+        title={all ? 'Every hormone, site by site' : `Where ${short(h)} acts`}
+        note={all ? 'Each box lists the hormones with receptors at that structure. Pick one hormone above to see what it does there.' : undefined}
+      >
+        {!all && (
+          <div class="legend-row">
+            <span>
+              <i style={{ background: 'var(--c-orange)' }} /> stimulates transport or constricts
+            </span>
+            <span>
+              <i style={{ background: 'var(--c-blue)' }} /> inhibits transport or dilates
+            </span>
+            <span>
+              <i style={{ background: 'var(--ink-dim)' }} /> other action
+            </span>
+            <span>
+              <i style={{ background: 'var(--c-dim)' }} /> no direct action
+            </span>
+          </div>
+        )}
+        <NephronDiagram labels dimUnmarked marks={marks} callouts={callouts} height={760} title={all ? 'Sites of hormone action along the nephron' : `Sites of ${short(h)} action along the nephron`} />
+      </Panel>
+      {!all && (
       <div class="grid grid-main-side" style={{ gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1fr)' }}>
         <Panel title={h.name}>
           <p class="muted">{h.source}</p>
@@ -76,9 +126,6 @@ export default function Hormones({ query }: { query: URLSearchParams }) {
           )}
         </Panel>
         <div>
-          <Panel title="Where it acts" note="Highlighted structures carry receptors for this hormone.">
-            <NephronDiagram labels={false} marks={Object.fromEntries(h.sites.map((s) => [s, 'active']))} height={380} />
-          </Panel>
           {drive && ev && (
             <Panel title="Drive it" note="Integrated model, first hours after the change.">
               <Slider label={drive.label} value={v} min={drive.min} max={drive.max} step={drive.step} unit={drive.unit} format={drive.format} onInput={(x) => setLevel({ ...level, [h.id]: x })} />
@@ -96,6 +143,7 @@ export default function Hormones({ query }: { query: URLSearchParams }) {
           )}
         </div>
       </div>
+      )}
       <Panel title="Primary disorders at a glance (Rose ch. 6 summary)">
         <div class="table-wrap">
           <table>

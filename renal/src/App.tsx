@@ -4,7 +4,7 @@ import { type ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { GROUPS, ROUTES, isReady, routeByPath, type RouteDef } from './routes';
 import { href, navigate, useLocation } from './router';
-import { ModeContext, loadMode, saveMode, type Mode } from './ui/mode';
+import { ModeContext, applyTheme, loadMode, loadTheme, saveMode, type Mode, type Theme } from './ui/mode';
 
 const pageModules = import.meta.glob<{ default: ComponentType<{ query: URLSearchParams }> }>('./pages/*.tsx');
 
@@ -66,6 +66,11 @@ export function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [mode, setModeState] = useState<Mode>(loadMode);
   const [q, setQ] = useState('');
+  const [theme, setThemeState] = useState<Theme>(loadTheme);
+  const setTheme = (t: Theme) => {
+    setThemeState(t);
+    applyTheme(t);
+  };
   const setMode = (m: Mode) => {
     setModeState(m);
     saveMode(m);
@@ -92,9 +97,9 @@ export function App() {
         <nav class={`sidebar ${navOpen ? 'open' : ''}`} id="sidebar" aria-label="Modules">
           <a class="sidebar-brand" href="#/" style={{ textDecoration: 'none', color: 'inherit' }}>
             <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
-              <rect width="64" height="64" rx="14" fill="#0f2a3d" />
-              <path d="M38 14c-9 0-16 7.2-16 16 0 6 2 9 2 14 0 4-2 5-2 7h6c0-4 2-6 2-9 0-5-2-7-2-12 0-6 4.6-10 10-10z" fill="#7fd1c1" />
-              <circle cx="27" cy="27" r="3.2" fill="#f2b134" />
+              <rect width="64" height="64" rx="14" fill="var(--bg-2)" />
+              <path d="M38 14c-9 0-16 7.2-16 16 0 6 2 9 2 14 0 4-2 5-2 7h6c0-4 2-6 2-9 0-5-2-7-2-12 0-6 4.6-10 10-10z" fill="var(--c-mint)" />
+              <circle cx="27" cy="27" r="3.2" fill="var(--c-amber)" />
             </svg>
             <div>
               <strong>Renal Physiology Lab</strong>
@@ -118,6 +123,13 @@ export function App() {
             <button class={mode === 'quantitative' ? 'active' : ''} onClick={() => setMode('quantitative')} title="Expose Starling forces, fractional reabsorption, transporter activities and the full parameter set">
               Quantitative
             </button>
+          </div>
+          <div class="mode-switch" role="group" aria-label="Colour theme">
+            {(['light', 'dark', 'auto'] as Theme[]).map((t) => (
+              <button key={t} class={theme === t ? 'active' : ''} onClick={() => setTheme(t)} aria-pressed={theme === t} title={t === 'auto' ? 'Follow the system setting' : `${t[0].toUpperCase()}${t.slice(1)} theme`}>
+                {t === 'light' ? '☀ Light' : t === 'dark' ? '☾ Dark' : 'Auto'}
+              </button>
+            ))}
           </div>
           {GROUPS.map((g) => (
             <div class="nav-group" key={g.id}>

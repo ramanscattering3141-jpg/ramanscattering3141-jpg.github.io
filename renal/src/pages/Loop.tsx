@@ -94,14 +94,14 @@ export default function Loop() {
             <CellDiagram
               lumenVoltage={`lumen +${(k.talVoltage * 7).toFixed(0)} mV`}
               apical={[
-                { label: 'NKCC2', moves: '1 Na⁺ + 1 K⁺ + 2 Cl⁻', dir: 'in', activity: s.nkcc2 * (1 - 0.95 * s.furosemide), blocked: blocked, color: '#5ecfba' },
-                { label: 'ROMK', moves: 'K⁺ recycles to lumen', dir: 'out', activity: s.romk / Math.max(1, s.casr), color: '#7bc47f' },
-                { label: 'NHE3', moves: 'Na⁺ in / H⁺ out (HCO₃⁻)', dir: 'in', activity: 1, color: '#6aa9e8' },
+                { label: 'NKCC2', moves: '1 Na⁺ + 1 K⁺ + 2 Cl⁻', dir: 'in', activity: s.nkcc2 * (1 - 0.95 * s.furosemide), blocked: blocked, color: 'var(--c-teal)' },
+                { label: 'ROMK', moves: 'K⁺ recycles to lumen', dir: 'out', activity: s.romk / Math.max(1, s.casr), color: 'var(--c-green)' },
+                { label: 'NHE3', moves: 'Na⁺ in / H⁺ out (HCO₃⁻)', dir: 'in', activity: 1, color: 'var(--c-blue)' },
               ]}
               basolateral={[
-                { label: 'NaK', moves: '3 Na⁺ out / 2 K⁺ in', dir: 'in', activity: 1, color: '#f2b134' },
-                { label: 'ClC-Kb', moves: 'Cl⁻ exits', dir: 'in', activity: s.clckb, color: '#e4a26b' },
-                { label: 'CaSR', moves: 'senses Ca²⁺/Mg²⁺ → inhibits ROMK', dir: 'both', activity: Math.min(1, s.casr - 0.5), color: '#b08ee0' },
+                { label: 'NaK', moves: '3 Na⁺ out / 2 K⁺ in', dir: 'in', activity: 1, color: 'var(--c-amber)' },
+                { label: 'ClC-Kb', moves: 'Cl⁻ exits', dir: 'in', activity: s.clckb, color: 'var(--c-orange)' },
+                { label: 'CaSR', moves: 'senses Ca²⁺/Mg²⁺ → inhibits ROMK', dir: 'both', activity: Math.min(1, s.casr - 0.5), color: 'var(--c-violet)' },
               ]}
               paracellular={[
                 { label: 'Na⁺', activity: k.talVoltage },
@@ -114,11 +114,11 @@ export default function Loop() {
           <div class="grid grid-2">
             <Panel title="Where it shows up in the urine">
               <BarRow label="Urine Na⁺" value={k.urine.exc.Na} max={Math.max(600, k.urine.exc.Na)} unit="mmol/d" sub={`normal ${n.kidney.urine.exc.Na.toFixed(0)}`} />
-              <BarRow label="Urine K⁺" value={k.urine.exc.K} max={Math.max(250, k.urine.exc.K)} unit="mmol/d" color="#7bc47f" sub={`normal ${n.kidney.urine.exc.K.toFixed(0)}`} />
-              <BarRow label="Urine Ca²⁺" value={k.urine.exc.Ca} max={Math.max(12, k.urine.exc.Ca)} unit="mmol/d" color="#f2b134" sub={`normal ${n.kidney.urine.exc.Ca.toFixed(1)}`} />
-              <BarRow label="Urine Mg²⁺" value={k.urine.exc.Mg} max={Math.max(12, k.urine.exc.Mg)} unit="mmol/d" color="#b08ee0" sub={`normal ${n.kidney.urine.exc.Mg.toFixed(1)}`} />
-              <BarRow label="Urine volume" value={k.urine.volumePerDay} max={Math.max(8, k.urine.volumePerDay)} unit="L/d" color="#6aa9e8" sub={`osmolality ${k.urine.osm.toFixed(0)} mOsm/kg`} />
-              {mode === 'quantitative' && <BarRow label="Distal Na⁺ delivery" value={k.distalNaDelivery * 1440} max={Math.max(2000, k.distalNaDelivery * 1440)} unit="mmol/d" color="#e4696b" />}
+              <BarRow label="Urine K⁺" value={k.urine.exc.K} max={Math.max(250, k.urine.exc.K)} unit="mmol/d" color="var(--c-green)" sub={`normal ${n.kidney.urine.exc.K.toFixed(0)}`} />
+              <BarRow label="Urine Ca²⁺" value={k.urine.exc.Ca} max={Math.max(12, k.urine.exc.Ca)} unit="mmol/d" color="var(--c-amber)" sub={`normal ${n.kidney.urine.exc.Ca.toFixed(1)}`} />
+              <BarRow label="Urine Mg²⁺" value={k.urine.exc.Mg} max={Math.max(12, k.urine.exc.Mg)} unit="mmol/d" color="var(--c-violet)" sub={`normal ${n.kidney.urine.exc.Mg.toFixed(1)}`} />
+              <BarRow label="Urine volume" value={k.urine.volumePerDay} max={Math.max(8, k.urine.volumePerDay)} unit="L/d" color="var(--c-blue)" sub={`osmolality ${k.urine.osm.toFixed(0)} mOsm/kg`} />
+              {mode === 'quantitative' && <BarRow label="Distal Na⁺ delivery" value={k.distalNaDelivery * 1440} max={Math.max(2000, k.distalNaDelivery * 1440)} unit="mmol/d" color="var(--c-red)" />}
             </Panel>
             <Panel title="The cascade from the carrier">
               <Chain

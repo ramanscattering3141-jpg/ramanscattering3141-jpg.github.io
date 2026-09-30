@@ -137,9 +137,9 @@ function States() {
           <Panel title="Where the extracellular fluid is" note="The plasma volume is what supports the circulation. Everything above it is oedema, and it is doing nothing useful.">
             {ev && (
               <>
-                <BarRow label="Plasma" value={ev.plasma.plasmaVolume} max={Math.max(20, ev.derived.ecfLiters)} unit=" L" color="#e07b6a" sub="normally ~3.0 L — defended almost to the last" />
-                <BarRow label="Interstitium, normal" value={Math.max(0, Math.min(11, ev.derived.ecfLiters - ev.plasma.plasmaVolume - ev.derived.edemaLiters))} max={Math.max(20, ev.derived.ecfLiters)} unit=" L" color="#6aa9e8" />
-                <BarRow label="Oedema" value={ev.derived.edemaLiters} max={Math.max(20, ev.derived.ecfLiters)} unit=" L" color="#b08ee0" sub={ev.derived.edemaLiters > 2.5 ? 'clinically apparent' : 'not yet detectable'} />
+                <BarRow label="Plasma" value={ev.plasma.plasmaVolume} max={Math.max(20, ev.derived.ecfLiters)} unit=" L" color="var(--c-coral)" sub="normally ~3.0 L — defended almost to the last" />
+                <BarRow label="Interstitium, normal" value={Math.max(0, Math.min(11, ev.derived.ecfLiters - ev.plasma.plasmaVolume - ev.derived.edemaLiters))} max={Math.max(20, ev.derived.ecfLiters)} unit=" L" color="var(--c-blue)" />
+                <BarRow label="Oedema" value={ev.derived.edemaLiters} max={Math.max(20, ev.derived.ecfLiters)} unit=" L" color="var(--c-violet)" sub={ev.derived.edemaLiters > 2.5 ? 'clinically apparent' : 'not yet detectable'} />
                 <p class="note" style={{ marginTop: 8 }}>
                   {c.explain}
                 </p>
@@ -149,11 +149,11 @@ function States() {
           <Panel title="The transcapillary oncotic gradient" note="Not the plasma albumin — the gradient across the capillary wall, which is what actually opposes filtration.">
             {ev && (
               <>
-                <LineChart
+                <LineChart yLabel="Oncotic gradient, plasma − interstitium (mmHg)"
                   xLabel="plasma albumin (g/L)"
                   series={[
-                    { label: 'Gradient, chronic (interstitium has adapted)', points: albuminCurve(true), color: '#7bc47f' },
-                    { label: 'Gradient, acute (no time to adapt)', points: albuminCurve(false), color: '#e07b6a' },
+                    { label: 'Gradient, chronic (interstitium has adapted)', points: albuminCurve(true), color: 'var(--c-green)' },
+                    { label: 'Gradient, acute (no time to adapt)', points: albuminCurve(false), color: 'var(--c-coral)' },
                   ] as Series[]}
                   yMin={0}
                   yMax={1.1}
@@ -415,36 +415,36 @@ function Compensation() {
           <Panel title="Rose Fig. 16-5" note="Thoracic inferior vena cava constriction in the dog: initial hypotension and hormone activation, then a new steady state at an expanded volume.">
             {points && (
               <>
-                <LineChart
+                <LineChart yLabel="Mean arterial pressure (mmHg)"
                   xLabel="days"
                   series={[
-                    { label: 'Mean arterial pressure (mmHg)', points: points.map((p) => ({ x: p.day, y: p.MAP })), color: '#e07b6a' },
+                    { label: 'Mean arterial pressure (mmHg)', points: points.map((p) => ({ x: p.day, y: p.MAP })), color: 'var(--c-coral)' },
                   ] as Series[]}
                   height={130}
                 />
-                <LineChart
+                <LineChart yLabel="× normal"
                   xLabel="days"
                   series={[
-                    { label: 'Renin (×normal)', points: points.map((p) => ({ x: p.day, y: p.renin })), color: '#f2b134' },
-                    { label: 'Aldosterone (×normal)', points: points.map((p) => ({ x: p.day, y: p.aldo })), color: '#b08ee0' },
+                    { label: 'Renin (×normal)', points: points.map((p) => ({ x: p.day, y: p.renin })), color: 'var(--c-amber)' },
+                    { label: 'Aldosterone (×normal)', points: points.map((p) => ({ x: p.day, y: p.aldo })), color: 'var(--c-violet)' },
                   ] as Series[]}
                   yMin={0}
                   height={150}
                 />
-                <LineChart
+                <LineChart yLabel="Na⁺ (mmol/day)"
                   xLabel="days"
                   series={[
-                    { label: 'Urinary Na⁺ (mmol/day)', points: points.map((p) => ({ x: p.day, y: p.urineNa })), color: '#7bc47f' },
-                    { label: 'Intake', points: points.map((p) => ({ x: p.day, y: 150 })), color: '#8aa4b8' },
+                    { label: 'Urinary Na⁺ (mmol/day)', points: points.map((p) => ({ x: p.day, y: p.urineNa })), color: 'var(--c-green)' },
+                    { label: 'Intake', points: points.map((p) => ({ x: p.day, y: 150 })), color: 'var(--ink-faint)' },
                   ] as Series[]}
                   yMin={0}
                   height={150}
                 />
-                <LineChart
+                <LineChart yLabel="Volume (L)"
                   xLabel="days"
                   series={[
-                    { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: '#6aa9e8' },
-                    { label: 'Oedema (L)', points: points.map((p) => ({ x: p.day, y: p.edema })), color: '#b08ee0' },
+                    { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: 'var(--c-blue)' },
+                    { label: 'Oedema (L)', points: points.map((p) => ({ x: p.day, y: p.edema })), color: 'var(--c-violet)' },
                   ] as Series[]}
                   yMin={0}
                   height={150}
@@ -542,23 +542,23 @@ function Treating() {
           <Panel title="Seven days of treatment">
             {points && (
               <>
-                <LineChart
+                <LineChart yLabel="Volume (L)"
                   xLabel="days"
                   series={[
-                    { label: 'Oedema (L)', points: points.map((p) => ({ x: p.day, y: p.edema })), color: '#b08ee0' },
-                    { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: '#6aa9e8' },
+                    { label: 'Oedema (L)', points: points.map((p) => ({ x: p.day, y: p.edema })), color: 'var(--c-violet)' },
+                    { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: 'var(--c-blue)' },
                   ] as Series[]}
                   yMin={0}
                   height={170}
                 />
-                <LineChart
+                <LineChart yLabel="Creatinine (µmol/L)"
                   xLabel="days"
-                  series={[{ label: 'Creatinine (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) })), color: '#e07b6a' }] as Series[]}
+                  series={[{ label: 'Creatinine (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) })), color: 'var(--c-coral)' }] as Series[]}
                   height={150}
                 />
-                <LineChart
+                <LineChart yLabel="Renin (× normal)"
                   xLabel="days"
-                  series={[{ label: 'Renin (×normal)', points: points.map((p) => ({ x: p.day, y: p.renin })), color: '#f2b134' }] as Series[]}
+                  series={[{ label: 'Renin (×normal)', points: points.map((p) => ({ x: p.day, y: p.renin })), color: 'var(--c-amber)' }] as Series[]}
                   yMin={0}
                   height={150}
                 />

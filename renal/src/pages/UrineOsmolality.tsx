@@ -93,12 +93,12 @@ export default function UrineOsmolality() {
         </div>
         <div>
           <Panel title="Urine volume against solute load" note="Three lines: maximally dilute, maximally concentrated, and the current urine osmolality. The gap between the outer two is the kidney's whole working range at that solute load.">
-            <LineChart
+            <LineChart yLabel="Urine volume (L/day)"
               xLabel="solute excreted (mOsm/day)"
               series={[
-                { label: `Maximally dilute (${s.minUosm})`, points: curve.atMin, color: '#6aa9e8' },
-                { label: `At the current osmolality (${uosm.toFixed(0)})`, points: curve.now, color: '#f2b134' },
-                { label: `Maximally concentrated (${s.maxUosm})`, points: curve.atMax, color: '#e07b6a' },
+                { label: `Maximally dilute (${s.minUosm})`, points: curve.atMin, color: 'var(--c-blue)' },
+                { label: `At the current osmolality (${uosm.toFixed(0)})`, points: curve.now, color: 'var(--c-amber)' },
+                { label: `Maximally concentrated (${s.maxUosm})`, points: curve.atMax, color: 'var(--c-coral)' },
               ]}
               yMin={0}
               yMax={Math.min(20, maxVolume * 1.15)}
@@ -108,9 +108,9 @@ export default function UrineOsmolality() {
           </Panel>
           <div class="grid grid-2">
             <Panel title="How the same urine osmolality means different things">
-              <BarRow label="Urine volume now" value={volume} max={Math.max(6, maxVolume)} unit=" L/day" color="#f2b134" />
-              <BarRow label="If solute doubled" value={urineVolume(s.solute * 2, uosm)} max={Math.max(6, maxVolume)} unit=" L/day" color="#7bc47f" />
-              <BarRow label="If solute halved" value={urineVolume(s.solute / 2, uosm)} max={Math.max(6, maxVolume)} unit=" L/day" color="#b08ee0" />
+              <BarRow label="Urine volume now" value={volume} max={Math.max(6, maxVolume)} unit=" L/day" color="var(--c-amber)" />
+              <BarRow label="If solute doubled" value={urineVolume(s.solute * 2, uosm)} max={Math.max(6, maxVolume)} unit=" L/day" color="var(--c-green)" />
+              <BarRow label="If solute halved" value={urineVolume(s.solute / 2, uosm)} max={Math.max(6, maxVolume)} unit=" L/day" color="var(--c-violet)" />
               <p class="control-hint">The urine osmolality has not changed in any of these — only how much solute there was to carry.</p>
             </Panel>
             <Panel title="Two ways to be unable to excrete water">

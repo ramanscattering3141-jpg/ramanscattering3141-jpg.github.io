@@ -49,13 +49,13 @@ export default function Distal() {
         title="Distal convoluted tubule cell"
         apical={[
           { label: 'NCC', moves: 'Na⁺ + Cl⁻', dir: 'in', activity: s.ncc * (s.thiazide ? 0.08 : 1), blocked: s.thiazide ? 'thiazide' : undefined },
-          { label: 'TRPV5', moves: 'Ca²⁺ (PTH, calcitriol ↑)', dir: 'in', activity: Math.min(1.5, Math.pow(h.pth, 0.35)) * (s.thiazide ? 1.4 : 1), color: '#f2b134' },
-          { label: 'TRPM6', moves: 'Mg²⁺', dir: 'in', activity: s.thiazide ? 0.7 : 1, color: '#b08ee0' },
+          { label: 'TRPV5', moves: 'Ca²⁺ (PTH, calcitriol ↑)', dir: 'in', activity: Math.min(1.5, Math.pow(h.pth, 0.35)) * (s.thiazide ? 1.4 : 1), color: 'var(--c-amber)' },
+          { label: 'TRPM6', moves: 'Mg²⁺', dir: 'in', activity: s.thiazide ? 0.7 : 1, color: 'var(--c-violet)' },
         ]}
         basolateral={[
-          { label: 'NaK', moves: '3 Na⁺ out / 2 K⁺ in', dir: 'in', activity: s.ncc * (s.thiazide ? 0.5 : 1), color: '#f2b134' },
-          { label: 'NCX1', moves: '3 Na⁺ in / 1 Ca²⁺ out', dir: 'in', activity: s.thiazide ? 1.4 : 1, color: '#e4a26b' },
-          { label: 'ClC-Kb', moves: 'Cl⁻ exits', dir: 'in', activity: s.ncc * (s.thiazide ? 0.1 : 1), color: '#7bc47f' },
+          { label: 'NaK', moves: '3 Na⁺ out / 2 K⁺ in', dir: 'in', activity: s.ncc * (s.thiazide ? 0.5 : 1), color: 'var(--c-amber)' },
+          { label: 'NCX1', moves: '3 Na⁺ in / 1 Ca²⁺ out', dir: 'in', activity: s.thiazide ? 1.4 : 1, color: 'var(--c-orange)' },
+          { label: 'ClC-Kb', moves: 'Cl⁻ exits', dir: 'in', activity: s.ncc * (s.thiazide ? 0.1 : 1), color: 'var(--c-green)' },
         ]}
         cellNote="water-impermeable even with ADH: keeps diluting"
       />
@@ -66,14 +66,14 @@ export default function Distal() {
         lumenVoltage={`lumen −${(k.distalVoltage * 12).toFixed(0)} mV`}
         apical={[
           { label: 'ENaC', moves: 'Na⁺ alone (electrogenic)', dir: 'in', activity: s.enac * (s.amiloride ? 0.2 : 1) * Math.min(1.5, Math.pow(h.mr, 0.45)), blocked: s.amiloride ? 'amiloride' : undefined },
-          { label: 'ROMK', moves: 'K⁺ secreted', dir: 'out', activity: Math.min(1.5, rel(k.kSecretion, n.kidney.kSecretion)), color: '#7bc47f' },
-          { label: 'BK', moves: 'flow-activated K⁺', dir: 'out', activity: Math.min(1.5, rel(k.distalFlow, n.kidney.distalFlow)), color: '#9fd8a3' },
-          { label: 'AQP2', moves: 'H₂O (ADH)', dir: 'in', activity: h.aqp2, color: '#6aa9e8' },
+          { label: 'ROMK', moves: 'K⁺ secreted', dir: 'out', activity: Math.min(1.5, rel(k.kSecretion, n.kidney.kSecretion)), color: 'var(--c-green)' },
+          { label: 'BK', moves: 'flow-activated K⁺', dir: 'out', activity: Math.min(1.5, rel(k.distalFlow, n.kidney.distalFlow)), color: 'var(--c-green2)' },
+          { label: 'AQP2', moves: 'H₂O (ADH)', dir: 'in', activity: h.aqp2, color: 'var(--c-blue)' },
         ]}
         basolateral={[
-          { label: 'NaK', moves: '3 Na⁺ out / 2 K⁺ in', dir: 'in', activity: Math.min(1.5, Math.pow(h.mr, 0.3)), color: '#f2b134' },
-          { label: 'MR', moves: s.spiro ? 'aldosterone receptor (blocked)' : 'aldosterone receptor', dir: 'both', activity: Math.min(1.5, h.mr), color: '#b08ee0', blocked: s.spiro ? 'spironolactone' : undefined },
-          { label: 'AQP3/4', moves: 'H₂O exits', dir: 'in', activity: 1, color: '#6aa9e8' },
+          { label: 'NaK', moves: '3 Na⁺ out / 2 K⁺ in', dir: 'in', activity: Math.min(1.5, Math.pow(h.mr, 0.3)), color: 'var(--c-amber)' },
+          { label: 'MR', moves: s.spiro ? 'aldosterone receptor (blocked)' : 'aldosterone receptor', dir: 'both', activity: Math.min(1.5, h.mr), color: 'var(--c-violet)', blocked: s.spiro ? 'spironolactone' : undefined },
+          { label: 'AQP3/4', moves: 'H₂O exits', dir: 'in', activity: 1, color: 'var(--c-blue)' },
         ]}
         paracellular={[{ label: 'Cl⁻', activity: Math.min(1, k.distalVoltage) }]}
       />
@@ -82,12 +82,12 @@ export default function Distal() {
       <CellDiagram
         title="Type A intercalated cell"
         apical={[
-          { label: 'H-ATP', moves: 'H⁺ secreted', dir: 'out', activity: Math.min(1.5, rel(k.hSecretionDistal, n.kidney.hSecretionDistal)), color: '#e4696b' },
-          { label: 'HKATP', moves: 'H⁺ out / K⁺ in', dir: 'both', activity: ev.plasma.K < 3.8 ? 1.3 : 0.7, color: '#7bc47f' },
+          { label: 'H-ATP', moves: 'H⁺ secreted', dir: 'out', activity: Math.min(1.5, rel(k.hSecretionDistal, n.kidney.hSecretionDistal)), color: 'var(--c-red)' },
+          { label: 'HKATP', moves: 'H⁺ out / K⁺ in', dir: 'both', activity: ev.plasma.K < 3.8 ? 1.3 : 0.7, color: 'var(--c-green)' },
         ]}
         basolateral={[
-          { label: 'AE1', moves: 'HCO₃⁻ out / Cl⁻ in', dir: 'in', activity: Math.min(1.5, rel(k.hSecretionDistal, n.kidney.hSecretionDistal)), color: '#b08ee0' },
-          { label: 'CA II', moves: 'CO₂ + H₂O → H⁺ + HCO₃⁻', dir: 'both', activity: 1, color: '#6aa9e8' },
+          { label: 'AE1', moves: 'HCO₃⁻ out / Cl⁻ in', dir: 'in', activity: Math.min(1.5, rel(k.hSecretionDistal, n.kidney.hSecretionDistal)), color: 'var(--c-violet)' },
+          { label: 'CA II', moves: 'CO₂ + H₂O → H⁺ + HCO₃⁻', dir: 'both', activity: 1, color: 'var(--c-blue)' },
         ]}
         cellNote="acidaemia, aldosterone and a negative lumen increase H⁺ secretion"
       />
@@ -95,10 +95,10 @@ export default function Distal() {
     icB: (
       <CellDiagram
         title="Type B intercalated cell"
-        apical={[{ label: 'Pendrin', moves: 'HCO₃⁻ out / Cl⁻ in', dir: 'out', activity: Math.min(1.5, k.pendrinSecretion / 0.05), color: '#b08ee0' }]}
+        apical={[{ label: 'Pendrin', moves: 'HCO₃⁻ out / Cl⁻ in', dir: 'out', activity: Math.min(1.5, k.pendrinSecretion / 0.05), color: 'var(--c-violet)' }]}
         basolateral={[
-          { label: 'H-ATP', moves: 'H⁺ returned to blood', dir: 'out', activity: Math.min(1.5, k.pendrinSecretion / 0.05), color: '#e4696b' },
-          { label: 'CA II', moves: 'CO₂ + H₂O → H⁺ + HCO₃⁻', dir: 'both', activity: 1, color: '#6aa9e8' },
+          { label: 'H-ATP', moves: 'H⁺ returned to blood', dir: 'out', activity: Math.min(1.5, k.pendrinSecretion / 0.05), color: 'var(--c-red)' },
+          { label: 'CA II', moves: 'CO₂ + H₂O → H⁺ + HCO₃⁻', dir: 'both', activity: 1, color: 'var(--c-blue)' },
         ]}
         cellNote="active in alkalosis — but needs luminal Cl⁻"
       />

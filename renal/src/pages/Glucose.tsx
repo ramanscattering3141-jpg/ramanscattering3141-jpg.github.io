@@ -42,14 +42,14 @@ function CellDiagram({ sglt2, sglt1, inhibitor, flux }: { sglt2: number; sglt1: 
       <text x="540" y="18" class="svg-label" text-anchor="middle">
         BLOOD
       </text>
-      <rect x="140" y="30" width="320" height="140" rx="12" fill="#16303f" stroke="#2f7f73" />
+      <rect x="140" y="30" width="320" height="140" rx="12" fill="var(--panel-2)" stroke="var(--accent-dim)" />
       {/* apical carriers */}
-      <circle cx="140" cy="70" r="23" fill={inhibitor ? '#b08ee0' : '#5ecfba'} opacity={0.3 + 0.7 * Math.min(1, sglt2)} />
-      <text x="140" y="74" text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>
+      <circle cx="140" cy="70" r="23" fill={inhibitor ? 'var(--c-violet)' : 'var(--c-teal)'} opacity={0.3 + 0.7 * Math.min(1, sglt2)} />
+      <text x="140" y="74" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
         SGLT2
       </text>
-      <circle cx="140" cy="130" r="23" fill="#7bc47f" opacity={0.3 + 0.7 * Math.min(1, sglt1)} />
-      <text x="140" y="134" text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>
+      <circle cx="140" cy="130" r="23" fill="var(--c-green)" opacity={0.3 + 0.7 * Math.min(1, sglt1)} />
+      <text x="140" y="134" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
         SGLT1
       </text>
       <text x="60" y="66" text-anchor="middle" class="svg-label">
@@ -65,17 +65,17 @@ function CellDiagram({ sglt2, sglt1, inhibitor, flux }: { sglt2: number; sglt1: 
         S3 · high affinity
       </text>
       {inhibitor && (
-        <text x="140" y="46" text-anchor="middle" class="svg-label" style={{ fill: '#b08ee0' }}>
+        <text x="140" y="46" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-violet)' }}>
           ✕ gliflozin
         </text>
       )}
       {/* basolateral */}
-      <circle cx="460" cy="70" r="23" fill="#f2b134" />
-      <text x="460" y="74" text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>
+      <circle cx="460" cy="70" r="23" fill="var(--c-amber)" />
+      <text x="460" y="74" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
         GLUT2
       </text>
-      <circle cx="460" cy="130" r="23" fill="#e4a26b" />
-      <text x="460" y="134" text-anchor="middle" class="svg-label" style={{ fill: '#0b1b27', fontWeight: 700 }}>
+      <circle cx="460" cy="130" r="23" fill="var(--c-orange)" />
+      <text x="460" y="134" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
         NaK
       </text>
       <text x="540" y="66" text-anchor="middle" class="svg-label">
@@ -84,8 +84,8 @@ function CellDiagram({ sglt2, sglt1, inhibitor, flux }: { sglt2: number; sglt1: 
       <text x="540" y="126" text-anchor="middle" class="svg-label">
         3 Na⁺ out / 2 K⁺ in
       </text>
-      <line x1="160" x2="440" y1="70" y2="70" stroke="#f2b134" stroke-width={w(flux * 8)} marker-end="url(#g-arr)" opacity="0.8" />
-      <line x1="160" x2="440" y1="130" y2="130" stroke="#5ecfba" stroke-width="2" stroke-dasharray="4 4" />
+      <line x1="160" x2="440" y1="70" y2="70" stroke="var(--c-amber)" stroke-width={w(flux * 8)} marker-end="url(#g-arr)" opacity="0.8" />
+      <line x1="160" x2="440" y1="130" y2="130" stroke="var(--c-teal)" stroke-width="2" stroke-dasharray="4 4" />
       <text x="300" y="62" text-anchor="middle" class="svg-label">
         glucose moves uphill into the cell, then downhill out
       </text>
@@ -94,7 +94,7 @@ function CellDiagram({ sglt2, sglt1, inhibitor, flux }: { sglt2: number; sglt1: 
       </text>
       <defs>
         <marker id="g-arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="#f2b134" />
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--c-amber)" />
         </marker>
       </defs>
     </svg>
@@ -161,13 +161,13 @@ export default function Glucose() {
         </div>
         <div>
           <Panel title="Glucose titration curve" note="Solid: with splay (nephron heterogeneity). Dashed: the idealised sharp Tm. Vertical line: current plasma glucose.">
-            <LineChart
+            <LineChart yLabel="Glucose (mmol/min)"
               xLabel="plasma glucose (mmol/L)"
               series={[
-                { label: 'Filtered', points: curve.map((r) => ({ x: r.P, y: r.filtered })), color: '#6aa9e8' },
-                { label: 'Reabsorbed', points: curve.map((r) => ({ x: r.P, y: r.reab })), color: '#7bc47f' },
-                { label: 'Excreted', points: curve.map((r) => ({ x: r.P, y: r.excreted })), color: '#f2b134' },
-                { label: 'Excreted if no splay', points: curve.map((r) => ({ x: r.P, y: r.idealExc })), color: '#f2b134', dashed: true },
+                { label: 'Filtered', points: curve.map((r) => ({ x: r.P, y: r.filtered })), color: 'var(--c-blue)' },
+                { label: 'Reabsorbed', points: curve.map((r) => ({ x: r.P, y: r.reab })), color: 'var(--c-green)' },
+                { label: 'Excreted', points: curve.map((r) => ({ x: r.P, y: r.excreted })), color: 'var(--c-amber)' },
+                { label: 'Excreted if no splay', points: curve.map((r) => ({ x: r.P, y: r.idealExc })), color: 'var(--c-amber)', dashed: true },
               ]}
               yMin={0}
               marker={s.glucose}

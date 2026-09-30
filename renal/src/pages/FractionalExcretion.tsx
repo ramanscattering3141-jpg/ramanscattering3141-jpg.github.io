@@ -78,9 +78,9 @@ export default function FractionalExcretion() {
         </div>
         <div>
           <Panel title="Why 1% is not a constant" note="The threshold is a fraction of the filtered load, and the filtered load is what changes in kidney disease.">
-            <LineChart
+            <LineChart yLabel="1% of the filtered Na⁺ load (mmol/day)"
               xLabel="GFR (mL/min)"
-              series={[{ label: '1% of the filtered load (mmol/day)', points: curve.one, color: '#f2b134' }] as Series[]}
+              series={[{ label: '1% of the filtered load (mmol/day)', points: curve.one, color: 'var(--c-amber)' }] as Series[]}
               yMin={0}
               marker={ev.kidney.GFR}
               height={190}
@@ -88,12 +88,12 @@ export default function FractionalExcretion() {
             <p class="control-hint" style={{ marginBottom: 10 }}>
               At a normal GFR, 1% of the filtered sodium is about 270 mmol/day — far more than anyone eats, so a normal person is always well under 1%. At a GFR of 12 it is about 25 mmol/day.
             </p>
-            <LineChart
+            <LineChart yLabel="FENa (%)"
               xLabel="GFR (mL/min)"
               series={[
-                { label: 'FENa of someone in balance on 150 mmol/day', points: curve.inBalance, color: '#7bc47f' },
-                { label: 'The 1% line', points: curve.inBalance.map((p) => ({ x: p.x, y: 1 })), color: '#8aa4b8' },
-                { label: 'The 2% line', points: curve.inBalance.map((p) => ({ x: p.x, y: 2 })), color: '#e07b6a' },
+                { label: 'FENa of someone in balance on 150 mmol/day', points: curve.inBalance, color: 'var(--c-green)' },
+                { label: 'The 1% line', points: curve.inBalance.map((p) => ({ x: p.x, y: 1 })), color: 'var(--ink-faint)' },
+                { label: 'The 2% line', points: curve.inBalance.map((p) => ({ x: p.x, y: 2 })), color: 'var(--c-coral)' },
               ] as Series[]}
               yMin={0}
               yMax={8}
@@ -108,9 +108,9 @@ export default function FractionalExcretion() {
           <Panel title="Concentration, rate, fraction" note="Three ways to report the same sodium, and what each one is confounded by.">
             {steady.ev && (
               <>
-                <BarRow label="Urine Na⁺ concentration" value={steady.ev.kidney.urine.Na} max={250} unit=" mmol/L" color="#6aa9e8" sub="confounded by urine volume" />
-                <BarRow label="Na⁺ excreted per day" value={steady.ev.kidney.urine.exc.Na} max={400} unit=" mmol/day" color="#7bc47f" sub="confounded by intake — in balance it simply equals it" />
-                <BarRow label="FENa" value={steady.ev.derived.FENa} max={8} unit=" %" color="#f2b134" sub="confounded by GFR and by diuretics" />
+                <BarRow label="Urine Na⁺ concentration" value={steady.ev.kidney.urine.Na} max={250} unit=" mmol/L" color="var(--c-blue)" sub="confounded by urine volume" />
+                <BarRow label="Na⁺ excreted per day" value={steady.ev.kidney.urine.exc.Na} max={400} unit=" mmol/day" color="var(--c-green)" sub="confounded by intake — in balance it simply equals it" />
+                <BarRow label="FENa" value={steady.ev.derived.FENa} max={8} unit=" %" color="var(--c-amber)" sub="confounded by GFR and by diuretics" />
                 <p class="control-hint">
                   Each removes one confounder and introduces another. FENa is the right choice in the 20–40 mmol/L overlap zone, where the concentration is ambiguous — not a universally better number.
                 </p>

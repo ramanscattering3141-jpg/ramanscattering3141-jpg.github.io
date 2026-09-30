@@ -20,7 +20,7 @@ export const chapter: ChapterContent = {
         'Symptoms — and the rate of change matters more than the level',
       ],
       points: [
-        '70 kg man: ~42 L total, 25 L intracellular, 17 L extracellular, 3 L plasma',
+        '100 kg person, round numbers: 60 L total, 40 L intracellular, 20 L extracellular (15 L interstitial, 5 L plasma)',
         'Urea is an ineffective osmole; sodium and glucose are effective',
         'Effective osmolality ≈ 2 × [Na⁺] + glucose (in mmol/L)',
       ],
