@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Chain, LineChart, Expand, type Series } from '../ui/kit';
-import { EquationCard } from '../ui/EquationCard';
+import { BedsideEquations, EquationCard } from '../ui/EquationCard';
 import { makeParams, useSteady, useStep, NORMAL } from '../sim/hooks';
 import { oncoticGradientRel } from '../engine/body';
 import type { ParamPatch } from '../engine/types';
@@ -85,6 +85,10 @@ export default function Edema({ query }: { query: URLSearchParams }) {
       {tab === 'underfill' && <Underfill />}
       {tab === 'compensation' && <Compensation />}
       {tab === 'treating' && <Treating />}
+      <BedsideEquations
+        ids={['unauk', 'fena']}
+        intro="In an oedematous patient on diuretics, the spot urine Na⁺/K⁺ ratio shows whether the kidney is excreting sodium at all, and so whether to raise the diuretic or look at what the patient is eating."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>A net filtration gradient of about 0.3 mmHg at a muscle capillary, with the filtrate returned by the lymphatics. No interstitial accumulation.</p>}

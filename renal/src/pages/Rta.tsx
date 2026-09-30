@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Chain, LineChart, Expand, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady, useStep } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
 
@@ -88,6 +89,10 @@ export default function Rta({ query }: { query: URLSearchParams }) {
       {tab === 'titration' && <Titration />}
       {tab === 'diagnose' && <Diagnose />}
       {tab === 'stones' && <Stones />}
+      <BedsideEquations
+        ids={['uag', 'uosmgap', 'fehco3', 'ag']}
+        intro="In a normal-gap acidosis: is ammonium excretion appropriate (urine anion and osmolal gaps)? If it is low, is the defect proximal (FEHCO₃ during bicarbonate loading) or distal?"
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={

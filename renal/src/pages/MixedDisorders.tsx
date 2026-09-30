@@ -2,7 +2,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, Chain, Expand, Equation } from '../ui/kit';
 import { AcidBaseMap, hco3From, phFrom, type MapPoint } from '../ui/AcidBaseMap';
-import { EquationCard } from '../ui/EquationCard';
+import { BedsideEquations } from '../ui/EquationCard';
 
 const TAB_IDS = ['interpret', 'map', 'cases'] as const;
 
@@ -228,10 +228,10 @@ export default function MixedDisorders({ query }: { query: URLSearchParams }) {
           reason to look again rather than a second diagnosis.
         </p>
       </Expand>
-      <div class="grid grid-2">
-        <EquationCard eq="hplus" compact />
-        <EquationCard eq="ag" compact />
-      </div>
+      <BedsideEquations
+        ids={['hplus', 'ag', 'deltaratio', 'winters', 'alkComp', 'respComp']}
+        intro="Every compensation rule in one place, each with a patient in whom it reveals a second disorder."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>pH 7.37–7.43, PCO₂ 36–44 mmHg, bicarbonate 22–26 mmol/L; [H⁺] about 40 nmol/L.</p>}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, Tabs, Chain, LineChart, Expand, toneFor, type Series } from '../ui/kit';
-import { EquationCard } from '../ui/EquationCard';
+import { BedsideEquations } from '../ui/EquationCard';
 import { EcgStrip, ecgFeatures } from '../ui/EcgStrip';
 import { makeParams, useStep } from '../sim/hooks';
 import { normalKStore, plasmaPotassium } from '../engine/body';
@@ -395,10 +395,10 @@ export default function Hypokalemia({ query }: { query: URLSearchParams }) {
       {tab === 'deficit' && <DeficitTab />}
       {tab === 'ecg' && <EcgTab />}
       {tab === 'treat' && <TreatTab />}
-      <div class="grid grid-2" style={{ marginTop: 16 }}>
-        <EquationCard eq="ukcr" compact />
-        <EquationCard eq="ttkg" compact />
-      </div>
+      <BedsideEquations
+        ids={['ukcr', 'kdeficit', 'femg', 'ttkg']}
+        intro="Is the kidney wasting K⁺ or conserving it? How big is the deficit? And is magnesium keeping the leak open?"
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>40–120 mmol/day in, the same out in urine; cells hold 98% and buffer shifts; the kidney can cut excretion to 5–25 mmol/day.</p>}

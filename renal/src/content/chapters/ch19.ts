@@ -152,7 +152,7 @@ export const chapter: ChapterContent = {
     { label: 'Urine anion gap on NH₄Cl', value: '−27 mmol/L', note: 'Batlle 1988; +23 to +39 in renal tubular acidosis' },
     { label: 'Alkali needed', value: '1–2 mmol/kg/day in type 1; 10–15 in type 2', note: 'type 2 alkali is promptly re-excreted' },
   ],
-  equations: ['ag', 'deltaratio', 'winters', 'hco3deficit', 'uag', 'uosmgap', 'nae'],
+  equations: ['ag', 'deltaratio', 'winters', 'hco3deficit', 'uag', 'uosmgap', 'nae', 'fehco3'],
   clinical: [
     'A bicarbonate of 10 mmol/L or less is metabolic acidosis: the renal compensation to chronic hypocapnia never goes that low.',
     'Calculate the anion gap on every set of electrolytes, and correct it for the albumin before deciding it is normal.',

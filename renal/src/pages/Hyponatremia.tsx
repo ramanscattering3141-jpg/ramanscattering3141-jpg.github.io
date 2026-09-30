@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Chain, LineChart, Expand, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady, useStep, NORMAL } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
 
@@ -94,6 +95,10 @@ export default function Hyponatremia({ query }: { query: URLSearchParams }) {
       {tab === 'diagnose' && <Diagnose />}
       {tab === 'fluids' && <Fluids />}
       {tab === 'correct' && <Correct />}
+      <BedsideEquations
+        ids={['furst', 'efwc', 'edelman', 'adrogue', 'nadeficit', 'maxuv']}
+        intro="First ask whether the kidney can excrete free water at all (Furst ratio, electrolyte-free water clearance, solute-limited urine volume). Then size the correction (Adrogué–Madias, sodium deficit), remembering that potassium counts as much as sodium (Edelman)."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Antidiuretic hormone stops below a plasma osmolality of about 275. The urine osmolality then falls to 40–100 mmol/kg and over 10 litres a day of free water can be excreted.</p>}

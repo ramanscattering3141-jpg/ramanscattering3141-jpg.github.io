@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, Toggle, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, Tabs, Chain, LineChart, Expand, toneFor, type Series } from '../ui/kit';
-import { EquationCard } from '../ui/EquationCard';
+import { BedsideEquations } from '../ui/EquationCard';
 import { EcgStrip, ecgFeatures } from '../ui/EcgStrip';
 import { makeParams, useStep } from '../sim/hooks';
 import { normalKStore, plasmaPotassium } from '../engine/body';
@@ -550,10 +550,10 @@ export default function Hyperkalemia({ query }: { query: URLSearchParams }) {
       {tab === 'adapt' && <AdaptTab />}
       {tab === 'ecg' && <EcgTab />}
       {tab === 'treat' && <TreatTab />}
-      <div class="grid grid-2" style={{ marginTop: 16 }}>
-        <EquationCard eq="ttkg" compact />
-        <EquationCard eq="ukcr" compact />
-      </div>
+      <BedsideEquations
+        ids={['fek', 'ukcr', 'ttkg']}
+        intro="Is the kidney excreting enough K⁺ for the level? A low fractional excretion with a good GFR points at the distal secretory machinery or the drugs acting on it."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Cells buffer a load within minutes (insulin, β₂, the K⁺ itself); the kidney excretes most of it within 6–8 hours; adaptation lets intake rise to about 400 mmol/day.</p>}

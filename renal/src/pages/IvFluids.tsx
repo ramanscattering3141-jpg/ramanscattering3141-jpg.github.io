@@ -147,7 +147,7 @@ export default function IvFluids({ query }: { query: URLSearchParams }) {
         path="/iv-fluids"
         lede="Choose a patient and a bag, and follow every millilitre: into the plasma, out across the capillaries, into or out of cells, and — if the kidney is able — into the urine. The same litre behaves very differently in a healthy volunteer, after bleeding, in septic shock and in heart failure."
       />
-      <div class="grid grid-main-side" style={{ gridTemplateColumns: 'minmax(0, 1.55fr) minmax(0, 1fr)' }}>
+      <div class="grid grid-main-side" style={{ '--main-side': 'minmax(0, 1.55fr) minmax(0, 1fr)' }}>
         <div>
           <Panel title={`${fluid.name} · ${patient.name}`}>
             <div class="player" style={{ marginBottom: 8 }}>

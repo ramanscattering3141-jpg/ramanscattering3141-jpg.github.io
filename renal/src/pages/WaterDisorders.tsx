@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, Toggle, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Chain, LineChart } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady, useDeprivation, useCorrection } from '../sim/hooks';
 import { DEPRIVATION_PATIENTS, type HypernatraemiaCause } from '../sim/deprivation';
 import type { ParamPatch } from '../engine/types';
@@ -29,6 +30,10 @@ export default function WaterDisorders({ query }: { query: URLSearchParams }) {
       {tab === 'deprivation' && <Deprivation />}
       {tab === 'correct' && <Correct />}
       {tab === 'polyuria' && <Polyuria />}
+      <BedsideEquations
+        ids={['waterdeficit', 'ch2o', 'efwc', 'adrogue']}
+        intro="How much water is missing, how much more is being lost each day, and what a litre of D5W will do."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>ADH is released from a plasma osmolality of about 280 mOsm/kg, and thirst starts a few mOsm/kg higher. Together they hold osmolality within 1–2%.</p>}

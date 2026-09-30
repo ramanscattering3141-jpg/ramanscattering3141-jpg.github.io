@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Sources, Predict, Tabs, Chain, Expand, BarRow, toneFor } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady } from '../sim/hooks';
 import { si } from '../units';
 import type { ParamPatch } from '../engine/types';
@@ -177,6 +178,10 @@ export default function Glomerular({ query }: { query: URLSearchParams }) {
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
       {tab === 'barrier' && <BarrierTab />}
       {tab === 'syndromes' && <SyndromesTab />}
+      <BedsideEquations
+        ids={['upcr', 'ckdepi']}
+        intro="Quantify proteinuria from a spot urine, and estimate GFR (only in a steady state)."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Three layers — endothelium, basement membrane, podocytes — filter by size and charge, so water and small solutes pass while albumin and cells stay in the blood.</p>}

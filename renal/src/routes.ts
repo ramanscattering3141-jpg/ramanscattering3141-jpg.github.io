@@ -120,6 +120,7 @@ export const ROUTES: RouteDef[] = [
 
   // ---------------------------------------------------------------- clinical
   { path: '/cases', page: 'Cases', title: 'Clinical cases', group: 'clinical', blurb: 'Patients built from physiology, each opening in a simulator set to their parameters.', keywords: ['case', 'patient', 'vignette'] },
+  { path: '/bedside', page: 'Bedside', title: 'Equations at the bedside', group: 'clinical', blurb: 'Why the renal equations matter for patients, which one answers which question, and worked patients that chain them from first result to treatment plan.', chapters: [30], keywords: ['equations', 'formula', 'bedside', 'calculation', 'Furst', 'urine sodium potassium ratio', 'Edelman', 'Adrogue', 'sodium correction', 'worked example', 'patient'] },
   { path: '/urine-chemistry', page: 'UrineChemistry', title: 'Urine chemistries', group: 'clinical', blurb: 'What urine Na, Cl, K, osmolality and pH mean — and when they mislead.', chapters: [13], keywords: ['urine sodium', 'urine chloride', 'urine osmolality', 'specific gravity', 'urine pH'] },
 ];
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related } from '../ui/page';
 import { Panel, Readout, Slider, Chain, Sources, Predict, LineChart, BarRow, type Series } from '../ui/kit';
-import { EquationCard } from '../ui/EquationCard';
+import { BedsideEquations } from '../ui/EquationCard';
 import { urineVolume } from '../sim/osmoregulation';
 
 interface S {
@@ -167,10 +167,10 @@ export default function UrineOsmolality() {
           explanation="Volume = solute ÷ osmolality. With ADH fixed, solute intake is the only lever on urine volume — the basis for oral urea in chronic SIADH."
         />
       </div>
-      <div class="grid grid-2">
-        <EquationCard eq="cosm" compact />
-        <EquationCard eq="ch2o" compact />
-      </div>
+      <BedsideEquations
+        ids={['cosm', 'ch2o', 'maxuv']}
+        intro="How solute excretion and urine osmolality together set urine volume, and why low-solute diets limit water excretion."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>About 800 mOsm/day of solute is excreted in 0.5–2 L of urine, at an osmolality set by ADH between 40–100 and 900–1400 mOsm/kg.</p>}

@@ -88,7 +88,7 @@ export default function Hormones({ query }: { query: URLSearchParams }) {
         <NephronDiagram labels dimUnmarked marks={marks} callouts={callouts} height={760} title={all ? 'Sites of hormone action along the nephron' : `Sites of ${short(h)} action along the nephron`} />
       </Panel>
       {!all && (
-      <div class="grid grid-main-side" style={{ gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1fr)' }}>
+      <div class="grid grid-main-side" style={{ '--main-side': 'minmax(0, 1.1fr) minmax(0, 1fr)' }}>
         <Panel title={h.name}>
           <p class="muted">{h.source}</p>
           <p>

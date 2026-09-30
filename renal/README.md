@@ -34,7 +34,9 @@ The lab shares this repository's Vite build with the flight simulator at the sit
 - *Kidney disease:* acute kidney injury, pre-renal vs ATN, urinary obstruction, chronic kidney disease, glomerular pathophysiology, tubulointerstitial disease, inherited tubular disorders
 - *Drugs:* diuretic lab, **transporters & drug targets** (every major transporter on its cell with the drugs wired to it; why loops lower K⁺ but not Na⁺, magnesium, vaptans, and a drug-by-electrolyte table)
 - *Laboratory:* physiology sandbox, break-the-kidney, what-if explorer, knowledge map, equation explorer, laboratory interpreter
-- *Clinical:* clinical cases, guided lessons, predict-then-observe challenges, the (retrieval) AI tutor, urine chemistries
+- *Clinical:* clinical cases, guided lessons, predict-then-observe challenges, the (retrieval) AI tutor, urine chemistries, **equations at the bedside** (why the equations matter for patients, a question → equation table, and six worked patients that chain live equation cards from first result to plan)
+
+**Equations.** 49 live equations (`content/equations.ts`), 29 with a worked patient case (`content/equationCases.ts`) that loads its numbers into the sliders. They include the Furst ratio, the spot urine Na⁺/K⁺ ratio, Edelman, Adrogué–Madias, FEK, FEMg, FEPO₄, FEHCO₃, the calcium/creatinine clearance ratio, urea:creatinine, UPCR, the potassium deficit and the solute-limited urine volume. Each module that leans on them shows an “Equations at the bedside” panel (`BedsideEquations` in `ui/EquationCard.tsx`).
 
 ## Display conventions
 

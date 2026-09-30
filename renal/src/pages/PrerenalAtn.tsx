@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, Toggle } from '../ui/page';
 import { Panel, Slider, Sources, Predict, Chain, Expand, LineChart, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useStep } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
 import { si } from '../units';
@@ -214,6 +215,10 @@ export default function PrerenalAtn() {
           </table>
         </div>
       </Expand>
+      <BedsideEquations
+        ids={['fena', 'feurea', 'ureacr']}
+        intro="The classic indices, each with the patient in whom it misleads."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Neither state is normal. In health the kidney conserves sodium when volume falls and concentrates urine when ADH rises, which is exactly the behaviour the indices test for.</p>}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Expand, LineChart, Chain, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { NephronDiagram, type Mark, type StructureId } from '../ui/NephronDiagram';
 import { acute, makeParams, useAcute, useStep, NORMAL } from '../sim/hooks';
 import type { Drugs, ParamPatch } from '../engine/types';
@@ -57,6 +58,10 @@ export default function Diuretics({ query }: { query: URLSearchParams }) {
       {tab === 'timecourse' && <TimeCourse />}
       {tab === 'braking' && <Braking />}
       {tab === 'resistance' && <Resistance />}
+      <BedsideEquations
+        ids={['unauk', 'feurea']}
+        intro="Two checks for a patient whose diuretic does not seem to work: is sodium actually reaching the urine (Na⁺/K⁺ ratio), and is the kidney under-perfused (FEUrea, which diuretics do not distort)."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Nothing: a diuretic is a drug. In a person in balance, sodium intake equals sodium output at a normal extracellular volume.</p>}

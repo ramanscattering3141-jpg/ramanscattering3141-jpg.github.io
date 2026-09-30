@@ -139,7 +139,7 @@ export const chapter: ChapterContent = {
     { label: 'Cirrhosis starting regimen', value: 'spironolactone 100 mg + furosemide 40 mg, single morning dose' },
     { label: 'Thiazides become ineffective below', value: 'GFR ~20 mL/min, unless combined with a loop' },
   ],
-  equations: ['fena', 'feurea'],
+  equations: ['fena', 'feurea', 'unauk'],
   clinical: [
     'A diuretic produces a limited, self-terminating net fluid loss. If you expect continued weight loss on an unchanged dose and diet, you will be disappointed — and if you keep escalating, you will produce hypovolaemia.',
     'The first dose is the largest response. Judge efficacy on it, and find the effective single dose by doubling rather than by giving an ineffective dose more often.',

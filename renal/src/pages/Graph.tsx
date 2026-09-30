@@ -39,6 +39,7 @@ export default function Graph({ query }: { query: URLSearchParams }) {
       <Panel title="Search the map">
         <input
           type="search"
+          aria-label="Search the knowledge graph"
           value={q}
           placeholder="Search every module — countercurrent, aldosterone, RTA, FENa…"
           onInput={(e) => setQ((e.target as HTMLInputElement).value)}

@@ -127,7 +127,7 @@ export const chapter: ChapterContent = {
     { label: 'Heat of evaporation', value: '0.58 kcal/mL (20–25% of heat loss)' },
     { label: 'Stool water', value: '100–200 mL/day' },
   ],
-  equations: ['cosm', 'ch2o', 'efwc', 'posm', 'waterdeficit'],
+  equations: ['cosm', 'ch2o', 'efwc', 'posm', 'waterdeficit', 'maxuv'],
   clinical: [
     'Hyponatraemia almost always means impaired water excretion: look for ADH (volume depletion, SIADH, adrenal insufficiency, nausea, pain, drugs), poor delivery to the diluting segment, thiazides, or a very low solute intake.',
     'Thiazides cause hyponatraemia much more often than loop diuretics because they block the cortical diluting segment without impairing the medullary gradient.',

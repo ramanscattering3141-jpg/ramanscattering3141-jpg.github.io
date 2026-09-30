@@ -106,7 +106,7 @@ export const chapter: ChapterContent = {
     { label: 'Appropriate urine pH in acidosis', value: '< 5.3 (usually < 5.0)' },
     { label: 'Urine Na⁺ vs Cl⁻ discrepancy', value: '> 15 mmol/L in ~30% of hypovolaemic patients' },
   ],
-  equations: ['fena', 'feurea', 'uag', 'uosmgap', 'ukcr'],
+  equations: ['fena', 'feurea', 'uag', 'uosmgap', 'ukcr', 'ureacr'],
   clinical: [
     'There are no normal values for urine electrolytes — interpret them against the question you are asking and the patient’s state.',
     'A urine Na⁺ below 20 mmol/L means the kidney is retaining sodium; it does not by itself mean the patient is dry (think renal artery stenosis, glomerulonephritis) — and a high value does not exclude hypovolaemia (diuretics, salt wasting, bicarbonaturia).',

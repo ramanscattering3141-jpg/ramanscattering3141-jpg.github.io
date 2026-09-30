@@ -40,7 +40,7 @@ export default function NephronExplorer({ query }: { query: URLSearchParams }) {
   return (
     <div>
       <PageHead path="/nephron" lede="A juxtamedullary nephron with its blood supply. Click any segment, vessel or cell group. Numbers beside each segment show the share of filtered water still in the tubule as fluid leaves it, and its osmolality (mOsm/kg), in a normally hydrated adult." />
-      <div class="grid grid-main-side" style={{ gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)' }}>
+      <div class="grid grid-main-side" style={{ '--main-side': 'minmax(0, 1.3fr) minmax(0, 1fr)' }}>
         <div class="sticky-figure">
         <Panel>
           <NephronDiagram selected={sel} onSelect={setSel} notes={notes} medullaOsm={ev.kidney.medullaTarget} height="calc(100vh - 150px)" />

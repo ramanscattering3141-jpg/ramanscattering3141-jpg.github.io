@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, Tabs, Chain, LineChart, BarRow, Expand, toneFor, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
 
@@ -321,6 +322,10 @@ export default function Minerals({ query }: { query: URLSearchParams }) {
       {tab === 'handling' && <HandlingTab />}
       {tab === 'ckd' && <CkdTab />}
       {tab === 'magnesium' && <MagnesiumTab />}
+      <BedsideEquations
+        ids={['correctedCa', 'cccr', 'femg', 'fepo4']}
+        intro="Before treating a calcium, magnesium or phosphate level, correct it for albumin, then use a fractional excretion to ask whether the kidney is the cause or is appropriately conserving."
+      />
       <Panel title="The five questions" id="five">
         <FiveQuestions
           normal={<p>Gut, bone and kidney share the load; PTH, calcitriol and FGF23 hold ionised calcium and phosphate steady. About 45% of calcium is ionised; correct the total for albumin.</p>}

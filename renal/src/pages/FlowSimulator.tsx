@@ -269,7 +269,7 @@ export default function FlowSimulator() {
   return (
     <div>
       <PageHead path="/flow" lede="Every particle entering the proximal tubule was filtered at the glomerulus. Follow one solute: particles cross out through the tubule wall into the blood where a segment reabsorbs it, cross in where a segment secretes it, and whatever is left reaches the urine. The green band under each segment shows how much of the filtered load it takes back." />
-      <div class="grid grid-main-side" style={{ gridTemplateColumns: 'minmax(0, 1.45fr) minmax(0, 1fr)' }}>
+      <div class="grid grid-main-side" style={{ '--main-side': 'minmax(0, 1.45fr) minmax(0, 1fr)' }}>
         <div class="sticky-figure">
           <Panel title={`Where does filtered ${label} go?`}>
             <div class="player" style={{ marginBottom: 8 }}>

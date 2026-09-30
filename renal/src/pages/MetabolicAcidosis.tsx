@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Chain, LineChart, Expand, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { AcidBaseMap } from '../ui/AcidBaseMap';
 import { makeParams, useStep, useCourse, NORMAL } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
@@ -104,6 +105,10 @@ export default function MetabolicAcidosis({ query }: { query: URLSearchParams })
       {tab === 'gap' && <Gap />}
       {tab === 'causes' && <Causes />}
       {tab === 'treat' && <Treat />}
+      <BedsideEquations
+        ids={['ag', 'deltaratio', 'winters', 'osmgap']}
+        intro="A stepwise read of any metabolic acidosis: anion gap corrected for albumin, then the Δ/Δ for a second metabolic disorder, Winter’s formula for the respiratory response, and the osmolal gap for toxic alcohols."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Acid production of 50–100 mmol/day is matched by net acid excretion: 10–40 mmol as titratable acid on phosphate, 30–60 as ammonium, minus any bicarbonate lost.</p>}

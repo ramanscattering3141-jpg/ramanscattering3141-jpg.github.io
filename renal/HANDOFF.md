@@ -56,12 +56,22 @@ Engine work done alongside these (all covered by the regression suite):
 - Body water: 100 kg / 60 L reference person (ch. 7 worked examples redone in round numbers, noting Rose’s 70 kg).
 - New `/iv-fluids` (`sim/ivfluids.ts`, regression tests in `tests/renal/ivfluids.test.ts`, checked against Lobo 2001 and Hahn 2010) and `/drug-map` (`content/drugmap.ts`). 22 new PubMed references, each checked by PMID.
 
+### Added on 2026-09-30 (third pass: equations at the bedside + review fixes)
+- 11 new equations: `furst`, `unauk`, `maxuv`, `fek`, `kdeficit`, `fehco3`, `femg`, `fepo4`, `cccr`, `ureacr`, `upcr`. Four new PubMed references, each checked by PMID: `furst2000`, `lee2021unak`, `elisaf1997femg`, `christensen2011fhh`.
+- Worked patient cases (`content/equationCases.ts`, attached to `EquationDef.patient`) for 29 equations; the card shows “How it works” and “Try it on a patient” even in compact mode.
+- `BedsideEquations` panels added to hyponatraemia, oedema, diuretics, minerals, RTA, pre-renal vs ATN, AKI, glomerular, metabolic acidosis, hypernatraemia, urine osmolality, hyper/hypokalaemia and mixed disorders. New page `/bedside` (`pages/Bedside.tsx`). The equation explorer has a “with a worked patient” filter.
+- Edelman card now displays the regression it computes (1.11 × … − 25.6).
+- Review fixes: pages that set `grid-main-side` columns inline (nephron explorer, flow simulator, IV fluids, hormones) now use the `--main-side` CSS variable so they stack on phones instead of overflowing. Search inputs on tutor, graph and equations have accessible labels.
+- `tests/renal/equations.test.ts`: case values fit their sliders, every equation computes, and the worked answers are reproduced.
+
 ### What a next session could still do
 The spec is broad; genuine polish items remain rather than missing modules:
 - Liddle syndrome is only partially reproduced (the ENaC gain suppresses renin/aldosterone but does not fully produce the hypertension/hypokalaemia, because escape and other loops compensate). Same for Gordon's blood pressure.
 - Nephrotic oedema is under-represented (the model lacks a primary nephrotic Na-avidity mechanism; it is discussed on `/edema` and `/glomerular` rather than simulated).
 - Deeper "open in simulator" wiring: the clinical cases link to modules but do not yet pre-load their exact parameters into the target page's controls.
 - More clinical cases and challenges from Rose ch. 29's problem set.
+- A mg/dL ↔ SI unit switch for the equation cards and lab interpreter (many readers outside Canada see US units).
+- The tutor is retrieval over the knowledge base, not a language model; its menu title “AI tutor” oversells it.
 
 ## 5. Known model limitations (keep documented, don't tune away)
 - The anion gap runs a few mmol/L high in distal/type 4 RTA, NH₄Cl loading and diarrhoea. Chloride is tracked by mass balance so it can cause chloride-depletion alkalosis.

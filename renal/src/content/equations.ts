@@ -3,6 +3,7 @@
 // textbook's summary (Rose & Post ch. 30) unless a modern source is cited.
 
 import type { Citation } from './sources';
+import { EQUATION_CASES } from './equationCases';
 
 export interface EqVar {
   key: string;
@@ -38,6 +39,17 @@ export interface EquationDef {
   route?: string;
   cite?: Citation;
   keywords?: string[];
+  /** a worked bedside example: the numbers load into the sliders */
+  patient?: PatientCase;
+}
+
+/** A worked patient example for an equation. `values` must use the equation's own variable keys. */
+export interface PatientCase {
+  title: string;
+  story: string;
+  values: Record<string, number>;
+  steps: string[];
+  takeaway: string;
 }
 
 const f = (x: number, d = 0) => (Number.isFinite(x) ? x.toFixed(d) : '—');
@@ -442,7 +454,7 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'edelman',
     name: 'Plasma sodium (Edelman)',
-    formula: '[Na⁺]p ≈ (Na⁺e + K⁺e) ÷ TBW',
+    formula: '[Na⁺]p = 1.11 × (Na⁺e + K⁺e) ÷ TBW − 25.6   (in essence: exchangeable cations ÷ body water)',
     group: 'Water & sodium',
     vars: [
       { key: 'na', label: 'Exchangeable Na⁺', unit: 'mmol', min: 1000, max: 5000, step: 10, value: 3080 },
@@ -451,7 +463,7 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => ({ value: 1.11 * ((v.na + v.k) / v.tbw) - 25.6, unit: 'mmol/L', digits: 0 }),
     show: (v) => `1.11 × (${f(v.na)} + ${f(v.k)}) ÷ ${f(v.tbw, 1)} − 25.6`,
-    explain: 'Plasma sodium is a ratio: the exchangeable cations (the osmoles that hold water in cells and extracellular fluid) divided by total body water. Potassium lost from cells lowers the plasma sodium just as sodium loss does; giving potassium raises it.',
+    explain: 'Plasma sodium is a ratio: the exchangeable cations (the osmoles that hold water in cells and extracellular fluid) divided by total body water. Potassium lost from cells lowers the plasma sodium just as sodium loss does; giving potassium raises it. The slope (1.11) and intercept (−25.6) are Edelman’s fitted regression; the intercept reflects osmotically inactive sodium (bone, bound) and other osmoles.',
     chapters: [7, 23],
     route: '/body-water',
     cite: { rose: [7], evidence: 'physiology', refs: ['edelman1958', 'rose1986'] },
@@ -820,7 +832,269 @@ export const EQUATIONS: EquationDef[] = [
     route: '/respiratory',
     cite: { rose: [20, 30], evidence: 'physiology' },
   },
+  // ------------------------------------------------------------------ bedside additions
+  {
+    id: 'furst',
+    name: 'Furst ratio (urine/plasma electrolyte ratio)',
+    formula: 'Furst ratio = (UNa + UK) ÷ PNa',
+    group: 'Water & sodium',
+    vars: [
+      { key: 'una', label: 'Urine Na⁺', unit: 'mmol/L', min: 0, max: 300, step: 1, value: 70 },
+      { key: 'uk', label: 'Urine K⁺', unit: 'mmol/L', min: 0, max: 150, step: 1, value: 40 },
+      { key: 'pna', label: 'Plasma Na⁺', unit: 'mmol/L', min: 100, max: 160, step: 1, value: 122 },
+    ],
+    compute: (v) => {
+      const r = (v.una + v.uk) / v.pna;
+      return {
+        value: r,
+        digits: 2,
+        read:
+          r > 1
+            ? 'Above 1: the urine is saltier than plasma and carries no electrolyte-free water. Fluid restriction alone will not raise the Na⁺; add solute (urea, salt with a loop diuretic) or a vaptan.'
+            : r >= 0.5
+              ? '0.5–1: restrict fluid to about 500 mL/day.'
+              : 'Below 0.5: restrict fluid to about 1 L/day.',
+      };
+    },
+    show: (v) => `(${f(v.una)} + ${f(v.uk)}) ÷ ${f(v.pna)}`,
+    explain: 'The bedside form of electrolyte-free water clearance. One minus the ratio is the fraction of each litre of urine that is free water. If the ratio is above 1, every litre of urine leaves the body relatively saltier and the remaining water more dilute, so drinking less cannot correct the sodium: the kidney is not excreting any free water to “catch up” with.',
+    caveat: 'One spot urine is a snapshot: repeat it as the urine changes. Insensible losses (about 500 mL/day) are also free water, which is why a ratio near 1 still allows a modest restriction. A low solute intake shrinks urine volume and blunts every strategy.',
+    chapters: [23],
+    route: '/hyponatremia',
+    cite: { rose: [23], evidence: 'clinical', refs: ['furst2000'] },
+    keywords: ['Furst', 'U/P ratio', 'urine to plasma electrolyte ratio', 'fluid restriction', 'SIADH', 'urine sodium plus potassium'],
+  },
+  {
+    id: 'unauk',
+    name: 'Spot urine Na⁺/K⁺ ratio',
+    formula: 'Urine Na⁺/K⁺ = UNa ÷ UK   (random sample)',
+    group: 'Water & sodium',
+    vars: [
+      { key: 'una', label: 'Urine Na⁺', unit: 'mmol/L', min: 1, max: 250, step: 1, value: 60 },
+      { key: 'uk', label: 'Urine K⁺', unit: 'mmol/L', min: 5, max: 150, step: 1, value: 40 },
+    ],
+    compute: (v) => {
+      const r = v.una / v.uk;
+      return {
+        value: r,
+        digits: 2,
+        read:
+          r > 1
+            ? 'Above 1: predicts a 24-hour Na⁺ excretion above about 78 mmol/day. On an 88 mmol (2 g) Na⁺ diet the patient should be losing weight; if ascites keeps growing, look for dietary or hidden sodium.'
+            : 'Below 1: aldosterone is still winning, so the collecting duct swaps Na⁺ for K⁺. The diuretic dose is not yet enough (typically raise spironolactone with furosemide in a 100:40 ratio).',
+      };
+    },
+    show: (v) => `${f(v.una)} ÷ ${f(v.uk)}`,
+    explain: 'In cirrhosis, secondary hyperaldosteronism makes the collecting duct reabsorb Na⁺ in exchange for K⁺, so urine Na⁺ falls while urine K⁺ stays up. Their ratio in a random sample tracks the 24-hour sodium excretion without a timed collection. Outside liver disease the same logic applies: a ratio below 1 in a volume-depleted, hypokalaemic patient reflects aldosterone effect.',
+    caveat: 'Sensitive (about 90%) but only modestly specific (about 56%) in validation: a ratio above 1 does not guarantee adequate natriuresis. When the answer changes management, confirm with a complete 24-hour collection (check the creatinine content to prove it is complete).',
+    chapters: [16],
+    route: '/edema',
+    cite: { rose: [16], evidence: 'clinical', refs: ['lee2021unak'] },
+    keywords: ['Na/K ratio', 'urine sodium potassium ratio', 'ascites', 'cirrhosis', 'diuretic resistance', 'dietary compliance', 'aldosterone'],
+  },
+  {
+    id: 'maxuv',
+    name: 'Solute-limited urine volume',
+    formula: 'Maximum urine volume (L/day) = solute excreted (mOsm/day) ÷ minimum Uosm (mOsm/kg)',
+    group: 'Water & sodium',
+    vars: [
+      { key: 'sol', label: 'Solute excretion', unit: 'mOsm/day', min: 100, max: 1500, step: 10, value: 600 },
+      { key: 'umin', label: 'Minimum urine osmolality', unit: 'mOsm/kg', min: 40, max: 300, step: 5, value: 50 },
+    ],
+    compute: (v) => {
+      const vol = v.sol / v.umin;
+      return { value: vol, unit: 'L/day', digits: 1, read: `Drinking more than about ${(vol + 0.5).toFixed(1)} L/day (urine plus ~0.5 L insensible loss) will lower the Na⁺ even with ADH fully suppressed` };
+    },
+    show: (v) => `${f(v.sol)} ÷ ${f(v.umin)}`,
+    explain: 'Water can only leave in urine that carries solute, and even maximally dilute urine has some osmolality. So daily solute excretion caps how much water can be excreted. A normal diet gives 600–900 mOsm/day (12–18 L of capacity); tea-and-toast or beer diets may give 150–250 (3–5 L).',
+    caveat: 'Once solute arrives (food, saline), the capacity jumps and a brisk water diuresis can overcorrect the Na⁺ within hours.',
+    chapters: [9, 23],
+    route: '/urine-osmolality',
+    cite: { rose: [23], evidence: 'physiology' },
+    keywords: ['beer potomania', 'tea and toast', 'low solute', 'maximum urine volume', 'solute intake'],
+  },
+  {
+    id: 'fek',
+    name: 'Fractional excretion of K⁺',
+    formula: 'FEK (%) = (UK × Pcr) ÷ (PK × Ucr × 1000) × 100   [Pcr µmol/L, Ucr mmol/L]',
+    group: 'Potassium',
+    vars: [
+      { key: 'uk', label: 'Urine K⁺', unit: 'mmol/L', min: 1, max: 200, step: 1, value: 40 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 88 },
+      { key: 'pk', label: 'Plasma K⁺', unit: 'mmol/L', min: 1.5, max: 9, step: 0.1, value: 4.2 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 8 },
+    ],
+    compute: (v) => {
+      const fe = ((v.uk * v.pcr) / (v.pk * v.ucr * 1000)) * 100;
+      return { value: fe, unit: '%', digits: 1, read: 'Around 10% at a normal GFR on a normal diet. It rises as GFR falls, because each remaining nephron secretes more. In hyperkalaemia with a near-normal GFR, a value that is not clearly raised means the kidney is failing to respond.' };
+    },
+    show: (v) => `(${f(v.uk)} × ${f(v.pcr)}) ÷ (${f(v.pk, 1)} × ${f(v.ucr, 1)} × 1000) × 100`,
+    explain: 'The share of filtered K⁺ that ends up in the urine. Almost all filtered K⁺ is reabsorbed before the collecting duct, so urinary K⁺ is essentially what the distal nephron secretes: FEK is a window on distal secretion, adjusted for GFR.',
+    caveat: 'No single cut-off is validated. Read it with the GFR, the urine volume and the drugs (ACE inhibitors, ARBs, MRAs, trimethoprim, heparin, calcineurin inhibitors).',
+    chapters: [12, 28],
+    route: '/hyperkalemia',
+    cite: { rose: [12, 28], evidence: 'reasoning' },
+    keywords: ['FEK', 'fractional excretion potassium', 'distal secretion'],
+  },
+  {
+    id: 'kdeficit',
+    name: 'Potassium deficit (estimate)',
+    formula: 'Deficit ≈ 200–400 mmol for each 1 mmol/L fall below 4 (70 kg adult, no transcellular shift)',
+    group: 'Potassium',
+    vars: [
+      { key: 'k', label: 'Plasma K⁺', unit: 'mmol/L', min: 1.5, max: 4, step: 0.1, value: 2.8 },
+      { key: 'wt', label: 'Weight', unit: 'kg', min: 30, max: 150, step: 1, value: 70 },
+    ],
+    compute: (v) => {
+      const d = (4 - v.k) * (v.wt / 70);
+      return { value: 300 * d, unit: 'mmol', digits: 0, read: `Likely range ${(200 * d).toFixed(0)}–${(400 * d).toFixed(0)} mmol. Replace gradually and recheck; the plasma level, not the formula, guides the dose.` };
+    },
+    show: (v) => `300 × (4 − ${f(v.k, 1)}) × ${f(v.wt)}/70`,
+    explain: 'About 98% of body K⁺ is inside cells, so a small fall in plasma K⁺ reflects a large total loss. Because the relation is curved, losses are larger per mmol/L at lower levels.',
+    caveat: 'Only valid when K⁺ has actually left the body. Shifts into cells (insulin, β₂-agonists, alkalaemia, periodic paralysis, refeeding) lower the plasma K⁺ without a deficit, and full replacement then risks rebound hyperkalaemia. Correct magnesium, or the K⁺ will not stay in.',
+    chapters: [27],
+    route: '/hypokalemia',
+    cite: { rose: [27], evidence: 'clinical' },
+    keywords: ['potassium deficit', 'KCl replacement', 'hypokalaemia'],
+  },
+  {
+    id: 'fehco3',
+    name: 'Fractional excretion of HCO₃⁻',
+    formula: 'FEHCO₃ (%) = (UHCO₃ × Pcr) ÷ (PHCO₃ × Ucr × 1000) × 100',
+    group: 'Acid–base',
+    vars: [
+      { key: 'uhco3', label: 'Urine HCO₃⁻', unit: 'mmol/L', min: 0, max: 150, step: 1, value: 60 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 88 },
+      { key: 'phco3', label: 'Plasma HCO₃⁻', unit: 'mmol/L', min: 5, max: 40, step: 0.5, value: 22 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 3 },
+    ],
+    compute: (v) => {
+      const fe = ((v.uhco3 * v.pcr) / (v.phco3 * v.ucr * 1000)) * 100;
+      return { value: fe, unit: '%', digits: 1, read: fe > 15 ? 'Above 15% while plasma HCO₃⁻ is being raised: proximal (type 2) RTA' : fe < 5 ? 'Below ~5%: bicarbonate is reclaimed normally (distal or type 4 RTA more likely if acidotic)' : 'Intermediate: can occur in distal RTA, which leaks some bicarbonate' };
+    },
+    show: (v) => `(${f(v.uhco3)} × ${f(v.pcr)}) ÷ (${f(v.phco3, 1)} × ${f(v.ucr, 1)} × 1000) × 100`,
+    explain: 'Proximal RTA lowers the plasma HCO₃⁻ at which bicarbonate starts to spill. At the acidotic baseline the filtered load falls below that lower threshold, so the urine is bicarbonate-free and can be acidic. Raise the plasma HCO₃⁻ with an infusion and bicarbonate pours into the urine.',
+    caveat: 'Only meaningful during bicarbonate loading, not at the acidotic baseline.',
+    chapters: [11, 19],
+    route: '/rta',
+    cite: { rose: [19], evidence: 'clinical' },
+    keywords: ['FEHCO3', 'proximal RTA', 'type 2 RTA', 'bicarbonate loading', 'Fanconi'],
+  },
+  {
+    id: 'femg',
+    name: 'Fractional excretion of Mg²⁺',
+    formula: 'FEMg (%) = (UMg × Pcr) ÷ (0.7 × PMg × Ucr × 1000) × 100',
+    group: 'Minerals',
+    vars: [
+      { key: 'umg', label: 'Urine Mg²⁺', unit: 'mmol/L', min: 0.1, max: 10, step: 0.05, value: 1.5 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 80 },
+      { key: 'pmg', label: 'Plasma Mg²⁺', unit: 'mmol/L', min: 0.2, max: 1.5, step: 0.05, value: 0.5 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 8 },
+    ],
+    compute: (v) => {
+      const fe = ((v.umg * v.pcr) / (0.7 * v.pmg * v.ucr * 1000)) * 100;
+      return { value: fe, unit: '%', digits: 1, read: fe > 4 ? 'Above ~4% in hypomagnesaemia: inappropriate renal loss (loop or thiazide diuretics, alcohol, cisplatin, aminoglycosides, calcineurin inhibitors, Gitelman)' : fe < 2 ? 'Below ~2%: the kidney is conserving; the loss is gastrointestinal or intake is low (diarrhoea, proton-pump inhibitors)' : '2–4%: indeterminate' };
+    },
+    show: (v) => `(${f(v.umg, 2)} × ${f(v.pcr)}) ÷ (0.7 × ${f(v.pmg, 2)} × ${f(v.ucr, 1)} × 1000) × 100`,
+    explain: 'Only about 70% of plasma magnesium is filtered (the rest is bound to albumin), hence the 0.7. Most filtered Mg²⁺ is reclaimed in the thick ascending limb, and the final amount is set in the distal convoluted tubule (TRPM6).',
+    caveat: 'Interpret only while the patient is hypomagnesaemic, with reasonable renal function, and not within about a day of IV magnesium.',
+    chapters: [5, 27],
+    route: '/minerals',
+    cite: { rose: [5], evidence: 'clinical', refs: ['elisaf1997femg'] },
+    keywords: ['FEMg', 'magnesium wasting', 'hypomagnesaemia', 'PPI'],
+  },
+  {
+    id: 'fepo4',
+    name: 'Fractional excretion of phosphate',
+    formula: 'FEPO₄ (%) = (UPO₄ × Pcr) ÷ (PPO₄ × Ucr × 1000) × 100',
+    group: 'Minerals',
+    vars: [
+      { key: 'upo4', label: 'Urine phosphate', unit: 'mmol/L', min: 0.5, max: 60, step: 0.5, value: 5 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 80 },
+      { key: 'ppo4', label: 'Plasma phosphate', unit: 'mmol/L', min: 0.2, max: 3, step: 0.05, value: 0.5 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 8 },
+    ],
+    compute: (v) => {
+      const fe = ((v.upo4 * v.pcr) / (v.ppo4 * v.ucr * 1000)) * 100;
+      return { value: fe, unit: '%', digits: 1, read: fe > 5 ? 'Above ~5% in hypophosphataemia: renal wasting (PTH excess, FGF23 excess such as after IV ferric carboxymaltose, Fanconi syndrome)' : 'Below ~5%: the kidney is conserving; think shift into cells (refeeding, insulin, respiratory alkalosis) or low intake/absorption' };
+    },
+    show: (v) => `(${f(v.upo4, 1)} × ${f(v.pcr)}) ÷ (${f(v.ppo4, 2)} × ${f(v.ucr, 1)} × 1000) × 100`,
+    explain: 'About 80% of filtered phosphate is reabsorbed in the proximal tubule by NaPi-IIa/IIc. PTH and FGF23 remove those transporters from the membrane, so a high FEPO₄ in a hypophosphataemic patient points to one of these hormones or to proximal tubular damage.',
+    caveat: 'Only interpretable while the plasma phosphate is low. In CKD, FEPO₄ rises appropriately as nephrons are lost.',
+    chapters: [3],
+    route: '/minerals',
+    cite: { rose: [3], evidence: 'clinical' },
+    keywords: ['FEPO4', 'phosphate wasting', 'hypophosphataemia', 'FGF23', 'TmP/GFR'],
+  },
+  {
+    id: 'cccr',
+    name: 'Calcium/creatinine clearance ratio',
+    formula: 'CCCR = (UCa × Pcr) ÷ (PCa × Ucr × 1000)   [24-hour urine]',
+    group: 'Minerals',
+    vars: [
+      { key: 'uca', label: 'Urine Ca²⁺', unit: 'mmol/L', min: 0.2, max: 15, step: 0.1, value: 3 },
+      { key: 'pcr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 80 },
+      { key: 'pca', label: 'Plasma total Ca²⁺', unit: 'mmol/L', min: 2, max: 4, step: 0.01, value: 2.75 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 8 },
+    ],
+    compute: (v) => {
+      const r = (v.uca * v.pcr) / (v.pca * v.ucr * 1000);
+      return { value: r, digits: 4, read: r < 0.01 ? 'Below 0.01: strongly suggests familial hypocalciuric hypercalcaemia (FHH); test the CASR gene before any parathyroid surgery' : r > 0.02 ? 'Above 0.02: favours primary hyperparathyroidism' : '0.01–0.02: grey zone; CASR testing is reasonable' };
+    },
+    show: (v) => `(${f(v.uca, 1)} × ${f(v.pcr)}) ÷ (${f(v.pca, 2)} × ${f(v.ucr, 1)} × 1000)`,
+    explain: 'In primary hyperparathyroidism the filtered calcium load is so high that urine calcium rises despite PTH. In FHH an insensitive calcium-sensing receptor in the thick ascending limb keeps reabsorbing calcium, so the urine stays calcium-poor despite hypercalcaemia.',
+    caveat: 'Thiazides, lithium, vitamin D deficiency and CKD also lower urine calcium. Stop thiazides and lithium and replete vitamin D before testing.',
+    chapters: [5, 6],
+    route: '/minerals',
+    cite: { rose: [6], evidence: 'clinical', refs: ['christensen2011fhh'] },
+    keywords: ['CCCR', 'FHH', 'familial hypocalciuric hypercalcaemia', 'hyperparathyroidism', 'CaSR'],
+  },
+  {
+    id: 'ureacr',
+    name: 'Urea : creatinine ratio (SI)',
+    formula: 'Ratio = urea (mmol/L) ÷ creatinine (µmol/L) × 1000',
+    group: 'Filtration & clearance',
+    vars: [
+      { key: 'urea', label: 'Plasma urea', unit: 'mmol/L', min: 1, max: 70, step: 0.5, value: 20 },
+      { key: 'cr', label: 'Plasma creatinine', unit: 'µmol/L', min: 30, max: 1300, step: 1, value: 150 },
+    ],
+    compute: (v) => {
+      const r = (v.urea / v.cr) * 1000;
+      return { value: r, digits: 0, read: r > 100 ? 'Above ~100 (≈ BUN:creatinine above 20 in US units): urea reabsorbed avidly with water (pre-renal), or high urea production (GI bleeding, corticosteroids, catabolism, protein load)' : r < 40 ? 'Low: little urea production (low protein intake, liver disease) or creatinine raised out of proportion (rhabdomyolysis)' : 'Unremarkable' };
+    },
+    show: (v) => `${f(v.urea, 1)} ÷ ${f(v.cr)} × 1000`,
+    explain: 'Creatinine is filtered and not reabsorbed; urea is partly reabsorbed, and more so when tubular flow is low and ADH is high. In volume depletion urea therefore rises faster than creatinine.',
+    caveat: 'A weak test on its own: protein intake, GI bleeding, steroids, liver disease and muscle mass all move it independently of the kidney.',
+    chapters: [13, 14],
+    route: '/prerenal-atn',
+    cite: { rose: [13], evidence: 'clinical' },
+    keywords: ['BUN/creatinine', 'urea creatinine ratio', 'pre-renal', 'GI bleed'],
+  },
+  {
+    id: 'upcr',
+    name: 'Urine protein : creatinine ratio',
+    formula: 'UPCR (mg/mmol) = urine protein (mg/L) ÷ urine creatinine (mmol/L);   daily protein (g) ≈ UPCR ÷ 100',
+    group: 'Filtration & clearance',
+    vars: [
+      { key: 'prot', label: 'Urine protein', unit: 'g/L', min: 0, max: 20, step: 0.05, value: 3 },
+      { key: 'ucr', label: 'Urine creatinine', unit: 'mmol/L', min: 0.5, max: 35, step: 0.1, value: 7.5 },
+    ],
+    compute: (v) => {
+      const r = (v.prot * 1000) / v.ucr;
+      return { value: r, unit: 'mg/mmol', digits: 0, read: `≈ ${(r / 100).toFixed(1)} g/day. ${r > 300 ? 'Nephrotic range (above ~300 mg/mmol, ≈3 g/day).' : r > 50 ? 'Severely increased (above 50).' : r >= 15 ? 'Moderately increased (15–50).' : 'Normal to mildly increased (below 15).'}` };
+    },
+    show: (v) => `${f(v.prot * 1000)} ÷ ${f(v.ucr, 1)}`,
+    explain: 'A spot urine replaces a 24-hour collection because adults excrete roughly 10 mmol of creatinine a day. Dividing protein by creatinine cancels out how concentrated the urine happens to be.',
+    caveat: 'Assumes about 10 mmol/day creatinine excretion: it overestimates daily protein in small, elderly or cachectic patients, and underestimates it in muscular ones.',
+    chapters: [2, 16],
+    route: '/glomerular',
+    cite: { rose: [16], evidence: 'clinical' },
+    keywords: ['UPCR', 'PCR', 'proteinuria', 'nephrotic range', 'ACR'],
+  },
 ];
+
+// Attach the worked patient examples (kept in their own file so the definitions stay readable).
+for (const e of EQUATIONS) if (EQUATION_CASES[e.id]) e.patient = EQUATION_CASES[e.id];
 
 export const equationById = new Map(EQUATIONS.map((e) => [e.id, e]));
 export const initialValues = (e: EquationDef) => Object.fromEntries(e.vars.map((v) => [v.key, v.value]));

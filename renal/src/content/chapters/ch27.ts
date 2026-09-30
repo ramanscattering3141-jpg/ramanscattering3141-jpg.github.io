@@ -115,7 +115,7 @@ export const chapter: ChapterContent = {
     { label: 'Maximum IV rate (usual)', value: '10–20 mmol/h', note: '≤ 60 mmol/L peripheral' },
     { label: 'Adenoma share of primary aldosteronism', value: '≈ 65%' },
   ],
-  equations: ['ukcr', 'ttkg'],
+  equations: ['ukcr', 'ttkg', 'kdeficit', 'femg'],
   clinical: [
     'Urinary K⁺ first: below 25 mmol/day means the kidney is conserving and the loss is elsewhere.',
     'Hypokalaemia with alkalosis and a low urine chloride is vomiting (possibly concealed) or a diuretic that has worn off.',

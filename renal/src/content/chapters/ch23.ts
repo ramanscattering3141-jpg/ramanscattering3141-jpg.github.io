@@ -149,7 +149,7 @@ export const chapter: ChapterContent = {
     { label: 'Sodium deficit', value: 'TBW × (target − current)', note: 'only for sodium given without water' },
     { label: 'Osmolyte loss in chronic hyponatraemia', value: '~60% of the pool', note: 'against < 10% of cell Na⁺ + K⁺' },
   ],
-  equations: ['edelman', 'nadeficit', 'adrogue', 'efwc', 'ch2o', 'cosm', 'effosm'],
+  equations: ['edelman', 'nadeficit', 'adrogue', 'efwc', 'ch2o', 'cosm', 'effosm', 'furst', 'maxuv'],
   clinical: [
     'Confirm the hypoosmolality first — a normal or high effective osmolality means the problem is not free water.',
     'Urine osmolality then urine sodium: those two numbers sort almost every case.',
