@@ -20,14 +20,16 @@ export default defineConfig({
       ],
     }),
   ],
+  oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } },
   build: {
     chunkSizeWarningLimit: 6000,
     target: 'es2022',
-    // Two independent apps: the flight simulator (/) and the ECG physiology lab (/ecg/).
+    // Three independent apps: the flight simulator (/), the ECG lab (/ecg/) and the renal lab (/renal/).
     rolldownOptions: {
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         ecg: resolve(import.meta.dirname, 'ecg/index.html'),
+        renal: resolve(import.meta.dirname, 'renal/index.html'),
       },
     },
   },

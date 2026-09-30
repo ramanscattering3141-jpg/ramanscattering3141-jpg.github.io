@@ -9,9 +9,11 @@
     "noUnusedParameters": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "isolatedModules": true,
     "types": ["vite/client"],
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src", "renal/src"]
 }

@@ -1,0 +1,63 @@
+# Handoff: where the renal lab stands and what comes next
+
+This file lets a new session (or a person) pick up the work without the chat history. Update it with every commit that changes the plan.
+
+Branch: `claude/renal-physiology-lab`. Everything is committed and pushed. Nothing lives only in a local checkout. The build is content-complete — see section 4.
+
+## 1. Getting it live
+
+GitHub Pages deploys from the repository's default branch, `claude/flight-simulator-architecture-ck2cgq` (see `.github/workflows/deploy.yml`). The default branch (with the ECG app) has been merged into this branch and the three entry-point conflicts resolved: `vite.config.ts` has `main`, `ecg` and `renal` inputs under one `rolldownOptions` key plus the `oxc` Preact JSX setting, and `package.json` lists `cesium`, `preact` and `three`. `npm test` (425 tests, all three apps) and `npm run build` pass on the merged result.
+
+To publish, merge this branch's pull request into the default branch. The deploy workflow then tests, builds and publishes, and the lab appears at https://ramanscattering3141-jpg.github.io/renal/. Pages must be set to **Settings → Pages → Source: GitHub Actions** (one-time).
+
+## 2. Standing rules for the content
+
+- Built on Rose & Post, *Clinical Physiology of Acid-Base and Electrolyte Disorders*, 5th ed. (2001). Paraphrase only, with brief attributed quotations at most. Never a copy of the book.
+- Don't invent references or mechanisms. Every external reference must be a real PubMed record, checked by PMID, added to `renal/src/content/pubmed.extra.ts`.
+- Grade every claim (physiology / experimental / clinical / guideline / reasoning). Mark later changes to the book's picture as a modern update, with a source.
+- Never present a mechanistic hypothesis as established clinical evidence. Never teach FeNa or urine Na as infallible.
+- All displayed units SI (Canadian): mmol/L, µmol/L creatinine, mOsm/kg, g/L.
+- The goal is a kidney you can play with (change a variable → see the consequence → understand why → connect to disease), not a mirror of the textbook.
+
+## 3. Method that works
+
+For each chapter: read it, then **test the engine against the chapter's figures and tables before writing any page**. Fix the engine where it disagrees and make each case a regression test in `tests/renal/physiology.test.ts`. Only then write `renal/src/content/chapters/chNN.ts` and the page in `renal/src/pages/`, and screenshot the page to catch render bugs.
+
+`tests/renal/content.test.ts` checks that every reference id, route, equation id and cross-link resolves.
+
+Useful engine calls (see `renal/src/engine/simulate.ts`, `renal/src/sim/hooks.ts`):
+- `runToSteadyState(applyPatch(DEFAULT_PARAMS, patch), days, dt)` returns `{ state, ev }`. `ev.plasma.Na`, `ev.kidney.urine...`, `state.body` is the body state.
+- `simulate(params, days, dt, startBody)` returns `{ points, state }`, a time course starting from a body state.
+- In pages: `useStep(from, to, days, dt, settleDays)` returns `{ points, before, final, state, busy }`.
+
+## 4. Status
+
+**The build is content-complete.** Chapters 1–28 have interactive chapter content, and every module in the menu is live (60-plus pages; a page goes live the moment its file exists in `renal/src/pages/`, because `routes.ts` checks this). Chapter 30's equation summary is the equation explorer; chapter 29's worked problems seed the clinical cases and challenges. The full suite is green (`npx vitest run tests/renal`, 198 tests) and all routes pass a browser smoke test with no console errors (`smoke.tmp.mjs`, git-excluded).
+
+Built since the ch24 handoff, in order:
+- **ch25** hyperglycaemia / DKA / HHS → `/hyperglycemia`, with the crisis time-course simulator (`renal/src/sim/hyperglycemia.ts`).
+- **ch26–27** hypokalaemia → `/hypokalemia`; **ch28** hyperkalaemia → `/hyperkalemia`. Both with the ECG (`renal/src/ui/EcgStrip.tsx`); hyperkalaemia has an emergency-treatment time course fitted to Rose's Table 28-4 effect sizes (a pharmacodynamic sketch, not the renal engine — noted on the page).
+- **Minerals** → `/minerals` (Ca/Pi/Mg, PTH, calcitriol, FGF23, CKD–MBD).
+- **Disease:** `/aki`, `/obstruction`, `/ckd`, `/glomerular`, `/tubulointerstitial`, `/inherited`.
+- **Laboratory:** `/sandbox`, `/break`, `/whatif`, `/graph`, `/equations`, `/labs`.
+- **Clinical:** `/cases`, `/lessons`, `/challenges`, `/tutor` (a retrieval tutor over the KB search index — no external model, so it never drifts from Rose).
+
+Engine work done alongside these (all covered by the regression suite):
+- Potassium adaptation of the secreting cells (`kAdapt`, slow, mineralocorticoid-gated); ammonium excretion scaled so it is preserved per nephron until GFR < 40–50; low-flow K⁺ secretion steepened and a basal aldosterone-independent ROMK conductance; ENaC loss blunts secretion.
+- Escape from antidiuresis (`adhEscape`) and a milder cortisol→ADH drive, so chronic water retention stabilises instead of crashing the sodium.
+- CKD minerals: realistic phosphate intake, phosphate reabsorption floored at ~20% (so Pi rises below GFR ~30), and a stronger PTH bone-calcium defence.
+- Obstruction: Bowman's-space pressure scaled for a graded GFR fall; glomerulus: effective oncotic pressure falls at half rate in hypoalbuminaemia so nephrotic hyperfiltration is modest, not doubled.
+
+### What a next session could still do
+The spec is broad; genuine polish items remain rather than missing modules:
+- Liddle syndrome is only partially reproduced (the ENaC gain suppresses renin/aldosterone but does not fully produce the hypertension/hypokalaemia, because escape and other loops compensate). Same for Gordon's blood pressure.
+- Nephrotic oedema is under-represented (the model lacks a primary nephrotic Na-avidity mechanism; it is discussed on `/edema` and `/glomerular` rather than simulated).
+- Deeper "open in simulator" wiring: the clinical cases link to modules but do not yet pre-load their exact parameters into the target page's controls.
+- More clinical cases and challenges from Rose ch. 29's problem set.
+
+## 5. Known model limitations (keep documented, don't tune away)
+- The anion gap runs a few mmol/L high in distal/type 4 RTA, NH₄Cl loading and diarrhoea. Chloride is tracked by mass balance so it can cause chloride-depletion alkalosis.
+- Angiotensin-II thirst is omitted, because it destabilised oedematous states.
+- Chronic respiratory compensation takes longer than 3–5 days.
+- The glomerulus over-estimates the hyperfiltration of isolated hypoalbuminaemia (buffered by a half-rate oncotic term, but still present); nephrotic diseases are modelled with a matching Kf reduction.
+- The emergency-hyperkalaemia treatment curves and the hyperkalaemia adaptation constants are fitted to Rose's stated effect sizes and time scales, not derived from first principles.
