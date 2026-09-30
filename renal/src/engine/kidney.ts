@@ -100,7 +100,7 @@ function sideResult(
   // Bowman's space pressure: ~4 mmHg of downstream (interstitial and pelvic) pressure plus the
   // back-pressure of pushing filtrate down the tubule, ~6 mmHg at a normal single-nephron GFR.
   // Obstruction raises the downstream component (Rose ch. 2).
-  const PbsBase = GLOM_REF.Pbs - 6 + 45 * obstruction;
+  const PbsBase = GLOM_REF.Pbs - 6 + 28 * obstruction;
   const PbsFlow = 6 / (130 * nephrons);
   const chronicLoss = p.obstructionChronic ? 1 - 0.45 * obstruction : 1;
   const stenosisDrop = MAP * 0.62 * Math.pow(clamp(stenosis, 0, 0.95), 2.2);
@@ -115,8 +115,13 @@ function sideResult(
     Kf: KfSide * chronicLoss * (1 - 0.33 * clamp(p.tubularInjury, 0, 1)),
     Pbs: PbsBase,
     PbsFlow,
-    // Plasma protein = albumin + globulins (~3 g/dL); both exert oncotic pressure.
-    Cp: clamp(pl.albumin + 3.0, 2, 12),
+    // Plasma protein = albumin + globulins (~3 g/dL); both exert oncotic pressure. In
+    // hypoalbuminaemia the fall in the effective oncotic pressure at the glomerulus is smaller than
+    // the albumin fall alone: the liver raises globulin and lipoprotein synthesis, some protein is
+    // filtered (raising the tubular fluid's oncotic pressure), and tubuloglomerular feedback brakes
+    // the hyperfiltration. Represented by letting the oncotic albumin fall at half rate below
+    // normal, so nephrotic hypoalbuminaemia gives a modest, not a doubled, single-nephron GFR.
+    Cp: clamp((pl.albumin >= 4 ? pl.albumin : 4 - 0.5 * (4 - pl.albumin)) + 3.0, 2, 12),
     // Renal anaemia: erythropoietin production falls with functioning renal mass, so the
     // haematocrit falls as chronic kidney disease progresses (Rose ch. 1). This depends on
     // whole-body renal mass, not on this one kidney's share of it.
