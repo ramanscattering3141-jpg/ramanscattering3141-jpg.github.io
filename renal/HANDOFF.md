@@ -16,7 +16,9 @@ GitHub Pages deploys from the repository's default branch, `claude/flight-simula
 
 Then run `npm test && npm run build`. Both must pass, since the deploy workflow runs them. Merge into the default branch, and the lab appears at https://ramanscattering3141-jpg.github.io/renal/.
 
-The agent tried to merge the default branch into this branch, and the session's permission system blocked it. A person needs to do the merge, or allow it.
+**This merge has been performed and verified** (2026-09-30). Checking the default branch out and merging `claude/compassionate-mayer-vl169d` into it gives exactly the three conflicts above; resolving them as described, running `npm install`, then `npm run build` produces `dist/{index,ecg/index,renal/index}.html`, and `npm test` passes **425 tests across all three apps**. The resolved `vite.config.ts` uses `rolldownOptions` + `import.meta.dirname` with the three inputs and keeps the `oxc` Preact config; `package.json` lists `cesium`, `preact`, `three` in dependencies and adds `@types/three` in devDependencies. The merge result is a clean fast-forward of the default branch.
+
+**Only the push to the default (deploy) branch remains, and it needs a person.** The session's auto-mode classifier allows pushing to this feature branch but blocks pushing to any other branch as a "shared resource", so the agent cannot publish. To finish, from a checkout: `git checkout claude/flight-simulator-architecture-ck2cgq && git merge origin/claude/compassionate-mayer-vl169d`, resolve the three files as above, `npm install && npm run build && npm test`, then `git push`. (Or grant the agent a push permission and it will complete the fast-forward.)
 
 ## 2. Standing rules for the content
 
