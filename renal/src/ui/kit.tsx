@@ -286,8 +286,6 @@ export function LineChart(props: LineChartProps) {
 
 function SingleChart(props: LineChartProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
-  const h = (props.height ?? 200) + (props.hideXTitle ? 2 : 18);
-  const pad = { l: 48, r: 30, t: 26, b: props.hideXTitle ? 24 : 40 };
   const all = props.series.flatMap((s) => s.points).filter((p) => Number.isFinite(p.y));
   if (all.length === 0) return <div ref={ref} />;
   const xs = all.map((p) => p.x);
@@ -301,14 +299,20 @@ function SingleChart(props: LineChartProps) {
     y1 += 1;
   } else if (props.yMax === undefined) y1 += (y1 - y0) * 0.06;
   const w = Math.max(240, width);
+  const yt = niceTicks(y0, y1, 4);
+  const yd = tickDigits(yt);
+  // The left margin fits the widest tick label, so numbers never run into the axis.
+  const tickW = Math.max(...yt.map((y) => y.toFixed(yd).length)) * 6.9;
+  const yTitle = yTitleFor(props.series, props.yLabel);
+  // The y-axis title sits on its own line(s) above the plot, wrapped to the chart width.
+  const titleLines = wrapText(`↑ ${yTitle}`, Math.max(18, Math.floor((w - 8) / 7)));
+  const pad = { l: Math.max(38, Math.ceil(tickW) + 14), r: 24, t: 14 + titleLines.length * 15, b: props.hideXTitle ? 24 : 40 };
+  const h = (props.height ?? 200) + (props.hideXTitle ? 2 : 18) + (titleLines.length - 1) * 15;
   const sx = (x: number) => pad.l + ((x - x0) / (x1 - x0 || 1)) * (w - pad.l - pad.r);
   const sy = (y: number) => h - pad.b - ((Math.max(y0, Math.min(y1, y)) - y0) / (y1 - y0 || 1)) * (h - pad.t - pad.b);
   const palette = ['var(--c-teal)', 'var(--c-amber)', 'var(--c-blue)', 'var(--c-violet)', 'var(--c-green)', 'var(--c-red)'];
-  const yt = niceTicks(y0, y1, 4);
   const xt = niceTicks(x0, x1, Math.max(3, Math.floor(w / 110)));
-  const yd = tickDigits(yt);
   const xd = tickDigits(xt);
-  const yTitle = yTitleFor(props.series, props.yLabel);
   const xTitle = props.xLabel ?? 'x';
   return (
     <figure ref={ref}>
@@ -319,7 +323,7 @@ function SingleChart(props: LineChartProps) {
         {yt.map((y) => (
           <g key={`y${y}`}>
             <line x1={pad.l} x2={w - pad.r} y1={sy(y)} y2={sy(y)} stroke="color-mix(in srgb, var(--mix) 9%, transparent)" />
-            <text class="svg-label" x={pad.l - 6} y={sy(y) + 4} textAnchor="end">
+            <text class="svg-label" x={pad.l - 6} y={sy(y) + 4} text-anchor="end">
               {y.toFixed(yd)}
             </text>
           </g>
@@ -327,12 +331,12 @@ function SingleChart(props: LineChartProps) {
         {xt.map((x) => (
           <g key={`x${x}`}>
             <line x1={sx(x)} x2={sx(x)} y1={h - pad.b} y2={h - pad.b + 4} stroke="color-mix(in srgb, var(--mix) 35%, transparent)" />
-            <text class="svg-label" x={sx(x)} y={h - pad.b + 16} textAnchor="middle">
+            <text class="svg-label" x={sx(x)} y={h - pad.b + 16} text-anchor="middle">
               {props.xFormat ? props.xFormat(x) : x.toFixed(xd)}
             </text>
           </g>
         ))}
-        {props.marker !== undefined && <line x1={sx(props.marker)} x2={sx(props.marker)} y1={pad.t} y2={h - pad.b} stroke="color-mix(in srgb, var(--mix) 33%, transparent)" strokeDasharray="3 3" />}
+        {props.marker !== undefined && <line x1={sx(props.marker)} x2={sx(props.marker)} y1={pad.t} y2={h - pad.b} stroke="color-mix(in srgb, var(--mix) 33%, transparent)" stroke-dasharray="3 3" />}
         {props.series.map((s, i) => (
           <polyline
             key={s.label}
@@ -342,20 +346,24 @@ function SingleChart(props: LineChartProps) {
               .join(' ')}
             fill="none"
             stroke={s.color ?? palette[i % palette.length]}
-            strokeWidth="2.2"
-            strokeDasharray={s.dashed ? '5 4' : undefined}
-            strokeLinejoin="round"
+            stroke-width="2.2"
+            stroke-dasharray={s.dashed ? '5 4' : undefined}
+            stroke-linejoin="round"
             opacity={s.dashed ? 0.7 : 1}
           />
         ))}
         {/* axes */}
         <line x1={pad.l} x2={w - pad.r} y1={h - pad.b} y2={h - pad.b} stroke="color-mix(in srgb, var(--mix) 35%, transparent)" />
         <line x1={pad.l} x2={pad.l} y1={pad.t - 4} y2={h - pad.b} stroke="color-mix(in srgb, var(--mix) 35%, transparent)" />
-        <text class="svg-label axis-title" x={pad.l - 6} y={12} textAnchor="start">
-          ↑ {yTitle}
+        <text class="svg-label axis-title" x={4} y={13} text-anchor="start">
+          {titleLines.map((line, i) => (
+            <tspan key={i} x={4} dy={i ? 15 : 0}>
+              {line}
+            </tspan>
+          ))}
         </text>
         {!props.hideXTitle && (
-          <text class="svg-label axis-title" x={(w + pad.l) / 2} y={h - 6} textAnchor="middle">
+          <text class="svg-label axis-title" x={(w + pad.l) / 2} y={h - 6} text-anchor="middle">
             {xTitle} →
           </text>
         )}
@@ -371,6 +379,21 @@ function SingleChart(props: LineChartProps) {
       )}
     </figure>
   );
+}
+
+/** Greedy word wrap for SVG labels (SVG text does not wrap by itself). */
+export function wrapText(text: string, maxChars: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let cur = '';
+  for (const word of words) {
+    if (cur && (cur + ' ' + word).length > maxChars) {
+      lines.push(cur);
+      cur = word;
+    } else cur = cur ? cur + ' ' + word : word;
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 /** Horizontal bar comparison, for things like segmental reabsorption. */

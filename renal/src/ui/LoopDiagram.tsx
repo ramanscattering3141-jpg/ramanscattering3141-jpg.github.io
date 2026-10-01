@@ -33,7 +33,8 @@ export function LoopDiagram({ s, p, highlight }: { s: CCState; p: CCParams; high
     </g>
   );
   return (
-    <svg viewBox={`0 0 600 ${top + n * h + 70}`} width="100%" role="img" aria-label="Osmolality at each level of the loop of Henle, interstitium and collecting duct">
+ <div class="svg-scroll">
+    <svg viewBox={`0 0 600 ${top + n * h + 88}`} width="100%" role="img" aria-label="Osmolality at each level of the loop of Henle, interstitium and collecting duct">
       {['Descending limb', 'Interstitium', 'Ascending limb', 'Collecting duct'].map((t, i) => (
         <text key={t} x={[col.desc, col.int, col.asc, col.cd][i] + w / 2} y={top - 26} text-anchor="middle" class="svg-label" style={{ fontSize: 11 }}>
           {t}
@@ -43,7 +44,7 @@ export function LoopDiagram({ s, p, highlight }: { s: CCState; p: CCParams; high
         ↓ from PT (290)
       </text>
       <text x={col.asc + w / 2} y={top - 8} text-anchor="middle" class="svg-label">
-        ↑ to cortex ({Math.round(loopOutflow(s, p))} after cortical TAL)
+        ↑ to cortex: {Math.round(loopOutflow(s, p))}
       </text>
       <text x={col.cd + w / 2} y={top - 8} text-anchor="middle" class="svg-label">
         ↓ ADH {Math.round(p.adh * 100)}%
@@ -67,11 +68,9 @@ export function LoopDiagram({ s, p, highlight }: { s: CCState; p: CCParams; high
       <text x={(col.desc + col.asc + w) / 2} y={top + n * h + 55} text-anchor="middle" class="svg-label">
         hairpin: papilla ≈ {Math.round(inter[n - 1])} mOsm/kg · final urine {Math.round(s.cd[n - 1])}
       </text>
-      <text x={col.int + w + 6} y={top + 12} class="svg-label" style={{ fill: 'var(--c-amber)', fontSize: 9 }}>
-        NaCl
-      </text>
-      <text x={col.desc + w + 6} y={top + 36} class="svg-label" style={{ fill: 'var(--c-blue)', fontSize: 9 }}>
-        H₂O
+      <text x={300} y={top + n * h + 76} text-anchor="middle" class="svg-small">
+        <tspan style={{ fill: 'var(--c-amber)', fontWeight: 600 }}>← NaCl</tspan> pumped out of the ascending limb ·{' '}
+        <tspan style={{ fill: 'var(--c-blue)', fontWeight: 600 }}>H₂O →</tspan> leaves the descending limb (mOsm/kg)
       </text>
       <defs>
         <marker id="cc-arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
@@ -85,5 +84,6 @@ export function LoopDiagram({ s, p, highlight }: { s: CCState; p: CCParams; high
         </marker>
       </defs>
     </svg>
+    </div>
   );
 }

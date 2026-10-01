@@ -118,7 +118,8 @@ export function AcidBaseMap(props: {
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label="Acid–base map: pH against PCO2 with bicarbonate isopleths and the bands of the simple disorders">
+      <div class="svg-scroll wide">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Acid–base map: pH against PCO2 with bicarbonate isopleths and the bands of the simple disorders">
         {/* bicarbonate isopleths */}
         {isopleths.map((iso) => (
           <g key={iso.hco3}>
@@ -179,6 +180,7 @@ export function AcidBaseMap(props: {
           );
         })}
       </svg>
+      </div>
       <div class="chips" style={{ marginTop: 2 }}>
         {BANDS.filter((b) => (props.show ?? BANDS.map((z) => z.id)).includes(b.id)).map((b) => (
           <span key={b.id} class="tag" style={{ color: b.colour }}>

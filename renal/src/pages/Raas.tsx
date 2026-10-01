@@ -58,6 +58,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
   );
   const perfusion = ev.reg.MAP / 93;
   return (
+    <div class="svg-scroll wide">
     <svg viewBox="0 0 760 470" width="100%" role="img" aria-label="Renin–angiotensin–aldosterone pathway with current values">
       <defs>
         <marker id="raas-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
@@ -102,6 +103,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
         MAP {ev.reg.MAP.toFixed(0)} mmHg
       </text>
     </svg>
+    </div>
   );
 }
 

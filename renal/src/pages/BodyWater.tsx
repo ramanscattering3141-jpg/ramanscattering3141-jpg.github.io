@@ -15,7 +15,8 @@ function CompartmentBars(props: { icf0: number; ecf0: number; icf: number; ecf: 
   const shade = Math.max(0, Math.min(1, (props.osm - 250) / 70));
   const fill = (base: [number, number, number]) => `rgb(${base.map((c) => Math.round(c * (1 - 0.35 * shade))).join(',')})`;
   return (
-    <svg viewBox="0 0 600 150" class="diagram" role="img" aria-label="Intracellular and extracellular volumes">
+    <div class="svg-scroll">
+    <svg viewBox="0 0 600 160" class="diagram" role="img" aria-label="Intracellular and extracellular volumes">
       <rect x={x0} y={24} width={props.icf0 * scale} height={h} fill="none" stroke="var(--muted)" stroke-dasharray="4 3" />
       <rect x={x0 + props.icf0 * scale} y={24} width={props.ecf0 * scale} height={h} fill="none" stroke="var(--muted)" stroke-dasharray="4 3" />
       <rect x={x0} y={30} width={icfW} height={h - 12} rx={6} fill={fill([120, 170, 230])} opacity={0.85} />
@@ -25,9 +26,11 @@ function CompartmentBars(props: { icf0: number; ecf0: number; icf: number; ecf: 
       <text x={x0 + icfW + 2 + (ecfW * 0.75) / 2} y={70} text-anchor="middle" class="svg-label">ECF {props.ecf.toFixed(1)} L</text>
       <text x={x0 + icfW + 2 + ecfW * 0.875} y={112} text-anchor="middle" class="svg-small">plasma</text>
       <text x={x0} y={16} class="svg-small">K⁺ salts hold water in cells</text>
-      <text x={x0 + icfW + 2} y={16} class="svg-small">Na⁺ salts hold water outside cells</text>
-      <text x={x0} y={142} class="svg-small">dashed outline = starting volumes · deeper colour = higher osmolality ({props.osm.toFixed(0)} mOsm/kg in every compartment)</text>
+      <text x={580} y={16} class="svg-small" text-anchor="end">Na⁺ salts hold water outside cells</text>
+      <text x={x0} y={138} class="svg-small">dashed outline = starting volumes · deeper colour = higher osmolality</text>
+      <text x={x0} y={153} class="svg-small">{props.osm.toFixed(0)} mOsm/kg in every compartment</text>
     </svg>
+    </div>
   );
 }
 

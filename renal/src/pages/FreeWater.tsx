@@ -155,6 +155,7 @@ function UrineBlocks({ volume, cosm, efwc }: { volume: number; cosm: number; efw
   const freeWidth = concentrated ? 0 : (volume - cosm) * scale;
   const returnedWidth = concentrated ? (cosm - volume) * scale : 0;
   return (
+    <div class="svg-scroll">
     <svg viewBox="0 0 600 140" class="diagram" role="img" aria-label="Urine volume split into isosmotic and free-water parts">
       <rect x={30} y={36} width={Math.max(2, isoWidth)} height={46} rx={5} fill="var(--c-blue)" opacity={0.85} />
       {freeWidth > 1 && <rect x={30 + isoWidth} y={36} width={freeWidth} height={46} rx={5} fill="var(--c-teal)" opacity={0.85} />}
@@ -182,5 +183,6 @@ function UrineBlocks({ volume, cosm, efwc }: { volume: number; cosm: number; efw
         Electrolyte-free water: {efwc >= 0 ? `${efwc.toFixed(2)} L/day leaving the body — plasma Na⁺ rises` : `${Math.abs(efwc).toFixed(2)} L/day returned to the body — plasma Na⁺ falls`}
       </text>
     </svg>
+    </div>
   );
 }

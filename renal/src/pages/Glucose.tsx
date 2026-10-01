@@ -31,73 +31,50 @@ function titration(s: S, P: number) {
 
 function CellDiagram({ sglt2, sglt1, inhibitor, flux }: { sglt2: number; sglt1: number; inhibitor: boolean; flux: number }) {
   const w = (x: number) => Math.max(1, Math.min(10, x));
+  const AP = 175; // apical membrane
+  const BL = 505; // basolateral membrane
+  const carrier = (cx: number, cy: number, fill: string, label: string, opacity = 1) => (
+    <g>
+      <circle cx={cx} cy={cy} r="23" fill={fill} opacity={opacity} />
+      <text x={cx} y={cy + 4} text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
+        {label}
+      </text>
+    </g>
+  );
   return (
-    <svg viewBox="0 0 600 190" width="100%" role="img" aria-label="Proximal tubule cell: SGLT2 and SGLT1 at the apical membrane, GLUT2 and GLUT1 at the basolateral membrane">
-      <text x="60" y="18" class="svg-label" text-anchor="middle">
-        LUMEN
-      </text>
-      <text x="300" y="18" class="svg-label" text-anchor="middle">
-        PROXIMAL TUBULE CELL
-      </text>
-      <text x="540" y="18" class="svg-label" text-anchor="middle">
-        BLOOD
-      </text>
-      <rect x="140" y="30" width="320" height="140" rx="12" fill="var(--panel-2)" stroke="var(--accent-dim)" />
-      {/* apical carriers */}
-      <circle cx="140" cy="70" r="23" fill={inhibitor ? 'var(--c-violet)' : 'var(--c-teal)'} opacity={0.3 + 0.7 * Math.min(1, sglt2)} />
-      <text x="140" y="74" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
-        SGLT2
-      </text>
-      <circle cx="140" cy="130" r="23" fill="var(--c-green)" opacity={0.3 + 0.7 * Math.min(1, sglt1)} />
-      <text x="140" y="134" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
-        SGLT1
-      </text>
-      <text x="60" y="66" text-anchor="middle" class="svg-label">
-        1 Na⁺ + 1 glucose
-      </text>
-      <text x="60" y="80" text-anchor="middle" class="svg-label">
-        S1–S2 · high capacity
-      </text>
-      <text x="60" y="126" text-anchor="middle" class="svg-label">
-        2 Na⁺ + 1 glucose
-      </text>
-      <text x="60" y="140" text-anchor="middle" class="svg-label">
-        S3 · high affinity
-      </text>
-      {inhibitor && (
-        <text x="140" y="46" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-violet)' }}>
-          ✕ gliflozin
-        </text>
-      )}
-      {/* basolateral */}
-      <circle cx="460" cy="70" r="23" fill="var(--c-amber)" />
-      <text x="460" y="74" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
-        GLUT2
-      </text>
-      <circle cx="460" cy="130" r="23" fill="var(--c-orange)" />
-      <text x="460" y="134" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-deep)', fontWeight: 700 }}>
-        NaK
-      </text>
-      <text x="540" y="66" text-anchor="middle" class="svg-label">
-        facilitated diffusion
-      </text>
-      <text x="540" y="126" text-anchor="middle" class="svg-label">
-        3 Na⁺ out / 2 K⁺ in
-      </text>
-      <line x1="160" x2="440" y1="70" y2="70" stroke="var(--c-amber)" stroke-width={w(flux * 8)} marker-end="url(#g-arr)" opacity="0.8" />
-      <line x1="160" x2="440" y1="130" y2="130" stroke="var(--c-teal)" stroke-width="2" stroke-dasharray="4 4" />
-      <text x="300" y="62" text-anchor="middle" class="svg-label">
-        glucose moves uphill into the cell, then downhill out
-      </text>
-      <text x="300" y="152" text-anchor="middle" class="svg-label">
-        Na⁺ gradient (cell Na⁺ 20–30 mmol/L) powers the apical step
-      </text>
-      <defs>
-        <marker id="g-arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="var(--c-amber)" />
-        </marker>
-      </defs>
-    </svg>
+    <div class="svg-scroll">
+      <svg viewBox="0 0 680 200" class="diagram" role="img" aria-label="Proximal tubule cell: SGLT2 and SGLT1 at the apical membrane, GLUT2 and the Na⁺/K⁺ pump at the basolateral membrane">
+        <text x="80" y="16" class="svg-small" text-anchor="middle">LUMEN</text>
+        <text x={(AP + BL) / 2} y="16" class="svg-small" text-anchor="middle">PROXIMAL TUBULE CELL</text>
+        <text x="600" y="16" class="svg-small" text-anchor="middle">BLOOD</text>
+        <rect x={AP} y="26" width={BL - AP} height="160" rx="12" fill="var(--panel-2)" stroke="var(--accent-dim)" />
+        {/* glucose: in with Na⁺, out by facilitated diffusion */}
+        <text x={(AP + BL) / 2} y="62" text-anchor="middle" class="svg-small">glucose: uphill into the cell, downhill out</text>
+        <line x1={AP + 26} x2={BL - 30} y1="80" y2="80" stroke="var(--c-amber)" stroke-width={w(flux * 8)} marker-end="url(#g-arr)" opacity="0.8" />
+        <line x1={AP + 26} x2={BL - 26} y1="140" y2="140" stroke="var(--c-teal)" stroke-width="2" stroke-dasharray="4 4" />
+        <text x={(AP + BL) / 2} y="168" text-anchor="middle" class="svg-small">low cell Na⁺ (20–30 mmol/L) powers the apical step</text>
+        {carrier(AP, 80, inhibitor ? 'var(--c-violet)' : 'var(--c-teal)', 'SGLT2', 0.3 + 0.7 * Math.min(1, sglt2))}
+        {carrier(AP, 140, 'var(--c-green)', 'SGLT1', 0.3 + 0.7 * Math.min(1, sglt1))}
+        {carrier(BL, 80, 'var(--c-amber)', 'GLUT2')}
+        {carrier(BL, 140, 'var(--c-orange)', 'NaK')}
+        {inhibitor && (
+          <text x={AP} y="48" text-anchor="middle" class="svg-label" style={{ fill: 'var(--c-violet)', fontWeight: 600 }}>
+            ⊣ gliflozin
+          </text>
+        )}
+        <text x="80" y="76" text-anchor="middle" class="svg-label">1 Na⁺ + 1 glucose</text>
+        <text x="80" y="91" text-anchor="middle" class="svg-small">S1–S2 · high capacity</text>
+        <text x="80" y="136" text-anchor="middle" class="svg-label">2 Na⁺ + 1 glucose</text>
+        <text x="80" y="151" text-anchor="middle" class="svg-small">S3 · high affinity</text>
+        <text x="600" y="84" text-anchor="middle" class="svg-label">facilitated diffusion</text>
+        <text x="600" y="144" text-anchor="middle" class="svg-label">3 Na⁺ out / 2 K⁺ in</text>
+        <defs>
+          <marker id="g-arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--c-amber)" />
+          </marker>
+        </defs>
+      </svg>
+    </div>
   );
 }
 
