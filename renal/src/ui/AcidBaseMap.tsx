@@ -26,12 +26,12 @@ export const phFrom = (hco3: number, pco2: number) => 6.1 + Math.log10(Math.max(
 type BandId = 'metAcidosis' | 'metAlkalosis' | 'respAcidoseAcute' | 'respAcidoseChronic' | 'respAlkAcute' | 'respAlkChronic';
 
 export const BANDS: { id: BandId; label: string; colour: string }[] = [
-  { id: 'metAcidosis', label: 'Metabolic acidosis', colour: '#6aa9e8' },
-  { id: 'metAlkalosis', label: 'Metabolic alkalosis', colour: '#7bc47f' },
-  { id: 'respAcidoseAcute', label: 'Acute respiratory acidosis', colour: '#e07b6a' },
-  { id: 'respAcidoseChronic', label: 'Chronic respiratory acidosis', colour: '#b8574a' },
-  { id: 'respAlkAcute', label: 'Acute respiratory alkalosis', colour: '#f2b134' },
-  { id: 'respAlkChronic', label: 'Chronic respiratory alkalosis', colour: '#c08d20' },
+  { id: 'metAcidosis', label: 'Metabolic acidosis', colour: 'var(--c-blue)' },
+  { id: 'metAlkalosis', label: 'Metabolic alkalosis', colour: 'var(--c-green)' },
+  { id: 'respAcidoseAcute', label: 'Acute respiratory acidosis', colour: 'var(--c-coral)' },
+  { id: 'respAcidoseChronic', label: 'Chronic respiratory acidosis', colour: 'var(--c-blood)' },
+  { id: 'respAlkAcute', label: 'Acute respiratory alkalosis', colour: 'var(--c-amber)' },
+  { id: 'respAlkChronic', label: 'Chronic respiratory alkalosis', colour: 'var(--c-amber-dk)' },
 ];
 
 /**
@@ -122,9 +122,9 @@ export function AcidBaseMap(props: {
         {/* bicarbonate isopleths */}
         {isopleths.map((iso) => (
           <g key={iso.hco3}>
-            <path d={iso.d} fill="none" stroke="#ffffff18" stroke-width="1" stroke-dasharray="3 3" />
+            <path d={iso.d} fill="none" stroke="color-mix(in srgb, var(--mix) 9%, transparent)" stroke-width="1" stroke-dasharray="3 3" />
             {iso.label && iso.label[1] > pad.t + 10 && (
-              <text x={iso.label[0] + 3} y={iso.label[1] + 3} fill="#ffffff35" font-size="9">
+              <text x={iso.label[0] + 3} y={iso.label[1] + 3} fill="color-mix(in srgb, var(--mix) 21%, transparent)" font-size="9">
                 {iso.hco3}
               </text>
             )}
@@ -136,31 +136,31 @@ export function AcidBaseMap(props: {
           return <path key={b.id} d={b.d} fill={b.colour} opacity={dim ? 0.07 : 0.22} stroke={b.colour} stroke-opacity={dim ? 0.15 : 0.5} stroke-width="1" />;
         })}
         {/* normal box */}
-        <rect x={x(7.37)} y={y(44)} width={x(7.43) - x(7.37)} height={y(36) - y(44)} fill="#ffffff22" stroke="#ffffff55" stroke-width="1" />
+        <rect x={x(7.37)} y={y(44)} width={x(7.43) - x(7.37)} height={y(36) - y(44)} fill="color-mix(in srgb, var(--mix) 13%, transparent)" stroke="color-mix(in srgb, var(--mix) 33%, transparent)" stroke-width="1" />
         {/* axes */}
-        <line x1={pad.l} y1={H - pad.b} x2={W - pad.r} y2={H - pad.b} stroke="#ffffff33" />
-        <line x1={pad.l} y1={pad.t} x2={pad.l} y2={H - pad.b} stroke="#ffffff33" />
+        <line x1={pad.l} y1={H - pad.b} x2={W - pad.r} y2={H - pad.b} stroke="color-mix(in srgb, var(--mix) 20%, transparent)" />
+        <line x1={pad.l} y1={pad.t} x2={pad.l} y2={H - pad.b} stroke="color-mix(in srgb, var(--mix) 20%, transparent)" />
         {[6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7].map((t) => (
           <g key={t}>
-            <line x1={x(t)} y1={H - pad.b} x2={x(t)} y2={H - pad.b + 4} stroke="#ffffff33" />
-            <text x={x(t)} y={H - pad.b + 15} fill="#8aa4b8" class="svg-label" text-anchor="middle">
+            <line x1={x(t)} y1={H - pad.b} x2={x(t)} y2={H - pad.b + 4} stroke="color-mix(in srgb, var(--mix) 20%, transparent)" />
+            <text x={x(t)} y={H - pad.b + 15} fill="var(--ink-faint)" class="svg-label" text-anchor="middle">
               {t.toFixed(1)}
             </text>
           </g>
         ))}
         {[10, 20, 40, 60, 100].map((t) => (
           <g key={t}>
-            <line x1={pad.l - 4} y1={y(t)} x2={pad.l} y2={y(t)} stroke="#ffffff33" />
-            <text x={pad.l - 7} y={y(t) + 3} fill="#8aa4b8" class="svg-label" text-anchor="end">
+            <line x1={pad.l - 4} y1={y(t)} x2={pad.l} y2={y(t)} stroke="color-mix(in srgb, var(--mix) 20%, transparent)" />
+            <text x={pad.l - 7} y={y(t) + 3} fill="var(--ink-faint)" class="svg-label" text-anchor="end">
               {t}
             </text>
           </g>
         ))}
-        <text x={(W + pad.l) / 2} y={H - 3} class="svg-label" text-anchor="middle">
-          arterial pH
+        <text x={(W + pad.l) / 2} y={H - 3} class="svg-label axis-title" text-anchor="middle">
+          arterial pH →
         </text>
-        <text x={12} y={H / 2} class="svg-label" text-anchor="middle" transform={`rotate(-90 12 ${H / 2})`}>
-          PCO₂ (mmHg)
+        <text x={12} y={H / 2} class="svg-label" text-anchor="middle" transform={`rotate(-90 12 ${H / 2})`} style={{ fontWeight: 600, fill: 'var(--ink)' }}>
+          arterial PCO₂ (mmHg) →
         </text>
         {/* plotted points */}
         {(props.points ?? []).map((p, i) => {
@@ -169,9 +169,9 @@ export function AcidBaseMap(props: {
           const current = p.tone !== 'case';
           return (
             <g key={i}>
-              <circle cx={px} cy={py} r={current ? 6 : 4} fill={current ? '#5ecfba' : '#ffffff'} stroke="#0b1620" stroke-width="1.5" />
+              <circle cx={px} cy={py} r={current ? 6 : 4} fill={current ? 'var(--c-teal)' : 'var(--c-strong)'} stroke="var(--bg)" stroke-width="1.5" />
               {p.label && (
-                <text x={px + 9} y={py + 4} fill={current ? '#5ecfba' : '#ffffffcc'} font-size="10">
+                <text x={px + 9} y={py + 4} fill={current ? 'var(--c-teal)' : 'color-mix(in srgb, var(--mix) 80%, transparent)'} font-size="10">
                   {p.label}
                 </text>
               )}
@@ -185,7 +185,7 @@ export function AcidBaseMap(props: {
             ■ {b.label}
           </span>
         ))}
-        <span class="tag" style={{ color: '#ffffffaa' }}>■ Normal</span>
+        <span class="tag" style={{ color: 'color-mix(in srgb, var(--mix) 67%, transparent)' }}>■ Normal</span>
       </div>
     </div>
   );

@@ -101,11 +101,11 @@ export default function TitratableAcid() {
         </div>
         <div>
           <Panel title="How much H⁺ phosphate can take up" note="Buffering rises as the urine is acidified — and then stops, because once nearly all the phosphate is protonated there is nothing left to titrate.">
-            <LineChart
+            <LineChart yLabel="H⁺ buffered as titratable acid (mmol/day)"
               xLabel="urine pH (falling to the right)"
               series={[
-                { label: 'Phosphate (pKa 6.8)', points: curve.phosphate, color: '#f2b134' },
-                ...(s.extraBuffer > 0 ? [{ label: `Other buffer (pKa ${s.extraPka.toFixed(1)})`, points: curve.extra, color: '#b08ee0' }] : []),
+                { label: 'Phosphate (pKa 6.8)', points: curve.phosphate, color: 'var(--c-amber)' },
+                ...(s.extraBuffer > 0 ? [{ label: `Other buffer (pKa ${s.extraPka.toFixed(1)})`, points: curve.extra, color: 'var(--c-violet)' }] : []),
               ]}
               yMin={0}
               marker={s.urinePh}
@@ -141,9 +141,9 @@ export default function TitratableAcid() {
             </div>
           </Panel>
           <Panel title="The three terms of net acid excretion">
-            <BarRow label="Titratable acid" value={ta} max={Math.max(120, ta + s.nh4)} unit=" mmol/day" color="#f2b134" />
-            <BarRow label="Ammonium" value={s.nh4} max={Math.max(120, ta + s.nh4)} unit=" mmol/day" color="#5ecfba" />
-            <BarRow label="Bicarbonate lost (subtracts)" value={s.urineHco3} max={Math.max(120, ta + s.nh4)} unit=" mmol/day" color="#e07b6a" />
+            <BarRow label="Titratable acid" value={ta} max={Math.max(120, ta + s.nh4)} unit=" mmol/day" color="var(--c-amber)" />
+            <BarRow label="Ammonium" value={s.nh4} max={Math.max(120, ta + s.nh4)} unit=" mmol/day" color="var(--c-teal)" />
+            <BarRow label="Bicarbonate lost (subtracts)" value={s.urineHco3} max={Math.max(120, ta + s.nh4)} unit=" mmol/day" color="var(--c-coral)" />
             <p class="control-hint">
               {phosProtonated > s.phosphate * 0.95
                 ? 'Nearly all the phosphate is already protonated: acidifying the urine further cannot increase titratable acid.'

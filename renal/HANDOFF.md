@@ -48,12 +48,35 @@ Engine work done alongside these (all covered by the regression suite):
 - CKD minerals: realistic phosphate intake, phosphate reabsorption floored at ~20% (so Pi rises below GFR ~30), and a stronger PTH bone-calcium defence.
 - Obstruction: Bowman's-space pressure scaled for a graded GFR fall; glomerulus: effective oncotic pressure falls at half rate in hypoalbuminaemia so nephrotic hyperfiltration is modest, not doubled.
 
+### Added on 2026-09-30 (second pass)
+- Light theme with a Light / Dark / Auto switch; every hard-coded colour became a theme variable.
+- Nephron drawing: dark text on a halo instead of tubule-coloured labels, values in pills, marked sites glow in a colour distinct from the tubule, optional side callouts (`callouts`), `dimUnmarked`, `heat` and `tubeColor` props. The hormones page uses it full width with per-site action notes (`SITE_ACTIONS` in `content/hormones.ts`); the explorer diagram is larger and sticky.
+- Flow simulator: pause, 0.1×–2× speed, particles visibly crossing out (reabsorbed) or in (secreted), and a green/red band under each segment scaled to its share.
+- Charts: real axis titles everywhere; the rescaled series were split into stacked panels via `Series.axis`. The GFR Starling chart was redrawn with axis titles, % ticks and a legend.
+- Body water: 100 kg / 60 L reference person (ch. 7 worked examples redone in round numbers, noting Rose’s 70 kg).
+- New `/iv-fluids` (`sim/ivfluids.ts`, regression tests in `tests/renal/ivfluids.test.ts`, checked against Lobo 2001 and Hahn 2010) and `/drug-map` (`content/drugmap.ts`). 22 new PubMed references, each checked by PMID.
+
+### Added on 2026-09-30 (third pass: equations at the bedside + review fixes)
+- 11 new equations: `furst`, `unauk`, `maxuv`, `fek`, `kdeficit`, `fehco3`, `femg`, `fepo4`, `cccr`, `ureacr`, `upcr`. Four new PubMed references, each checked by PMID: `furst2000`, `lee2021unak`, `elisaf1997femg`, `christensen2011fhh`.
+- Worked patient cases (`content/equationCases.ts`, attached to `EquationDef.patient`) for 29 equations; the card shows “How it works” and “Try it on a patient” even in compact mode.
+- `BedsideEquations` panels added to hyponatraemia, oedema, diuretics, minerals, RTA, pre-renal vs ATN, AKI, glomerular, metabolic acidosis, hypernatraemia, urine osmolality, hyper/hypokalaemia and mixed disorders. New page `/bedside` (`pages/Bedside.tsx`). The equation explorer has a “with a worked patient” filter.
+- Edelman card now displays the regression it computes (1.11 × … − 25.6).
+- Review fixes: pages that set `grid-main-side` columns inline (nephron explorer, flow simulator, IV fluids, hormones) now use the `--main-side` CSS variable so they stack on phones instead of overflowing. Search inputs on tutor, graph and equations have accessible labels.
+- `tests/renal/equations.test.ts`: case values fit their sliders, every equation computes, and the worked answers are reproduced.
+
+### Added on 2026-09-30 (fourth pass)
+- **Diuretic map** (`ui/DiureticMap.tsx`, content in `content/diureticMap.ts`): the first tab of `/diuretics`. Every class drawn at its site with an inhibition bar; hover/tap/keyboard selects a segment or drug; the side panel shows the transporter cell, drug cards (effects on Na⁺, K⁺, Ca²⁺, Mg²⁺, acid–base, water), and a comparison table below.
+- **Units switch** (`ui/unitPref.ts`, sidebar “SI units / mg/dL”): equation cards and the laboratory interpreter accept and show conventional units (mg/dL, BUN, g/dL) and convert to SI before calculating. Simulator readouts stay SI. Equation cards also take typed values beside each slider.
+- **Cases open in the sandbox**: each clinical case links to `/sandbox?s=…` (encodeState of its parameter patch); the sandbox reads it and shows where it came from. The sandbox gained glucose and ketoacid dials so the DKA case loads fully.
+- The tutor is titled “Ask the tutor” and described as retrieval, not AI.
+
 ### What a next session could still do
 The spec is broad; genuine polish items remain rather than missing modules:
 - Liddle syndrome is only partially reproduced (the ENaC gain suppresses renin/aldosterone but does not fully produce the hypertension/hypokalaemia, because escape and other loops compensate). Same for Gordon's blood pressure.
 - Nephrotic oedema is under-represented (the model lacks a primary nephrotic Na-avidity mechanism; it is discussed on `/edema` and `/glomerular` rather than simulated).
-- Deeper "open in simulator" wiring: the clinical cases link to modules but do not yet pre-load their exact parameters into the target page's controls.
+- Cases now open the sandbox pre-set; the topic modules they also link to still open at their defaults.
 - More clinical cases and challenges from Rose ch. 29's problem set.
+- Extend the mg/dL switch to simulator readouts (currently SI only).
 
 ## 5. Known model limitations (keep documented, don't tune away)
 - The anion gap runs a few mmol/L high in distal/type 4 RTA, NH₄Cl loading and diarrhoea. Chloride is tracked by mass balance so it can cause chloride-depletion alkalosis.

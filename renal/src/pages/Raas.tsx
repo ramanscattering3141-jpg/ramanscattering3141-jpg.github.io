@@ -20,7 +20,7 @@ interface S {
 }
 const START: S = { volume: 0, naIntake: 150, stenosis: 0, acei: false, arb: false, mra: false, aliskiren: false, nsaid: false, beta: false, loop: false };
 
-const col = (x: number) => (x > 1.25 ? '#f2b134' : x < 0.8 ? '#6aa9e8' : '#5ecfba');
+const col = (x: number) => (x > 1.25 ? 'var(--c-amber)' : x < 0.8 ? 'var(--c-blue)' : 'var(--c-teal)');
 
 function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
   const h = ev.reg.hormones;
@@ -28,18 +28,18 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
   const n = NORMAL();
   const node = (x: number, y: number, w: number, label: string, value: number | null, sub?: string, blocked?: string) => (
     <g>
-      <rect x={x} y={y} width={w} height={48} rx="9" fill="#0d2233" stroke={value === null ? '#35536a' : col(value)} stroke-width={2} />
-      <text x={x + w / 2} y={y + 19} text-anchor="middle" style={{ fontSize: 12, fill: '#e9f2f8', fontWeight: 600 }}>
+      <rect x={x} y={y} width={w} height={48} rx="9" fill="var(--bg-2)" stroke={value === null ? 'var(--c-dim)' : col(value)} stroke-width={2} />
+      <text x={x + w / 2} y={y + 19} text-anchor="middle" style={{ fontSize: 12, fill: 'var(--ink)', fontWeight: 600 }}>
         {label}
       </text>
-      <text x={x + w / 2} y={y + 36} text-anchor="middle" class="svg-value" style={{ fill: value === null ? '#a3b9c9' : col(value), fontSize: 11 }}>
+      <text x={x + w / 2} y={y + 36} text-anchor="middle" class="svg-value" style={{ fill: value === null ? 'var(--ink-dim)' : col(value), fontSize: 11 }}>
         {value === null ? sub : `${value.toFixed(value < 10 ? 2 : 0)}× ${sub ?? ''}`}
       </text>
       {blocked && (
         <g>
-          <line x1={x + w - 4} y1={y - 6} x2={x + w + 10} y2={y + 8} stroke="#b08ee0" stroke-width="3" />
-          <line x1={x + w + 10} y1={y - 6} x2={x + w - 4} y2={y + 8} stroke="#b08ee0" stroke-width="3" />
-          <text x={x + w + 14} y={y + 4} style={{ fontSize: 10, fill: '#b08ee0' }}>
+          <line x1={x + w - 4} y1={y - 6} x2={x + w + 10} y2={y + 8} stroke="var(--c-violet)" stroke-width="3" />
+          <line x1={x + w + 10} y1={y - 6} x2={x + w - 4} y2={y + 8} stroke="var(--c-violet)" stroke-width="3" />
+          <text x={x + w + 14} y={y + 4} style={{ fontSize: 10, fill: 'var(--c-violet)' }}>
             {blocked}
           </text>
         </g>
@@ -48,7 +48,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
   );
   const arrow = (x1: number, y1: number, x2: number, y2: number, label?: string) => (
     <g>
-      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#a3b9c9" stroke-width="1.6" marker-end="url(#raas-arr)" />
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink-dim)" stroke-width="1.6" marker-end="url(#raas-arr)" />
       {label && (
         <text x={(x1 + x2) / 2 + 4} y={(y1 + y2) / 2 - 3} class="svg-label" style={{ fontSize: 9.5 }}>
           {label}
@@ -61,7 +61,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
     <svg viewBox="0 0 760 470" width="100%" role="img" aria-label="Renin–angiotensin–aldosterone pathway with current values">
       <defs>
         <marker id="raas-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="#a3b9c9" />
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-dim)" />
         </marker>
       </defs>
       {/* stimuli */}

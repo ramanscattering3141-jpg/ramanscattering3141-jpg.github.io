@@ -119,15 +119,15 @@ export default function Bicarbonate() {
             {SEGMENTS.map((id) => {
               const seg = r.segments[id];
               const taken = (seg.in.HCO3 - seg.out.HCO3) * 1440;
-              return <BarRow key={id} label={SEGMENT_INFO[id].name} value={Math.max(0, taken)} max={Math.max(100, filtered * 0.95)} unit=" mmol/day" color={taken < 0 ? '#e07b6a' : '#6aa9e8'} sub={taken < 0 ? 'secreting' : undefined} />;
+              return <BarRow key={id} label={SEGMENT_INFO[id].name} value={Math.max(0, taken)} max={Math.max(100, filtered * 0.95)} unit=" mmol/day" color={taken < 0 ? 'var(--c-coral)' : 'var(--c-blue)'} sub={taken < 0 ? 'secreting' : undefined} />;
             })}
           </Panel>
           <Panel title="The reabsorptive threshold" note="Reabsorption against plasma bicarbonate. Normally it plateaus near 26 mmol/L, so anything above that is excreted — which is why metabolic alkalosis cannot persist unless something raises the threshold.">
-            <LineChart
+            <LineChart yLabel="HCO₃⁻ reabsorbed (mmol/day)"
               xLabel="plasma bicarbonate (mmol/L)"
               series={[
-                { label: 'Normal volume', points: curve.normal, color: '#5ecfba' },
-                { label: 'Volume depleted', points: curve.depleted, color: '#e07b6a', dashed: true },
+                { label: 'Normal volume', points: curve.normal, color: 'var(--c-teal)' },
+                { label: 'Volume depleted', points: curve.depleted, color: 'var(--c-coral)', dashed: true },
               ]}
               yMin={0}
               marker={s.hco3}

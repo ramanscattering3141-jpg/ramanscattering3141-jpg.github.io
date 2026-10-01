@@ -160,7 +160,7 @@ export const chapter: ChapterContent = {
     { label: 'Net gut calcium absorption', value: '2.5–5 mmol/day (of ~25 ingested)' },
     { label: 'Fractional phosphate reabsorption in severe CKD', value: 'down to ~15%' },
   ],
-  equations: ['correctedCa'],
+  equations: ['correctedCa', 'cccr', 'fepo4'],
   clinical: [
     'Primary aldosteronism: hypokalaemia, metabolic alkalosis and hypertension without oedema (escape). Screening uses the aldosterone/renin ratio; salt loading unmasks K⁺ wasting.',
     'Hypoaldosteronism: hyperkalaemia and mild metabolic acidosis; Na⁺ wasting is modest in adults because other Na⁺-retaining systems compensate.',

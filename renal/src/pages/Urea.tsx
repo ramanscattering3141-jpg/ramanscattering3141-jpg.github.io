@@ -87,7 +87,7 @@ export default function Urea() {
           <Panel title="Urea along the nephron" note="Amount of urea leaving each segment, as a percentage of the filtered load. More than 100% leaving the loop means urea recycled from the medulla has been added back.">
             {SEGMENTS.map((id) => {
               const pct = (r.segments[id].out.urea / (r.segments.PT.in.urea || 1)) * 100;
-              return <BarRow key={id} label={SEGMENT_INFO[id].name} value={pct} max={Math.max(140, pct)} unit="%" color={id === 'IMCD' ? '#b08ee0' : '#6aa9e8'} />;
+              return <BarRow key={id} label={SEGMENT_INFO[id].name} value={pct} max={Math.max(140, pct)} unit="%" color={id === 'IMCD' ? 'var(--c-violet)' : 'var(--c-blue)'} />;
             })}
             {mode === 'quantitative' && <p class="control-hint">IMCD urea reabsorbed into the interstitium: {(r.segments.IMCD.in.urea - r.segments.IMCD.out.urea) * 1440 > 0 ? ((r.segments.IMCD.in.urea - r.segments.IMCD.out.urea) * 1440).toFixed(0) : 0} mmol/day</p>}
           </Panel>

@@ -99,11 +99,11 @@ export default function Ammonium() {
             <AmmoniaDiagram production={production} excreted={excreted} recycling={s.nkcc2} recyclingPct={recycledPct} trapping={s.rhcg * s.hatpase} urinePh={r.urinePH} />
           </Panel>
           <Panel title="Ammonium versus titratable acid as acidaemia deepens" note="The adaptive difference: ammonium climbs steeply as the plasma bicarbonate falls, while titratable acid is limited by filtered phosphate.">
-            <LineChart
+            <LineChart yLabel="Urinary excretion (mmol/day)"
               xLabel="plasma bicarbonate (mmol/L)"
               series={[
-                { label: 'Ammonium', points: curve.nh4, color: '#5ecfba' },
-                { label: 'Titratable acid', points: curve.titratable, color: '#f2b134' },
+                { label: 'Ammonium', points: curve.nh4, color: 'var(--c-teal)' },
+                { label: 'Titratable acid', points: curve.titratable, color: 'var(--c-amber)' },
               ]}
               yMin={0}
               marker={s.hco3}
@@ -169,32 +169,32 @@ function AmmoniaDiagram({ production, excreted, recycling, recyclingPct, trappin
   const w = (v: number) => Math.max(1.5, Math.min(11, v / 30));
   return (
     <svg viewBox="0 0 600 220" class="diagram" role="img" aria-label="Ammonium production, medullary recycling and collecting duct trapping">
-      <rect x={20} y={20} width={560} height={80} fill="#16303f22" stroke="#2f7f7355" rx={6} />
-      <rect x={20} y={100} width={560} height={100} fill="#0e2634" stroke="#2f7f7355" rx={6} />
+      <rect x={20} y={20} width={560} height={80} fill="color-mix(in srgb, var(--panel-2) 13%, transparent)" stroke="color-mix(in srgb, var(--accent-dim) 33%, transparent)" rx={6} />
+      <rect x={20} y={100} width={560} height={100} fill="var(--bg-2)" stroke="color-mix(in srgb, var(--accent-dim) 33%, transparent)" rx={6} />
       <text x={30} y={38} class="svg-small">CORTEX</text>
       <text x={30} y={195} class="svg-small">MEDULLA — interstitial NH₃ accumulates here</text>
 
       <text x={60} y={60} class="svg-label">Proximal tubule</text>
       <text x={60} y={76} class="svg-small">glutamine → NH₄⁺ + new HCO₃⁻</text>
-      <line x1={155} x2={230} y1={70} y2={130} stroke="#5ecfba" stroke-width={w(production)} opacity={0.8} marker-end="url(#a-arr)" />
+      <line x1={155} x2={230} y1={70} y2={130} stroke="var(--c-teal)" stroke-width={w(production)} opacity={0.8} marker-end="url(#a-arr)" />
       <text x={160} y={112} class="svg-small">{production.toFixed(0)} mmol/day made</text>
 
       <text x={250} y={128} class="svg-label">Thick ascending limb</text>
       <text x={250} y={143} class="svg-small">NH₄⁺ on NKCC2 → NH₃ to interstitium</text>
-      <line x1={330} x2={410} y1={150} y2={150} stroke="#b08ee0" stroke-width={w(production * recycling * 0.8)} opacity={0.85} marker-end="url(#a-arr2)" />
+      <line x1={330} x2={410} y1={150} y2={150} stroke="var(--c-violet)" stroke-width={w(production * recycling * 0.8)} opacity={0.85} marker-end="url(#a-arr2)" />
       <text x={330} y={172} class="svg-small">{recyclingPct.toFixed(0)}% recycled</text>
 
       <text x={425} y={128} class="svg-label">Collecting duct</text>
       <text x={425} y={143} class="svg-small">NH₃ trapped as NH₄⁺ (pH {urinePh.toFixed(1)})</text>
-      <line x1={500} x2={500} y1={155} y2={196} stroke="#f2b134" stroke-width={w(excreted)} opacity={0.9} marker-end="url(#a-arr3)" />
+      <line x1={500} x2={500} y1={155} y2={196} stroke="var(--c-amber)" stroke-width={w(excreted)} opacity={0.9} marker-end="url(#a-arr3)" />
       <text x={510} y={186} class="svg-small">{excreted.toFixed(0)} excreted</text>
-      <text x={425} y={160} class="svg-small" style={{ fill: trapping < 0.5 ? '#e07b6a' : undefined }}>
+      <text x={425} y={160} class="svg-small" style={{ fill: trapping < 0.5 ? 'var(--c-coral)' : undefined }}>
         {trapping < 0.5 ? 'trapping impaired' : ''}
       </text>
       <defs>
         {['a-arr', 'a-arr2', 'a-arr3'].map((id, i) => (
           <marker key={id} id={id} viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
-            <path d="M0,0 L10,5 L0,10 z" fill={['#5ecfba', '#b08ee0', '#f2b134'][i]} />
+            <path d="M0,0 L10,5 L0,10 z" fill={['var(--c-teal)', 'var(--c-violet)', 'var(--c-amber)'][i]} />
           </marker>
         ))}
       </defs>

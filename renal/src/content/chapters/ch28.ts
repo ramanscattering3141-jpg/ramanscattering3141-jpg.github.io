@@ -96,7 +96,7 @@ export const chapter: ChapterContent = {
     { label: 'Insulin–glucose effect', value: '−0.5 to −1.5 mmol/L in ~1 h' },
     { label: 'Resin binding', value: '≈ 1 mmol K⁺ per g' },
   ],
-  equations: ['ttkg', 'ukcr'],
+  equations: ['ttkg', 'ukcr', 'fek'],
   clinical: [
     'First exclude pseudohyperkalaemia if nothing explains the result and the ECG is normal.',
     'With ECG changes, give calcium before anything else; it buys minutes, not a solution.',

@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, Tabs, Chain, LineChart, BarRow, Expand, toneFor, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
 
@@ -128,14 +129,14 @@ function HandlingTab() {
         </div>
         <div>
           <Panel title="Where calcium is reabsorbed" note="Fraction of the filtered load, by segment. Most is passive and paracellular in the proximal tubule and thick ascending limb; the fine, hormone-controlled adjustment is distal.">
-            <BarRow label="Proximal tubule" value={65} max={100} unit="%" color="#5ecfba" />
-            <BarRow label="Thick ascending limb" value={20} max={100} unit="%" color="#6aa9e8" sub="paracellular, via claudin-16; driven by the lumen-positive voltage" />
-            <BarRow label="Distal tubule / CNT" value={10} max={100} unit="%" color="#f2b134" sub="active, TRPV5; PTH and calcitriol act here" />
-            <BarRow label="Excreted" value={2} max={100} unit="%" color="#e07b6a" />
+            <BarRow label="Proximal tubule" value={65} max={100} unit="%" color="var(--c-teal)" />
+            <BarRow label="Thick ascending limb" value={20} max={100} unit="%" color="var(--c-blue)" sub="paracellular, via claudin-16; driven by the lumen-positive voltage" />
+            <BarRow label="Distal tubule / CNT" value={10} max={100} unit="%" color="var(--c-amber)" sub="active, TRPV5; PTH and calcitriol act here" />
+            <BarRow label="Excreted" value={2} max={100} unit="%" color="var(--c-coral)" />
           </Panel>
           <Panel title="Where phosphate is reabsorbed" note="Almost entirely proximal, through the NaPi-II cotransporter — the target of both PTH and FGF23.">
-            <BarRow label="Proximal tubule (NaPi-II)" value={85} max={100} unit="%" color="#5ecfba" sub="80–95% normally; falls to as low as 15% under PTH/FGF23" />
-            <BarRow label="Excreted" value={13} max={100} unit="%" color="#e07b6a" />
+            <BarRow label="Proximal tubule (NaPi-II)" value={85} max={100} unit="%" color="var(--c-teal)" sub="80–95% normally; falls to as low as 15% under PTH/FGF23" />
+            <BarRow label="Excreted" value={13} max={100} unit="%" color="var(--c-coral)" />
           </Panel>
           <Sources cite={{ rose: [3, 4, 6], evidence: 'physiology' }} />
         </div>
@@ -198,11 +199,11 @@ function CkdTab() {
         </div>
         <div>
           <Panel title="Phosphate and calcium as GFR falls">
-            <LineChart
+            <LineChart yLabel="Plasma concentration (mmol/L)"
               xLabel="GFR (mL/min)"
               series={[
-                { label: 'phosphate', points: pts((e) => e.plasma.Pi), color: '#f2b134' },
-                { label: 'calcium', points: pts((e) => e.plasma.Ca), color: '#5ecfba' },
+                { label: 'phosphate', points: pts((e) => e.plasma.Pi), color: 'var(--c-amber)' },
+                { label: 'calcium', points: pts((e) => e.plasma.Ca), color: 'var(--c-teal)' },
               ]}
               bands={[{ from: 0.8, to: 1.45, label: 'PO₄', color: 'rgba(242,177,52,0.10)' }]}
               marker={cur?.kidney.GFR}
@@ -211,12 +212,12 @@ function CkdTab() {
             />
           </Panel>
           <Panel title="The hormones (× normal)">
-            <LineChart
+            <LineChart yLabel="× normal"
               xLabel="GFR (mL/min)"
               series={[
-                { label: 'PTH', points: pts((e) => e.reg.hormones.pth), color: '#e07b6a' },
-                { label: 'FGF23', points: pts((e) => e.reg.hormones.fgf23), color: '#b18ae0' },
-                { label: 'calcitriol', points: pts((e) => e.reg.hormones.calcitriol), color: '#6aa9e8' },
+                { label: 'PTH', points: pts((e) => e.reg.hormones.pth), color: 'var(--c-coral)' },
+                { label: 'FGF23', points: pts((e) => e.reg.hormones.fgf23), color: 'var(--c-violet)' },
+                { label: 'calcitriol', points: pts((e) => e.reg.hormones.calcitriol), color: 'var(--c-blue)' },
               ]}
               marker={cur?.kidney.GFR}
               xFormat={(x) => x.toFixed(0)}
@@ -295,10 +296,10 @@ function MagnesiumTab() {
             </table></div>
           </Panel>
           <Panel title="Where magnesium is reabsorbed">
-            <BarRow label="Proximal tubule" value={20} max={100} unit="%" color="#5ecfba" />
-            <BarRow label="Thick ascending limb" value={65} max={100} unit="%" color="#6aa9e8" sub="paracellular, claudin-16" />
-            <BarRow label="Distal tubule" value={10} max={100} unit="%" color="#f2b134" sub="active, TRPM6" />
-            <BarRow label="Excreted" value={5} max={100} unit="%" color="#e07b6a" />
+            <BarRow label="Proximal tubule" value={20} max={100} unit="%" color="var(--c-teal)" />
+            <BarRow label="Thick ascending limb" value={65} max={100} unit="%" color="var(--c-blue)" sub="paracellular, claudin-16" />
+            <BarRow label="Distal tubule" value={10} max={100} unit="%" color="var(--c-amber)" sub="active, TRPM6" />
+            <BarRow label="Excreted" value={5} max={100} unit="%" color="var(--c-coral)" />
           </Panel>
         </div>
       </div>
@@ -321,6 +322,10 @@ export default function Minerals({ query }: { query: URLSearchParams }) {
       {tab === 'handling' && <HandlingTab />}
       {tab === 'ckd' && <CkdTab />}
       {tab === 'magnesium' && <MagnesiumTab />}
+      <BedsideEquations
+        ids={['correctedCa', 'cccr', 'femg', 'fepo4']}
+        intro="Before treating a calcium, magnesium or phosphate level, correct it for albumin, then use a fractional excretion to ask whether the kidney is the cause or is appropriately conserving."
+      />
       <Panel title="The five questions" id="five">
         <FiveQuestions
           normal={<p>Gut, bone and kidney share the load; PTH, calcitriol and FGF23 hold ionised calcium and phosphate steady. About 45% of calcium is ionised; correct the total for albumin.</p>}

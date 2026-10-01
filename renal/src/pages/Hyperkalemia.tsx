@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, Toggle, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, Tabs, Chain, LineChart, Expand, toneFor, type Series } from '../ui/kit';
-import { EquationCard } from '../ui/EquationCard';
+import { BedsideEquations } from '../ui/EquationCard';
 import { EcgStrip, ecgFeatures } from '../ui/EcgStrip';
 import { makeParams, useStep } from '../sim/hooks';
 import { normalKStore, plasmaPotassium } from '../engine/body';
@@ -173,14 +173,14 @@ function CausesTab() {
           {!hidden && (
             <div class="grid grid-2">
               <Panel title="Plasma K⁺ over time">
-                <LineChart xLabel="days" series={[{ label: 'K⁺', points: s((p) => p.K), color: '#e07b6a' }]} bands={[{ from: 3.5, to: 5 }]} height={160} />
+                <LineChart yLabel="Plasma K⁺ (mmol/L)" xLabel="days" series={[{ label: 'K⁺', points: s((p) => p.K), color: 'var(--c-coral)' }]} bands={[{ from: 3.5, to: 5 }]} height={160} />
               </Panel>
               <Panel title="Aldosterone and adaptation" note="Aldosterone answers the K⁺ first; the secreting cells adapt over days.">
-                <LineChart
+                <LineChart yLabel="× normal"
                   xLabel="days"
                   series={[
-                    { label: 'aldosterone', points: s((p) => p.aldo), color: '#f2b134' },
-                    { label: 'K⁺ adaptation', points: s((p) => p.kAdapt), color: '#5ecfba' },
+                    { label: 'aldosterone', points: s((p) => p.aldo), color: 'var(--c-amber)' },
+                    { label: 'K⁺ adaptation', points: s((p) => p.kAdapt), color: 'var(--c-teal)' },
                   ]}
                   yMin={0}
                   height={160}
@@ -289,9 +289,9 @@ function ShiftTab() {
 // ---------------------------------------------------------------- adaptation
 
 const ADAPT_RUNS: { label: string; base: ParamPatch; color: string }[] = [
-  { label: 'Normal kidneys', base: {}, color: '#5ecfba' },
-  { label: 'Renal failure (GFR ≈ 35)', base: { nephronFraction: 0.22 }, color: '#f2b134' },
-  { label: 'Renal failure + low aldosterone', base: { nephronFraction: 0.22, aldoSynthesis: 0.15 }, color: '#e07b6a' },
+  { label: 'Normal kidneys', base: {}, color: 'var(--c-teal)' },
+  { label: 'Renal failure (GFR ≈ 35)', base: { nephronFraction: 0.22 }, color: 'var(--c-amber)' },
+  { label: 'Renal failure + low aldosterone', base: { nephronFraction: 0.22, aldoSynthesis: 0.15 }, color: 'var(--c-coral)' },
 ];
 
 function AdaptTab() {
@@ -330,14 +330,14 @@ function AdaptTab() {
         </div>
         <div>
           <Panel title="Plasma K⁺">
-            <LineChart xLabel="days" series={series((p) => p.K)} bands={[{ from: 3.5, to: 5 }]} height={190} />
+            <LineChart yLabel="Plasma K⁺ (mmol/L)" xLabel="days" series={series((p) => p.K)} bands={[{ from: 3.5, to: 5 }]} height={190} />
           </Panel>
           <div class="grid grid-2">
             <Panel title="Aldosterone (× normal)">
-              <LineChart xLabel="days" series={series((p) => p.aldo)} yMin={0} height={160} />
+              <LineChart yLabel="Aldosterone (× normal)" xLabel="days" series={series((p) => p.aldo)} yMin={0} height={160} />
             </Panel>
             <Panel title="Secretory adaptation (× normal)">
-              <LineChart xLabel="days" series={series((p) => p.kAdapt)} yMin={1} height={160} />
+              <LineChart yLabel="Secretory adaptation (× normal)" xLabel="days" series={series((p) => p.kAdapt)} yMin={1} height={160} />
             </Panel>
           </div>
         </div>
@@ -472,11 +472,11 @@ function TreatTab() {
   const ids = selected.map((x) => x.id);
   const times = Array.from({ length: 73 }, (_, i) => i * 5);
   const series: Series[] = [
-    { label: 'no treatment', color: '#8b98a5', dashed: true, points: times.map((x) => ({ x, y: k0 })) },
-    { label: 'chosen regimen', color: '#5ecfba', points: times.map((x) => ({ x, y: kAt(x, ids) })) },
+    { label: 'no treatment', color: 'var(--ink-faint)', dashed: true, points: times.map((x) => ({ x, y: k0 })) },
+    { label: 'chosen regimen', color: 'var(--c-teal)', points: times.map((x) => ({ x, y: kAt(x, ids) })) },
     ...selected
       .filter((x) => x.id !== 'calcium')
-      .map((x) => ({ label: x.label.split(' ')[0], dashed: true, color: '#6aa9e8', points: times.map((tt) => ({ x: tt, y: kAt(tt, [x.id]) })) })),
+      .map((x) => ({ label: x.label.split(' ')[0], dashed: true, color: 'var(--c-blue)', points: times.map((tt) => ({ x: tt, y: kAt(tt, [x.id]) })) })),
   ];
   const kNow = kAt(t, ids);
   const protect = on.calcium ? calciumProtection(t) : 0;
@@ -497,7 +497,7 @@ function TreatTab() {
         </div>
         <div>
           <Panel title="Plasma K⁺ over six hours">
-            <LineChart xLabel="minutes" series={series} bands={[{ from: 3.5, to: 5 }]} marker={t} height={220} yMin={3} yMax={9.5} />
+            <LineChart yLabel="Plasma K⁺ (mmol/L)" xLabel="minutes" series={series} bands={[{ from: 3.5, to: 5 }]} marker={t} height={220} yMin={3} yMax={9.5} />
             <Slider label="Time since treatment" value={t} min={0} max={360} step={5} unit="min" onInput={setT} />
           </Panel>
           <Panel title={`At ${t} minutes`}>
@@ -550,10 +550,10 @@ export default function Hyperkalemia({ query }: { query: URLSearchParams }) {
       {tab === 'adapt' && <AdaptTab />}
       {tab === 'ecg' && <EcgTab />}
       {tab === 'treat' && <TreatTab />}
-      <div class="grid grid-2" style={{ marginTop: 16 }}>
-        <EquationCard eq="ttkg" compact />
-        <EquationCard eq="ukcr" compact />
-      </div>
+      <BedsideEquations
+        ids={['fek', 'ukcr', 'ttkg']}
+        intro="Is the kidney excreting enough K⁺ for the level? A low fractional excretion with a good GFR points at the distal secretory machinery or the drugs acting on it."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Cells buffer a load within minutes (insulin, β₂, the K⁺ itself); the kidney excretes most of it within 6–8 hours; adaptation lets intake rise to about 400 mmol/day.</p>}

@@ -27,7 +27,9 @@ export interface CompartmentInput {
 }
 
 export const COMPARTMENT_DEFAULT: CompartmentInput = {
-  weight: 70,
+  // A round-numbers teaching person: 100 kg × 0.6 = 60 L of water, 40 L in cells and 20 L outside
+  // (15 L interstitial, 5 L plasma). Rose works the same examples with a 70 kg man.
+  weight: 100,
   waterFraction: 0.6,
   na0: 140,
   nacl: 0,
@@ -65,7 +67,8 @@ export interface CompartmentResult {
 
 export function compartments(i: CompartmentInput): CompartmentResult {
   const tbw0 = i.weight * i.waterFraction;
-  const icf0 = tbw0 * 0.6;
+  // Two-thirds intracellular, one-third extracellular (Rose gives 55–60% : 40–45%; ⅔ : ⅓ keeps the arithmetic memorable).
+  const icf0 = (tbw0 * 2) / 3;
   const ecf0 = tbw0 - icf0;
   const osm0 = 2 * i.na0;
   const icfSolute0 = icf0 * osm0;

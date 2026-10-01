@@ -26,15 +26,25 @@ The lab shares this repository's Vite build with the flight simulator at the sit
 - *The nephron:* nephron explorer, nephron flow simulator, tubular transport lab, hormones
 - *Filtration & clearance:* glomerular filtration, afferent/efferent lab, autoregulation, renin–angiotensin–aldosterone, clearance, fractional excretion, GFR & creatinine kinetics
 - *Tubular transport:* proximal tubule, glucose & SGLT2, loop of Henle, countercurrent multiplication, vasa recta, urea recycling, distal nephron
-- *Water, sodium & volume:* body water & serum sodium, sodium & effective volume, ADH & water balance, urine osmolality, free-water clearance, hyponatraemia simulator, hypernatraemia & polyuria, hypovolaemic states, oedematous states
+- *Water, sodium & volume:* body water & serum sodium, sodium & effective volume, ADH & water balance, urine osmolality, free-water clearance, hyponatraemia simulator, hypernatraemia & polyuria, hypovolaemic states, oedematous states, **IV fluids & oedema** (where a bag of saline, Ringer’s, Plasma-Lyte, D5W, albumin, 3% saline or red cells goes, minute by minute, in health, GI losses, haemorrhage, septic shock, heart failure, cirrhosis, nephrotic syndrome, oliguric AKI and after surgery)
 - *Potassium:* potassium balance, hypokalaemia (with the ECG), hyperkalaemia (with the ECG and an emergency-treatment time course)
 - *Acid–base:* acid–base engine, bicarbonate handling, ammonium excretion, titratable acid, metabolic acidosis, metabolic alkalosis, renal tubular acidosis, respiratory disorders, simple & mixed disorders
 - *Minerals:* calcium, phosphate & magnesium — PTH, calcitriol and FGF23, and the CKD–mineral and bone disorder
 - *Glucose:* hyperglycaemia, DKA and HHS with a crisis time course
 - *Kidney disease:* acute kidney injury, pre-renal vs ATN, urinary obstruction, chronic kidney disease, glomerular pathophysiology, tubulointerstitial disease, inherited tubular disorders
-- *Drugs:* diuretic lab
+- *Drugs:* diuretic lab (opens on an **interactive diuretic map**: every class at its site with an inhibition bar, and its effect on each electrolyte), **transporters & drug targets** (every major transporter on its cell with the drugs wired to it; why loops lower K⁺ but not Na⁺, magnesium, vaptans, and a drug-by-electrolyte table)
 - *Laboratory:* physiology sandbox, break-the-kidney, what-if explorer, knowledge map, equation explorer, laboratory interpreter
-- *Clinical:* clinical cases, guided lessons, predict-then-observe challenges, the (retrieval) AI tutor, urine chemistries
+- *Clinical:* clinical cases, guided lessons, predict-then-observe challenges, the retrieval tutor (“Ask the tutor”), urine chemistries, **equations at the bedside** (why the equations matter for patients, a question → equation table, and six worked patients that chain live equation cards from first result to plan)
+
+**Equations.** 49 live equations (`content/equations.ts`), 29 with a worked patient case (`content/equationCases.ts`) that loads its numbers into the sliders. They include the Furst ratio, the spot urine Na⁺/K⁺ ratio, Edelman, Adrogué–Madias, FEK, FEMg, FEPO₄, FEHCO₃, the calcium/creatinine clearance ratio, urea:creatinine, UPCR, the potassium deficit and the solute-limited urine volume. Each module that leans on them shows an “Equations at the bedside” panel (`BedsideEquations` in `ui/EquationCard.tsx`).
+
+## Display conventions
+
+- **Units.** SI by default; the sidebar switch lets the equation cards and laboratory interpreter take and show mg/dL, BUN and g/dL (converted to SI before any calculation).
+
+- **Light and dark themes.** Colours are CSS variables (`--c-*`, `--ink*`, `--panel`, `--tubule`, …) defined for both themes in `app.css`; the sidebar switch stores the choice, and *Auto* follows the operating system. Diagrams and charts use the variables, never raw hex, so they recolour with the theme.
+- **Every chart has labelled axes.** `LineChart` prints both axis titles. Series that are read against different quantities carry an `axis` name and are drawn as stacked panels sharing the x-axis, so no series is ever rescaled (“÷ 5”) to share an axis with another.
+- **The body-water teaching person weighs 100 kg**: 60 L of water, 40 L in cells, 20 L outside (15 L interstitial, 5 L plasma). The whole-body engine is still a 70 kg adult.
 
 ## How it is built
 

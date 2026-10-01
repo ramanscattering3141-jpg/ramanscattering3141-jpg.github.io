@@ -149,7 +149,7 @@ export const chapter: ChapterContent = {
     { label: 'Safe fluid removal in generalised oedema', value: '2–3 L/day or more' },
     { label: 'Time to a new steady state after IVC constriction', value: '~7 days' },
   ],
-  equations: ['starling', 'fena'],
+  equations: ['starling', 'fena', 'unauk', 'upcr'],
   clinical: [
     'Oedema requires both an altered capillary force and renal sodium retention. Ask which is which before treating.',
     'In heart failure and cirrhosis the retention is compensatory: removing the fluid lowers the effective circulating volume, and the urea and creatinine are how you find out whether it has gone too far.',

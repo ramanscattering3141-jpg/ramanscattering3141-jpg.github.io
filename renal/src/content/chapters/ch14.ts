@@ -102,7 +102,7 @@ export const chapter: ChapterContent = {
     { label: 'Normal jugular venous pressure', value: '1–8 cmH₂O above the right atrium' },
     { label: 'Post-obstructive replacement', value: '50–75 mL/h of half-isotonic saline' },
   ],
-  equations: ['fena', 'feurea', 'nadeficit', 'waterdeficit'],
+  equations: ['fena', 'feurea', 'nadeficit', 'waterdeficit', 'ureacr'],
   clinical: [
     'Volume depletion and dehydration are not synonyms: dehydration means a water deficit with hypernatraemia; volume depletion means loss of extracellular fluid, most often salt and water together.',
     'The plasma sodium tells you the composition of what was lost, not how much — a normal sodium in a clearly hypovolaemic patient means proportionate salt and water loss.',

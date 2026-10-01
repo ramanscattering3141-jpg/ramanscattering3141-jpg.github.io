@@ -38,7 +38,7 @@ export const ROUTES: RouteDef[] = [
   { path: '/textbook', page: 'Textbook', title: 'Interactive textbook', group: 'start', blurb: 'The book’s thirty chapters, each rebuilt as explanation → diagram → simulation → clinical connection → questions.', keywords: ['chapter', 'Rose', 'Burton Rose', 'book', 'reading'] },
   { path: '/lessons', page: 'Lessons', title: 'Guided lessons', group: 'start', blurb: 'Step-by-step paths that unlock one experiment at a time.', keywords: ['learning mode', 'tutorial', 'course'] },
   { path: '/challenges', page: 'Challenges', title: 'Predict-then-observe challenges', group: 'start', blurb: 'Commit to a prediction, then run the physiology and see whether you were right.', keywords: ['quiz', 'questions', 'test', 'practice'] },
-  { path: '/tutor', page: 'Tutor', title: 'AI tutor', group: 'start', blurb: 'Ask a mechanistic question; answers come from the verified knowledge base with sources, and can open the relevant simulator.', keywords: ['ask', 'question', 'AI', 'chat', 'Claude'] },
+  { path: '/tutor', page: 'Tutor', title: 'Ask the tutor', group: 'start', blurb: 'Ask a mechanistic question; the answer is retrieved from the lab’s own verified knowledge base (no AI model, so it never invents), with sources and a link to the relevant simulator.', keywords: ['ask', 'question', 'AI', 'chat', 'Claude'] },
   { path: '/search', page: 'Search', title: 'Search', group: 'start', blurb: 'Search anatomy, transporters, hormones, diseases, drugs, equations and findings.' },
 
   // ---------------------------------------------------------------- laboratory
@@ -84,6 +84,7 @@ export const ROUTES: RouteDef[] = [
   { path: '/hyperglycemia', page: 'Hyperglycemia', title: 'Hyperglycemia, DKA & HHS', group: 'water', blurb: 'Osmotic diuresis, translocational hyponatraemia, ketoacidosis and the potassium paradox.', chapters: [25], keywords: ['diabetic ketoacidosis', 'hyperosmolar', 'corrected sodium', 'insulin'] },
   { path: '/hypovolemia', page: 'Hypovolemia', title: 'Hypovolemic states', group: 'water', blurb: 'GI, renal, skin and third-space losses; compensation and fluid replacement.', chapters: [14], keywords: ['dehydration', 'volume depletion', 'shock', 'saline', 'fluid replacement'] },
   { path: '/edema', page: 'Edema', title: 'Edematous states', group: 'water', blurb: 'Heart failure, cirrhosis and nephrotic syndrome: why the kidney retains sodium when the body is already overloaded.', chapters: [16], nodes: ['heartFailure', 'cirrhosis', 'nephrotic'], keywords: ['oedema', 'underfill', 'overfill', 'ascites', 'Starling'] },
+  { path: '/iv-fluids', page: 'IvFluids', title: 'IV fluids & oedema', group: 'water', blurb: 'Follow a bag of saline, Ringer’s, D5W or albumin through plasma, interstitium, cells and urine — in health, bleeding, septic shock, heart failure, cirrhosis, nephrotic syndrome and AKI.', chapters: [7, 14, 16], keywords: ['intravenous fluid', 'IV fluids', 'crystalloid', 'colloid', 'albumin', 'Ringer', 'lactated Ringer', 'Plasma-Lyte', 'balanced', 'D5W', 'fluid bolus', 'fluid responsiveness', 'septic shock', 'resuscitation', 'glycocalyx', 'capillary leak', 'ICU'] },
 
   // ---------------------------------------------------------------- potassium
   { path: '/potassium', page: 'Potassium', title: 'Potassium balance', group: 'potassium', blurb: 'Internal distribution versus external balance; the distal secretory machinery.', chapters: [12, 26], nodes: ['plasmaK', 'romk', 'bk', 'lumenNegative', 'distalDelivery'], keywords: ['K', 'ROMK', 'BK', 'insulin', 'aldosterone', 'TTKG'] },
@@ -106,6 +107,7 @@ export const ROUTES: RouteDef[] = [
 
   // ---------------------------------------------------------------- drugs
   { path: '/diuretics', page: 'Diuretics', title: 'Diuretic laboratory', group: 'drugs', blurb: 'Each class from site to adverse effects; combine them and see sequential nephron blockade.', chapters: [15], nodes: ['loopDiuretic', 'thiazide', 'amiloride', 'mra', 'acetazolamide'], keywords: ['furosemide', 'thiazide', 'spironolactone', 'amiloride', 'mannitol', 'metolazone', 'diuretic resistance', 'braking'] },
+  { path: '/drug-map', page: 'DrugMap', title: 'Transporters & drug targets', group: 'drugs', blurb: 'Every major transporter on its cell, with the drugs that block or activate it — and why loop diuretics lower K⁺ but not Na⁺, where Mg²⁺ fits, and how vaptans work.', chapters: [3, 4, 5, 15, 23, 27, 28], keywords: ['transporter map', 'drug targets', 'NKCC2', 'NCC', 'ENaC', 'ROMK', 'TRPM6', 'claudin-16', 'magnesium', 'hypomagnesaemia', 'hypokalaemia', 'vaptan', 'tolvaptan', 'conivaptan', 'V2 receptor', 'trimethoprim', 'tacrolimus', 'lithium', 'amphotericin', 'cisplatin', 'PPI', 'furosemide hyponatremia', 'thiazide hyponatremia'] },
 
   // ---------------------------------------------------------------- disease
   { path: '/aki', page: 'Aki', title: 'Acute kidney injury', group: 'disease', blurb: 'Pre-renal, intrinsic and post-renal physiology on one model.', chapters: [2, 13, 14], nodes: ['aki', 'prerenal'], keywords: ['AKI', 'ATN', 'acute renal failure', 'KDIGO', 'oliguria'] },
@@ -118,6 +120,7 @@ export const ROUTES: RouteDef[] = [
 
   // ---------------------------------------------------------------- clinical
   { path: '/cases', page: 'Cases', title: 'Clinical cases', group: 'clinical', blurb: 'Patients built from physiology, each opening in a simulator set to their parameters.', keywords: ['case', 'patient', 'vignette'] },
+  { path: '/bedside', page: 'Bedside', title: 'Equations at the bedside', group: 'clinical', blurb: 'Why the renal equations matter for patients, which one answers which question, and worked patients that chain them from first result to treatment plan.', chapters: [30], keywords: ['equations', 'formula', 'bedside', 'calculation', 'Furst', 'urine sodium potassium ratio', 'Edelman', 'Adrogue', 'sodium correction', 'worked example', 'patient'] },
   { path: '/urine-chemistry', page: 'UrineChemistry', title: 'Urine chemistries', group: 'clinical', blurb: 'What urine Na, Cl, K, osmolality and pH mean — and when they mislead.', chapters: [13], keywords: ['urine sodium', 'urine chloride', 'urine osmolality', 'specific gravity', 'urine pH'] },
 ];
 

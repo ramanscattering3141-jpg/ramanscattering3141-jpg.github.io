@@ -105,13 +105,13 @@ export default function Countercurrent() {
           </Panel>
           <div class="grid grid-2">
             <Panel title="Steady-state interstitial gradient" note="Solid: your settings. Dashed: normal. Stacked into NaCl and urea.">
-              <LineChart
+              <LineChart yLabel="Interstitial osmolality (mOsm/kg)"
                 xLabel="depth: cortex (0) → papilla (100)"
                 series={[
-                  { label: 'Total', points: depth(interstitium(steady)), color: '#f2b134' },
-                  { label: 'NaCl part', points: depth(steady.nacl), color: '#5ecfba' },
-                  { label: 'Urea part', points: depth(steady.urea), color: '#b08ee0' },
-                  { label: 'Normal total', points: depth(interstitium(steadyNormal)), color: '#f2b134', dashed: true },
+                  { label: 'Total', points: depth(interstitium(steady)), color: 'var(--c-amber)' },
+                  { label: 'NaCl part', points: depth(steady.nacl), color: 'var(--c-teal)' },
+                  { label: 'Urea part', points: depth(steady.urea), color: 'var(--c-violet)' },
+                  { label: 'Normal total', points: depth(interstitium(steadyNormal)), color: 'var(--c-amber)', dashed: true },
                 ]}
                 yMin={0}
               />

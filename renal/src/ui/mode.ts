@@ -24,3 +24,27 @@ export function saveMode(m: Mode) {
     /* storage unavailable */
   }
 }
+
+/** Colour theme. 'auto' follows the operating system's light/dark setting. */
+export type Theme = 'auto' | 'light' | 'dark';
+
+export function loadTheme(): Theme {
+  try {
+    const t = localStorage.getItem('renal-theme');
+    return t === 'light' || t === 'dark' ? t : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+
+export function applyTheme(t: Theme) {
+  const root = document.documentElement;
+  if (t === 'auto') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', t);
+  try {
+    if (t === 'auto') localStorage.removeItem('renal-theme');
+    else localStorage.setItem('renal-theme', t);
+  } catch {
+    /* storage unavailable */
+  }
+}

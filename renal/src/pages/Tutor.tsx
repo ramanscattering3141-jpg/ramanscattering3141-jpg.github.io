@@ -33,6 +33,7 @@ export default function Tutor({ query }: { query: URLSearchParams }) {
       <Panel title="Ask">
         <input
           type="search"
+          aria-label="Ask the tutor a question"
           value={q}
           placeholder="Ask about the kidney — a mechanism, a disorder, an equation…"
           onInput={(e) => setQ((e.target as HTMLInputElement).value)}

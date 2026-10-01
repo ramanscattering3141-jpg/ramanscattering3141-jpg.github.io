@@ -80,7 +80,7 @@ export function FiltrationAnimation(props: { profile: ProfilePoint[]; flow: numb
         c.setAttribute('cx', String(40 + p.x * (W - 80)));
         c.setAttribute('cy', String(p.y));
         c.setAttribute('r', p.kind === 'rbc' ? '4.2' : p.kind === 'protein' ? '3' : '1.9');
-        c.setAttribute('fill', p.kind === 'rbc' ? '#c0504d' : p.kind === 'protein' ? '#f2b134' : '#6aa9e8');
+        c.setAttribute('fill', p.kind === 'rbc' ? 'var(--c-blood)' : p.kind === 'protein' ? 'var(--c-amber)' : 'var(--c-blue)');
         c.setAttribute('opacity', p.crossing > 0 ? String(Math.max(0, 1 - p.crossing / 1.6)) : '0.9');
       });
       raf = requestAnimationFrame(tick);
@@ -97,10 +97,10 @@ export function FiltrationAnimation(props: { profile: ProfilePoint[]; flow: numb
       <text x="560" y="20" class="svg-label" text-anchor="end">
         efferent end
       </text>
-      <rect x="40" y="30" width="520" height="60" rx="30" fill="#c0504d18" stroke="#c0504d88" />
-      <line x1="40" x2="560" y1="92" y2="92" stroke="#7fd1c1" stroke-width="3" stroke-dasharray="2 3" />
+      <rect x="40" y="30" width="520" height="60" rx="30" fill="color-mix(in srgb, var(--c-blood) 9%, transparent)" stroke="color-mix(in srgb, var(--c-blood) 53%, transparent)" />
+      <line x1="40" x2="560" y1="92" y2="92" stroke="var(--c-mint)" stroke-width="3" stroke-dasharray="2 3" />
       <text x="300" y="140" class="svg-label" text-anchor="middle">
-        Bowman&apos;s space · <tspan fill="#6aa9e8">● water &amp; small solutes cross</tspan> · <tspan fill="#f2b134">● protein retained</tspan> · <tspan fill="#c0504d">● red cells</tspan>
+        Bowman&apos;s space · <tspan fill="var(--c-blue)">● water &amp; small solutes cross</tspan> · <tspan fill="var(--c-amber)">● protein retained</tspan> · <tspan fill="var(--c-blood)">● red cells</tspan>
       </text>
       <g class="particles" />
     </svg>

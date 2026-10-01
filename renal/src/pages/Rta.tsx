@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Chain, LineChart, Expand, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady, useStep } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
 
@@ -88,6 +89,10 @@ export default function Rta({ query }: { query: URLSearchParams }) {
       {tab === 'titration' && <Titration />}
       {tab === 'diagnose' && <Diagnose />}
       {tab === 'stones' && <Stones />}
+      <BedsideEquations
+        ids={['uag', 'uosmgap', 'fehco3', 'ag']}
+        intro="In a normal-gap acidosis: is ammonium excretion appropriate (urine anion and osmolal gaps)? If it is low, is the defect proximal (FEHCO₃ during bicarbonate loading) or distal?"
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={
@@ -481,9 +486,9 @@ function Diagnose() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#6aa9e8' },
-                    { label: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: '#f2b134' },
-                    { label: 'Potassium (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.K })), color: '#7bc47f' },
+                    { label: 'Bicarbonate', axis: 'Plasma HCO₃⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-blue)' },
+                    { label: 'Urine pH', axis: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: 'var(--c-amber)' },
+                    { label: 'Potassium', axis: 'Plasma K⁺ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.K })), color: 'var(--c-green)' },
                   ] as Series[]}
                   height={210}
                 />
@@ -533,8 +538,8 @@ function Stones() {
               <Readout label="Citrate excretion" value={citrate} digits={2} unit="× normal" tone={citrate < 0.5 ? 'low' : 'normal'} />
               <Readout label="Calcium : citrate" value={risk} digits={2} unit="× normal" tone={risk > 3 ? 'danger' : risk > 1.8 ? 'high' : 'normal'} />
             </div>
-            <BarRow label="Calcium excretion" value={calciuria} max={3.2} unit="×" color="#e07b6a" />
-            <BarRow label="Citrate excretion" value={citrate} max={1.2} unit="×" color="#5ecfba" />
+            <BarRow label="Calcium excretion" value={calciuria} max={3.2} unit="×" color="var(--c-coral)" />
+            <BarRow label="Citrate excretion" value={citrate} max={1.2} unit="×" color="var(--c-teal)" />
             <p class="control-hint">
               These two curves illustrate relationships the chapter states as proportionalities rather than as equations; the slopes span the reported clinical range but are not measured
               coefficients. What they are there to show is the product, not either number on its own.

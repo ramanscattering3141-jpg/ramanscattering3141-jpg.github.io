@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, Toggle } from '../ui/page';
 import { Panel, Slider, Sources, Predict, Chain, Expand, LineChart, type Series } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useStep } from '../sim/hooks';
 import type { ParamPatch } from '../engine/types';
 import { si } from '../units';
@@ -214,6 +215,10 @@ export default function PrerenalAtn() {
           </table>
         </div>
       </Expand>
+      <BedsideEquations
+        ids={['fena', 'feurea', 'ureacr']}
+        intro="The classic indices, each with the patient in whom it misleads."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>Neither state is normal. In health the kidney conserves sodium when volume falls and concentrates urine when ADH rises, which is exactly the behaviour the indices test for.</p>}
@@ -318,9 +323,9 @@ function Evolution() {
           <LineChart
             xLabel="days of uncorrected volume depletion"
             series={[
-              { label: 'FENa (%)', points: points.map((p) => ({ x: p.day, y: p.fena })), color: '#f2b134' },
-              { label: 'GFR ÷ 30 (mL/min)', points: points.map((p) => ({ x: p.day, y: p.GFR / 30 })), color: '#6aa9e8' },
-              { label: 'Creatinine ÷ 50 (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) / 50 })), color: '#e07b6a' },
+              { label: 'FENa', axis: 'FENa (%)', points: points.map((p) => ({ x: p.day, y: p.fena })), color: 'var(--c-amber)' },
+              { label: 'GFR', axis: 'GFR (mL/min)', points: points.map((p) => ({ x: p.day, y: p.GFR })), color: 'var(--c-blue)' },
+              { label: 'Creatinine', axis: 'Creatinine (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) })), color: 'var(--c-coral)' },
             ] as Series[]}
             yMin={0}
             height={200}

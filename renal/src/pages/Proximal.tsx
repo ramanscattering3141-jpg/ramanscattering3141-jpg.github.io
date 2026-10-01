@@ -132,15 +132,14 @@ export default function Proximal() {
             <LineChart
               xLabel="% of proximal tubule length"
               series={[
-                { label: 'Na⁺ TF/P', points: profile.na, color: '#5ecfba' },
-                { label: 'Cl⁻ TF/P', points: profile.cl, color: '#7bc47f' },
-                { label: 'HCO₃⁻ TF/P', points: profile.hco3, color: '#b08ee0' },
-                { label: 'Glucose TF/P', points: profile.glucose, color: '#f2b134' },
-                { label: 'Amino acids TF/P', points: profile.aa, color: '#e4696b', dashed: true },
-                { label: 'Water remaining', points: profile.water, color: '#6aa9e8', dashed: true },
+                { label: 'Na⁺', axis: 'TF/P: tubular fluid ÷ plasma concentration', points: profile.na, color: 'var(--c-teal)' },
+                { label: 'Cl⁻', axis: 'TF/P: tubular fluid ÷ plasma concentration', points: profile.cl, color: 'var(--c-green)' },
+                { label: 'HCO₃⁻', axis: 'TF/P: tubular fluid ÷ plasma concentration', points: profile.hco3, color: 'var(--c-violet)' },
+                { label: 'Glucose', axis: 'TF/P: tubular fluid ÷ plasma concentration', points: profile.glucose, color: 'var(--c-amber)' },
+                { label: 'Amino acids', axis: 'TF/P: tubular fluid ÷ plasma concentration', points: profile.aa, color: 'var(--c-red)', dashed: true },
+                { label: 'Water still in the tubule', axis: 'Fraction of filtered water still in the tubule', points: profile.water, color: 'var(--c-blue)', dashed: true },
               ]}
               yMin={0}
-              yMax={1.6}
               height={260}
             />
           </Panel>
@@ -149,8 +148,8 @@ export default function Proximal() {
               <LineChart
                 xLabel="GFR (mL/min)"
                 series={[
-                  { label: 'Absolute Na⁺ reabsorbed (mol/day)', points: gtb.map((p) => ({ x: p.gfr, y: p.abs / 1000 })), color: '#5ecfba' },
-                  { label: 'Fraction reabsorbed × 20', points: gtb.map((p) => ({ x: p.gfr, y: p.frac * 20 })), color: '#f2b134', dashed: true },
+                  { label: 'Absolute Na⁺ reabsorbed', axis: 'Proximal Na⁺ reabsorbed (mol/day)', points: gtb.map((p) => ({ x: p.gfr, y: p.abs / 1000 })), color: 'var(--c-teal)' },
+                  { label: 'Fraction of filtered Na⁺ reabsorbed', axis: 'Fraction of filtered Na⁺ reabsorbed (%)', points: gtb.map((p) => ({ x: p.gfr, y: p.frac * 100 })), color: 'var(--c-amber)', dashed: true },
                 ]}
                 yMin={0}
                 marker={s.gfr}

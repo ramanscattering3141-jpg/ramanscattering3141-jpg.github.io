@@ -85,8 +85,8 @@ function Acute() {
               <Readout label="pH, chronic" value={ph(chronicHco3)} digits={2} tone={ph(chronicHco3) < 7.25 ? 'low' : ph(chronicHco3) > 7.5 ? 'high' : 'good'} />
               <Readout label="Gained by the kidney" value={ph(chronicHco3) - ph(acuteHco3)} digits={3} unit="pH" tone="good" />
             </div>
-            <BarRow label="Cell buffering alone" value={Math.abs(ph(acuteHco3) - ph(noBuffer)) * 1000} max={200} unit=" mpH" color="#e07b6a" />
-            <BarRow label="Plus the renal compensation" value={Math.abs(ph(chronicHco3) - ph(noBuffer)) * 1000} max={200} unit=" mpH" color="#5ecfba" />
+            <BarRow label="Cell buffering alone" value={Math.abs(ph(acuteHco3) - ph(noBuffer)) * 1000} max={200} unit=" mpH" color="var(--c-coral)" />
+            <BarRow label="Plus the renal compensation" value={Math.abs(ph(chronicHco3) - ph(noBuffer)) * 1000} max={200} unit=" mpH" color="var(--c-teal)" />
             <p class="control-hint">
               Take the PCO₂ to 80. Without any buffering the pH would be 7.10; the cell buffers get it to 7.17. That is nearly nothing — and it is because bicarbonate, the body's main extracellular
               buffer, cannot buffer carbonic acid. Give the kidney three to five days and the same PCO₂ gives a pH of 7.30.
@@ -237,14 +237,14 @@ function Chronic() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'PCO₂ (mmHg)', points: points.map((p) => ({ x: p.day, y: p.PCO2 })), color: '#e07b6a' },
-                    { label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#6aa9e8' },
+                    { label: 'PCO₂', axis: 'Arterial PCO₂ (mmHg)', points: points.map((p) => ({ x: p.day, y: p.PCO2 })), color: 'var(--c-coral)' },
+                    { label: 'Bicarbonate', axis: 'Plasma HCO₃⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-blue)' },
                   ] as Series[]}
                   height={175}
                 />
-                <LineChart
+                <LineChart yLabel="Arterial pH"
                   xLabel="days"
-                  series={[{ label: 'Arterial pH', points: points.map((p) => ({ x: p.day, y: p.pH })), color: '#5ecfba' }] as Series[]}
+                  series={[{ label: 'Arterial pH', points: points.map((p) => ({ x: p.day, y: p.pH })), color: 'var(--c-teal)' }] as Series[]}
                   height={150}
                 />
                 <p class="control-hint">
@@ -313,8 +313,8 @@ function Oxygen() {
               <Readout label="Hypoxic drive begins at" value={hypoxicThreshold} digits={0} unit="mmHg" title="80 mmHg when the PCO₂ cannot fall; 50–60 when it can" />
               <Readout label="Hypoxic drive active?" value={paO2 < hypoxicThreshold ? 'yes' : 'no'} tone={paO2 < hypoxicThreshold ? 'high' : 'normal'} />
             </div>
-            <BarRow label="Alveolar PO₂" value={pAO2} max={350} unit=" mmHg" color="#5ecfba" />
-            <BarRow label="Taken by CO₂" value={pco2 / 0.8} max={350} unit=" mmHg" color="#e07b6a" />
+            <BarRow label="Alveolar PO₂" value={pAO2} max={350} unit=" mmHg" color="var(--c-teal)" />
+            <BarRow label="Taken by CO₂" value={pco2 / 0.8} max={350} unit=" mmHg" color="var(--c-coral)" />
             <p class="control-hint">
               Raise the PCO₂ on room air and the PO₂ falls with it, because the alveolar partial pressures must add to atmospheric. That is why every hypercapnic patient breathing room air is
               hypoxaemic — and why supplemental oxygen fixes the hypoxaemia without touching the hypercapnia. Only ventilation removes CO₂.
@@ -327,8 +327,8 @@ function Oxygen() {
         </div>
         <div>
           <Panel title="Why oxygen raises the PCO₂ — mostly not by hypoventilation">
-            <BarRow label="Reduced minute ventilation" value={5} max={23} unit=" mmHg" color="#f2b134" />
-            <BarRow label="Worse V/Q matching + Haldane effect" value={18} max={23} unit=" mmHg" color="#e07b6a" />
+            <BarRow label="Reduced minute ventilation" value={5} max={23} unit=" mmHg" color="var(--c-amber)" />
+            <BarRow label="Worse V/Q matching + Haldane effect" value={18} max={23} unit=" mmHg" color="var(--c-coral)" />
             <p class="control-hint">
               In the study Rose cites, oxygen given to patients with chronic lung disease in acute respiratory failure reduced minute ventilation by about 7 per cent, which accounted for 5 mmHg of a
               23 mmHg rise in PCO₂. The rest came from releasing hypoxic pulmonary vasoconstriction — sending blood to poorly ventilated areas and so raising the dead-space fraction — and from the

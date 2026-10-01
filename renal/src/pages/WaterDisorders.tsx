@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, Toggle, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Chain, LineChart } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady, useDeprivation, useCorrection } from '../sim/hooks';
 import { DEPRIVATION_PATIENTS, type HypernatraemiaCause } from '../sim/deprivation';
 import type { ParamPatch } from '../engine/types';
@@ -29,6 +30,10 @@ export default function WaterDisorders({ query }: { query: URLSearchParams }) {
       {tab === 'deprivation' && <Deprivation />}
       {tab === 'correct' && <Correct />}
       {tab === 'polyuria' && <Polyuria />}
+      <BedsideEquations
+        ids={['waterdeficit', 'ch2o', 'efwc', 'adrogue']}
+        intro="How much water is missing, how much more is being lost each day, and what a litre of D5W will do."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>ADH is released from a plasma osmolality of about 280 mOsm/kg, and thirst starts a few mOsm/kg higher. Together they hold osmolality within 1–2%.</p>}
@@ -108,7 +113,7 @@ function Thirst() {
                 <Readout label="ADH" value={ev.reg.hormones.adh} digits={2} unit="× normal" />
               </div>
             )}
-            {state?.outOfRange && <p class="control-hint" style={{ color: 'var(--danger, #e07b6a)' }}>{state.outOfRange}</p>}
+            {state?.outOfRange && <p class="control-hint" style={{ color: 'var(--danger, var(--c-coral))' }}>{state.outOfRange}</p>}
             <p class="control-hint">
               With thirst on, the diabetes insipidus kidneys pass enormous volumes and the sodium stays near normal. Turn thirst off and the same kidney becomes dangerous. With a normal kidney, even no thirst is survivable for longer, because the urine concentrates to over 1000 mOsm/kg.
             </p>
@@ -122,8 +127,8 @@ function Thirst() {
               <Readout label="Obligatory urine volume" value={minVolume} digits={2} unit="L/day" tone={minVolume > 3 ? 'high' : 'good'} />
               <Readout label="Extra over a normal kidney" value={Math.max(0, minVolume - solute / 1000)} digits={2} unit="L/day" />
             </div>
-            <BarRow label="Obligatory urine" value={minVolume} max={15} unit=" L/day" color="#6aa9e8" />
-            <BarRow label="With a normal kidney (1000 mOsm/kg)" value={solute / 1000} max={15} unit=" L/day" color="#5ecfba" />
+            <BarRow label="Obligatory urine" value={minVolume} max={15} unit=" L/day" color="var(--c-blue)" />
+            <BarRow label="With a normal kidney (1000 mOsm/kg)" value={solute / 1000} max={15} unit=" L/day" color="var(--c-teal)" />
             <p class="control-hint">
               800 mOsm at 400 mOsm/kg needs 2 L, against 0.8 L for a normal kidney: 1.2 L a day extra, harmless to someone who drinks it. With the urine osmolality fixed at 100, halving the solute halves the urine. That is why a low-salt, low-protein diet helps in diabetes insipidus.
             </p>
@@ -171,11 +176,11 @@ function Deprivation() {
 
   const series = r
     ? [
-        { label: 'Urine osmolality (mOsm/kg)', points: r.samples.map((s) => ({ x: s.hour, y: s.uosm })), color: '#6aa9e8' },
-        { label: 'Plasma osmolality (mOsm/kg)', points: r.samples.map((s) => ({ x: s.hour, y: s.posm })), color: '#e07b6a' },
+        { label: 'Urine osmolality (mOsm/kg)', points: r.samples.map((s) => ({ x: s.hour, y: s.uosm })), color: 'var(--c-blue)' },
+        { label: 'Plasma osmolality (mOsm/kg)', points: r.samples.map((s) => ({ x: s.hour, y: s.posm })), color: 'var(--c-coral)' },
       ]
     : [];
-  const flow = r ? [{ label: 'Urine flow (mL/h)', points: r.samples.map((s) => ({ x: s.hour, y: s.uflow })), color: '#f2b134' }] : [];
+  const flow = r ? [{ label: 'Urine flow (mL/h)', points: r.samples.map((s) => ({ x: s.hour, y: s.uflow })), color: 'var(--c-amber)' }] : [];
 
   return (
     <>
@@ -280,8 +285,8 @@ function Correct() {
   const { result: r, busy } = useCorrection(rx);
 
   const at = (h: number) => r?.points.find((p) => p.hour >= h - 1e-6)?.na;
-  const limit = r ? [{ label: 'Rose’s limit: −0.5 mmol/L per hour', points: [0, 72].map((h) => ({ x: h, y: r.startNa - 0.5 * h })), color: '#8a9aa8', dashed: true }] : [];
-  const series = r ? [{ label: 'Plasma sodium (mmol/L)', points: r.points.map((p) => ({ x: p.hour, y: p.na })), color: '#e07b6a' }, ...limit] : [];
+  const limit = r ? [{ label: 'Rose’s limit: −0.5 mmol/L per hour', points: [0, 72].map((h) => ({ x: h, y: r.startNa - 0.5 * h })), color: 'var(--ink-faint)', dashed: true }] : [];
+  const series = r ? [{ label: 'Plasma sodium (mmol/L)', points: r.points.map((p) => ({ x: p.hour, y: p.na })), color: 'var(--c-coral)' }, ...limit] : [];
   const tooFast = r ? r.worstDay > 12 : false;
   const freeWater = d5w + 0.75 * qs;
 
@@ -312,7 +317,7 @@ function Correct() {
                 <Readout label="Fastest 24 h fall" value={r.worstDay} digits={1} unit="mmol/L" tone={tooFast ? 'danger' : 'good'} refRange="≤ 12" />
               </div>
             )}
-            {r?.outOfRange && <p class="control-hint" style={{ color: 'var(--danger, #e07b6a)' }}>Untreated or undertreated: {r.outOfRange}</p>}
+            {r?.outOfRange && <p class="control-hint" style={{ color: 'var(--danger, var(--c-coral))' }}>Untreated or undertreated: {r.outOfRange}</p>}
           </Panel>
         </div>
         <div>
@@ -398,8 +403,8 @@ function Polyuria() {
                 <Readout label="Plasma sodium" value={ev.plasma.Na} digits={1} unit="mmol/L" />
                 <Readout label="Classification" value={kind} />
               </div>
-              <BarRow label="Solute excreted" value={u.osm * u.volumePerDay} max={3000} unit=" mOsm/day" color="#f2b134" />
-              <BarRow label="Urine volume" value={u.volumePerDay} max={20} unit=" L/day" color="#6aa9e8" />
+              <BarRow label="Solute excreted" value={u.osm * u.volumePerDay} max={3000} unit=" mOsm/day" color="var(--c-amber)" />
+              <BarRow label="Urine volume" value={u.volumePerDay} max={20} unit=" L/day" color="var(--c-blue)" />
             </>
           )}
           <p class="control-hint">

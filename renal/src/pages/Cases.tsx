@@ -2,7 +2,8 @@ import { useState } from 'preact/hooks';
 import { PageHead, Related, Busy } from '../ui/page';
 import { Panel, Readout, Predict, Sources, toneFor } from '../ui/kit';
 import { makeParams, useSteady } from '../sim/hooks';
-import { href } from '../router';
+import { encodeState, href } from '../router';
+import { readyRoute } from '../routes';
 import type { ParamPatch } from '../engine/types';
 
 interface Readable {
@@ -129,8 +130,13 @@ function CaseCard({ c }: { c: Case }) {
         </p>
       )}
       <div class="chips" style={{ marginTop: 8 }}>
+        <a class="tag" href={href('/sandbox', { s: encodeState({ patch: c.patch, label: c.title }) })}>
+          open this patient in the sandbox →
+        </a>
         {c.links.map((p) => (
-          <a key={p} class="tag" href={href(p)}>open in simulator →</a>
+          <a key={p} class="tag" href={href(p)}>
+            {readyRoute(p)?.title ?? p} →
+          </a>
         ))}
       </div>
     </Panel>

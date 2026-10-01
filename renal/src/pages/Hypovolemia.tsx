@@ -184,16 +184,17 @@ function Losses() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: '#6aa9e8' },
+                    { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: 'var(--c-blue)' },
                   ] as Series[]}
+                  yLabel="Extracellular volume (L)"
                   marker={day}
                   height={150}
                 />
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Plasma Na⁺ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Na })), color: '#f2b134' },
-                    { label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#7bc47f' },
+                    { label: 'Plasma Na⁺', axis: 'Plasma Na⁺ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Na })), color: 'var(--c-amber)' },
+                    { label: 'Bicarbonate', axis: 'Plasma HCO₃⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-green)' },
                   ] as Series[]}
                   marker={day}
                   height={160}
@@ -201,14 +202,14 @@ function Losses() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Creatinine (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) })), color: '#e07b6a' },
-                    { label: 'Urea × 10 (mmol/L)', points: points.map((p) => ({ x: p.day, y: si.urea(p.BUN) * 10 })), color: '#b08ee0' },
+                    { label: 'Creatinine', axis: 'Creatinine (µmol/L)', points: points.map((p) => ({ x: p.day, y: si.creat(p.creat) })), color: 'var(--c-coral)' },
+                    { label: 'Urea', axis: 'Urea (mmol/L)', points: points.map((p) => ({ x: p.day, y: si.urea(p.BUN) })), color: 'var(--c-violet)' },
                   ] as Series[]}
                   marker={day}
                   height={160}
                 />
                 <p class="control-hint">
-                  Urea is drawn at ten times scale so it shares an axis. It rises proportionally faster than creatinine because its reabsorption is passive: slow tubular flow and a concentrated lumen
+                  Compare the two panels: urea rises proportionally faster than creatinine because its reabsorption is passive: slow tubular flow and a concentrated lumen
                   both drive more of it back. Creatinine, which is neither reabsorbed nor concentration-driven, only reflects the fall in filtration — which is exactly why the ratio between them is
                   informative.
                 </p>
@@ -451,23 +452,23 @@ function Replacement() {
           <Busy on={busy || illCourse.busy} />
           {points && illBody && (
             <>
-              <LineChart
+              <LineChart yLabel="Extracellular volume (L)"
                 xLabel="days of treatment"
                 series={[
-                  { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: '#6aa9e8' },
-                  { label: 'Normal', points: points.map((p) => ({ x: p.day, y: normal.derived.ecfLiters })), color: '#8aa4b8' },
+                  { label: 'Extracellular volume (L)', points: points.map((p) => ({ x: p.day, y: p.ecf })), color: 'var(--c-blue)' },
+                  { label: 'Normal', points: points.map((p) => ({ x: p.day, y: normal.derived.ecfLiters })), color: 'var(--ink-faint)' },
                 ] as Series[]}
                 height={160}
               />
-              <LineChart
+              <LineChart yLabel="Renin (× normal)"
                 xLabel="days of treatment"
-                series={[{ label: 'Renin (×normal)', points: points.map((p) => ({ x: p.day, y: p.renin })), color: '#f2b134' }] as Series[]}
+                series={[{ label: 'Renin (×normal)', points: points.map((p) => ({ x: p.day, y: p.renin })), color: 'var(--c-amber)' }] as Series[]}
                 yMin={0}
                 height={150}
               />
-              <LineChart
+              <LineChart yLabel="Plasma Na⁺ (mmol/L)"
                 xLabel="days of treatment"
-                series={[{ label: 'Plasma Na⁺ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Na })), color: '#7bc47f' }] as Series[]}
+                series={[{ label: 'Plasma Na⁺ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Na })), color: 'var(--c-green)' }] as Series[]}
                 height={150}
               />
             </>

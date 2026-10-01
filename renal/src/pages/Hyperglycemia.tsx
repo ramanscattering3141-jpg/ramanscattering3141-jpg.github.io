@@ -78,12 +78,12 @@ function ShiftTab() {
         </div>
         <div>
           <Panel title="Sodium against glucose, before any water is gained or lost" note="The model solves the body as an ideal osmometer, which lands on Katz's 1.6 mmol/L per 5.6 mmol/L. Hillier's volunteers fell faster above about 22 mmol/L; 2.4 per 5.6 fitted their data better overall.">
-            <LineChart
+            <LineChart yLabel="Plasma Na⁺ (mmol/L)"
               xLabel="plasma glucose (mmol/L)"
               series={[
-                { label: 'This model', points: curve.model, color: '#5ecfba' },
-                { label: 'Katz 1.6', points: curve.k, color: '#6aa9e8', dashed: true },
-                { label: 'Hillier 2.4', points: curve.h, color: '#f2b134', dashed: true },
+                { label: 'This model', points: curve.model, color: 'var(--c-teal)' },
+                { label: 'Katz 1.6', points: curve.k, color: 'var(--c-blue)', dashed: true },
+                { label: 'Hillier 2.4', points: curve.h, color: 'var(--c-amber)', dashed: true },
               ]}
               marker={glu}
               height={220}
@@ -184,15 +184,15 @@ function CrisisTab() {
         </div>
         <div>
           <Panel title="Glucose, and what caps it" note="The glucose is free to move here: hepatic output minus tissue uptake minus what the kidney excretes. With a normal GFR, excretion catches up in the 20s; with a low GFR, far higher; with none, it keeps climbing.">
-            <LineChart xLabel="hours" series={[{ label: 'glucose (mmol/L)', points: s((q) => q.glucose), color: '#f2b134' }]} marker={hour} yMin={0} height={170} />
+            <LineChart xLabel="hours" yLabel="Plasma glucose (mmol/L)" series={[{ label: 'glucose (mmol/L)', points: s((q) => q.glucose), color: 'var(--c-amber)' }]} marker={hour} yMin={0} height={170} />
           </Panel>
           <Panel title="Sodium: diluted, then concentrated">
             <LineChart
               xLabel="hours"
               series={[
-                { label: 'measured Na⁺', points: s((q) => q.Na), color: '#5ecfba' },
-                { label: 'corrected Na⁺', points: s((q) => q.naCorrected), color: '#e07b6a', dashed: true },
-                { label: 'effective osm − 150', points: s((q) => q.effOsm - 150), color: '#b08ee0' },
+                { label: 'measured Na⁺', axis: 'Plasma Na⁺ (mmol/L)', points: s((q) => q.Na), color: 'var(--c-teal)' },
+                { label: 'corrected Na⁺', axis: 'Plasma Na⁺ (mmol/L)', points: s((q) => q.naCorrected), color: 'var(--c-coral)', dashed: true },
+                { label: 'effective osmolality', axis: 'Effective osmolality (mOsm/kg)', points: s((q) => q.effOsm), color: 'var(--c-violet)' },
               ]}
               bands={[{ from: 135, to: 145 }]}
               marker={hour}
@@ -204,8 +204,8 @@ function CrisisTab() {
               <LineChart
                 xLabel="hours"
                 series={[
-                  { label: 'plasma K⁺', points: s((q) => q.K), color: '#5ecfba' },
-                  { label: 'deficit ÷ 100 (mmol)', points: s((q) => Math.max(0, q.kDeficit) / 100), color: '#e07b6a', dashed: true },
+                  { label: 'plasma K⁺', axis: 'Plasma K⁺ (mmol/L)', points: s((q) => q.K), color: 'var(--c-teal)' },
+                  { label: 'total-body K⁺ deficit', axis: 'K⁺ deficit (mmol)', points: s((q) => Math.max(0, q.kDeficit)), color: 'var(--c-coral)', dashed: true },
                 ]}
                 bands={[{ from: 3.5, to: 5 }]}
                 marker={hour}
@@ -216,9 +216,10 @@ function CrisisTab() {
               <LineChart
                 xLabel="hours"
                 series={[
-                  { label: 'HCO₃⁻', points: s((q) => q.HCO3), color: '#6aa9e8' },
-                  { label: 'anion gap', points: s((q) => q.anionGap), color: '#f2b134' },
+                  { label: 'HCO₃⁻', points: s((q) => q.HCO3), color: 'var(--c-blue)' },
+                  { label: 'anion gap', points: s((q) => q.anionGap), color: 'var(--c-amber)' },
                 ]}
+                yLabel="mmol/L"
                 marker={hour}
                 yMin={0}
                 height={170}
@@ -314,17 +315,16 @@ function TreatTab() {
         </div>
         <div>
           <Panel title="Potassium: the danger of treatment" note="Insulin and the falling osmolality move K⁺ back into cells; the deficit that was hidden appears.">
-            <LineChart xLabel="hours of treatment" series={[{ label: 'plasma K⁺', points: s((q) => q.K), color: '#5ecfba' }]} bands={[{ from: 3.5, to: 5.0 }]} yMin={2} yMax={7} height={170} />
+            <LineChart xLabel="hours of treatment" yLabel="Plasma K⁺ (mmol/L)" series={[{ label: 'plasma K⁺', points: s((q) => q.K), color: 'var(--c-teal)' }]} bands={[{ from: 3.5, to: 5.0 }]} yMin={2} yMax={7} height={170} />
             {Number.isFinite(minK) && <EcgStrip k={minK} seconds={2.4} height={110} label={`lead II at the lowest K⁺ (${minK.toFixed(1)} mmol/L)`} />}
           </Panel>
           <Panel title="Glucose and osmolality">
             <LineChart
               xLabel="hours of treatment"
               series={[
-                { label: 'glucose (mmol/L)', points: s((q) => q.glucose), color: '#f2b134' },
-                { label: 'effective osm − 270', points: s((q) => q.effOsm - 270), color: '#b08ee0' },
+                { label: 'glucose', axis: 'Plasma glucose (mmol/L)', points: s((q) => q.glucose), color: 'var(--c-amber)' },
+                { label: 'effective osmolality', axis: 'Effective osmolality (mOsm/kg)', points: s((q) => q.effOsm), color: 'var(--c-violet)' },
               ]}
-              yMin={0}
               height={170}
             />
           </Panel>
@@ -333,9 +333,10 @@ function TreatTab() {
               <LineChart
                 xLabel="hours"
                 series={[
-                  { label: 'measured', points: s((q) => q.Na), color: '#5ecfba' },
-                  { label: 'corrected', points: s((q) => q.naCorrected), color: '#e07b6a', dashed: true },
+                  { label: 'measured', points: s((q) => q.Na), color: 'var(--c-teal)' },
+                  { label: 'corrected', points: s((q) => q.naCorrected), color: 'var(--c-coral)', dashed: true },
                 ]}
+                yLabel="Plasma Na⁺ (mmol/L)"
                 bands={[{ from: 135, to: 145 }]}
                 height={160}
               />
@@ -344,11 +345,10 @@ function TreatTab() {
               <LineChart
                 xLabel="hours"
                 series={[
-                  { label: 'HCO₃⁻', points: s((q) => q.HCO3), color: '#6aa9e8' },
-                  { label: 'anion gap', points: s((q) => q.anionGap), color: '#f2b134' },
-                  { label: 'Cl⁻ − 80', points: s((q) => q.Cl - 80), color: '#7bc47f', dashed: true },
+                  { label: 'HCO₃⁻', axis: 'HCO₃⁻ and anion gap (mmol/L)', points: s((q) => q.HCO3), color: 'var(--c-blue)' },
+                  { label: 'anion gap', axis: 'HCO₃⁻ and anion gap (mmol/L)', points: s((q) => q.anionGap), color: 'var(--c-amber)' },
+                  { label: 'Cl⁻', axis: 'Plasma Cl⁻ (mmol/L)', points: s((q) => q.Cl), color: 'var(--c-green)', dashed: true },
                 ]}
-                yMin={0}
                 height={160}
               />
             </Panel>

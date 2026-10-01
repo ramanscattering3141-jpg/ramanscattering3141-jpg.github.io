@@ -175,6 +175,9 @@ export interface Series {
   points: { x: number; y: number }[];
   color?: string;
   dashed?: boolean;
+  /** Title of the y-axis this series is read against. Series with different axes are drawn as
+   *  stacked panels sharing the x-axis, so no quantity ever has to be rescaled to fit another. */
+  axis?: string;
 }
 
 /** Width of an element, tracked as it resizes (charts draw at their real pixel width). */
@@ -212,7 +215,25 @@ const tickDigits = (ticks: number[]) => {
   return Math.max(0, Math.min(3, -Math.floor(Math.log10(step) + 1e-9) + (step / Math.pow(10, Math.floor(Math.log10(step))) === 2.5 ? 1 : 0)));
 };
 
-export function LineChart(props: {
+/** Pull the unit out of a series label such as "Plasma Na⁺ (mmol/L)". */
+function unitOf(label: string): string | null {
+  const m = label.match(/\(([^()]*)\)\s*$/);
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * The y-axis title. Given explicitly, or worked out from the series: one series → its label;
+ * several sharing a unit → that unit; otherwise the legend names each line with its unit.
+ */
+export function yTitleFor(series: Series[], yLabel?: string): string {
+  if (yLabel) return yLabel;
+  if (series.length === 1) return series[0].label;
+  const units = [...new Set(series.map((s) => unitOf(s.label)))];
+  if (units.length === 1 && units[0]) return units[0];
+  return 'value (each line is named, with its unit, in the key below)';
+}
+
+type LineChartProps = {
   series: Series[];
   xLabel?: string;
   yLabel?: string;
@@ -220,21 +241,59 @@ export function LineChart(props: {
   yMin?: number;
   yMax?: number;
   /** horizontal reference bands, e.g. the normal range */
-  bands?: { from: number; to: number; label?: string; color?: string }[];
+  bands?: { from: number; to: number; label?: string; color?: string; /** stacked charts: the axis this band belongs to (default: the first) */ axis?: string }[];
   /** vertical marker, e.g. "now" */
   marker?: number;
   /** format x tick labels (e.g. undo a log scale) */
   xFormat?: (x: number) => string;
-}) {
+  /** force the x range (used to line up stacked panels) */
+  xDomain?: [number, number];
+  /** stacked panels: only the bottom one carries the x-axis title */
+  hideXTitle?: boolean;
+};
+
+export function LineChart(props: LineChartProps) {
+  const axes = [...new Set(props.series.map((s) => s.axis).filter((a): a is string => !!a))];
+  if (axes.length > 1) {
+    // One panel per y-axis, stacked, all on the same x range.
+    const xsAll = props.series.flatMap((s) => s.points.map((p) => p.x));
+    const dom: [number, number] = props.xDomain ?? [Math.min(...xsAll), Math.max(...xsAll)];
+    const palette = ['var(--c-teal)', 'var(--c-amber)', 'var(--c-blue)', 'var(--c-violet)', 'var(--c-green)', 'var(--c-red)'];
+    const colored = props.series.map((s, i) => ({ ...s, color: s.color ?? palette[i % palette.length] }));
+    const each = Math.max(120, Math.round(((props.height ?? 200) * 1.25) / axes.length));
+    return (
+      <div class="chart-stack">
+        {axes.map((a, i) => (
+          <LineChart
+            hideXTitle={i < axes.length - 1}
+            key={a}
+            series={colored.filter((s) => (s.axis ?? axes[0]) === a).map((s) => ({ ...s, axis: undefined }))}
+            yLabel={a}
+            xLabel={props.xLabel}
+            height={each}
+            marker={props.marker}
+            xFormat={props.xFormat}
+            xDomain={dom}
+            yMin={props.yMin}
+            bands={(props.bands ?? []).filter((b) => (b.axis ?? axes[0]) === a)}
+          />
+        ))}
+      </div>
+    );
+  }
+  return <SingleChart {...props} yLabel={props.yLabel ?? axes[0]} />;
+}
+
+function SingleChart(props: LineChartProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
-  const h = props.height ?? 200;
-  const pad = { l: 44, r: 20, t: 10, b: props.xLabel ? 38 : 22 };
+  const h = (props.height ?? 200) + (props.hideXTitle ? 2 : 18);
+  const pad = { l: 48, r: 30, t: 26, b: props.hideXTitle ? 24 : 40 };
   const all = props.series.flatMap((s) => s.points).filter((p) => Number.isFinite(p.y));
   if (all.length === 0) return <div ref={ref} />;
   const xs = all.map((p) => p.x);
   const ys = all.map((p) => p.y);
-  const x0 = Math.min(...xs);
-  const x1 = Math.max(...xs);
+  const x0 = props.xDomain?.[0] ?? Math.min(...xs);
+  const x1 = props.xDomain?.[1] ?? Math.max(...xs);
   let y0 = props.yMin ?? Math.min(...ys, ...(props.bands ?? []).map((b) => b.from));
   let y1 = props.yMax ?? Math.max(...ys, ...(props.bands ?? []).map((b) => b.to));
   if (y1 - y0 < 1e-9) {
@@ -244,31 +303,36 @@ export function LineChart(props: {
   const w = Math.max(240, width);
   const sx = (x: number) => pad.l + ((x - x0) / (x1 - x0 || 1)) * (w - pad.l - pad.r);
   const sy = (y: number) => h - pad.b - ((Math.max(y0, Math.min(y1, y)) - y0) / (y1 - y0 || 1)) * (h - pad.t - pad.b);
-  const palette = ['#5ecfba', '#f2b134', '#6aa9e8', '#b08ee0', '#7bc47f', '#e4696b'];
+  const palette = ['var(--c-teal)', 'var(--c-amber)', 'var(--c-blue)', 'var(--c-violet)', 'var(--c-green)', 'var(--c-red)'];
   const yt = niceTicks(y0, y1, 4);
   const xt = niceTicks(x0, x1, Math.max(3, Math.floor(w / 110)));
   const yd = tickDigits(yt);
   const xd = tickDigits(xt);
+  const yTitle = yTitleFor(props.series, props.yLabel);
+  const xTitle = props.xLabel ?? 'x';
   return (
     <figure ref={ref}>
-      <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" aria-label={`${props.yLabel ?? 'value'} against ${props.xLabel ?? 'x'}`}>
+      <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" aria-label={`${yTitle} against ${xTitle}`}>
         {(props.bands ?? []).map((b, i) => (
-          <rect key={i} x={pad.l} y={sy(b.to)} width={w - pad.l - pad.r} height={Math.max(1, sy(b.from) - sy(b.to))} fill={b.color ?? '#7bc47f'} opacity="0.09" />
+          <rect key={i} x={pad.l} y={sy(b.to)} width={w - pad.l - pad.r} height={Math.max(1, sy(b.from) - sy(b.to))} fill={b.color ?? 'var(--c-green)'} opacity="0.09" />
         ))}
         {yt.map((y) => (
           <g key={`y${y}`}>
-            <line x1={pad.l} x2={w - pad.r} y1={sy(y)} y2={sy(y)} stroke="#ffffff12" />
-            <text class="svg-label" x={pad.l - 6} y={sy(y) + 3} textAnchor="end">
+            <line x1={pad.l} x2={w - pad.r} y1={sy(y)} y2={sy(y)} stroke="color-mix(in srgb, var(--mix) 9%, transparent)" />
+            <text class="svg-label" x={pad.l - 6} y={sy(y) + 4} textAnchor="end">
               {y.toFixed(yd)}
             </text>
           </g>
         ))}
         {xt.map((x) => (
-          <text key={`x${x}`} class="svg-label" x={sx(x)} y={h - pad.b + 14} textAnchor="middle">
-            {props.xFormat ? props.xFormat(x) : x.toFixed(xd)}
-          </text>
+          <g key={`x${x}`}>
+            <line x1={sx(x)} x2={sx(x)} y1={h - pad.b} y2={h - pad.b + 4} stroke="color-mix(in srgb, var(--mix) 35%, transparent)" />
+            <text class="svg-label" x={sx(x)} y={h - pad.b + 16} textAnchor="middle">
+              {props.xFormat ? props.xFormat(x) : x.toFixed(xd)}
+            </text>
+          </g>
         ))}
-        {props.marker !== undefined && <line x1={sx(props.marker)} x2={sx(props.marker)} y1={pad.t} y2={h - pad.b} stroke="#ffffff55" strokeDasharray="3 3" />}
+        {props.marker !== undefined && <line x1={sx(props.marker)} x2={sx(props.marker)} y1={pad.t} y2={h - pad.b} stroke="color-mix(in srgb, var(--mix) 33%, transparent)" strokeDasharray="3 3" />}
         {props.series.map((s, i) => (
           <polyline
             key={s.label}
@@ -278,16 +342,21 @@ export function LineChart(props: {
               .join(' ')}
             fill="none"
             stroke={s.color ?? palette[i % palette.length]}
-            strokeWidth="2"
+            strokeWidth="2.2"
             strokeDasharray={s.dashed ? '5 4' : undefined}
             strokeLinejoin="round"
-            opacity={s.dashed ? 0.6 : 1}
+            opacity={s.dashed ? 0.7 : 1}
           />
         ))}
-        <line x1={pad.l} x2={w - pad.r} y1={h - pad.b} y2={h - pad.b} stroke="#ffffff25" />
-        {props.xLabel && (
-          <text class="svg-label" x={(w + pad.l) / 2} y={h - 4} textAnchor="middle">
-            {props.xLabel}
+        {/* axes */}
+        <line x1={pad.l} x2={w - pad.r} y1={h - pad.b} y2={h - pad.b} stroke="color-mix(in srgb, var(--mix) 35%, transparent)" />
+        <line x1={pad.l} x2={pad.l} y1={pad.t - 4} y2={h - pad.b} stroke="color-mix(in srgb, var(--mix) 35%, transparent)" />
+        <text class="svg-label axis-title" x={pad.l - 6} y={12} textAnchor="start">
+          ↑ {yTitle}
+        </text>
+        {!props.hideXTitle && (
+          <text class="svg-label axis-title" x={(w + pad.l) / 2} y={h - 6} textAnchor="middle">
+            {xTitle} →
           </text>
         )}
       </svg>
@@ -300,7 +369,6 @@ export function LineChart(props: {
           ))}
         </div>
       )}
-      {props.yLabel && <figcaption>{props.yLabel}</figcaption>}
     </figure>
   );
 }
@@ -317,7 +385,7 @@ export function BarRow(props: { label: string; value: number; max: number; unit?
           {props.unit ? ` ${props.unit}` : ''}
         </span>
       </div>
-      <div style={{ height: 6, background: '#ffffff12', borderRadius: 4, marginTop: 3, overflow: 'hidden' }}>
+      <div style={{ height: 6, background: 'color-mix(in srgb, var(--mix) 7%, transparent)', borderRadius: 4, marginTop: 3, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: props.color ?? 'var(--accent)', borderRadius: 4 }} />
       </div>
       {props.sub && <div class="control-hint">{props.sub}</div>}

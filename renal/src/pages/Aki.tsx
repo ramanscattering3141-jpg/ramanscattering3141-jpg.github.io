@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, Tabs, Chain, Expand, toneFor } from '../ui/kit';
+import { BedsideEquations } from '../ui/EquationCard';
 import { makeParams, useSteady, useStep } from '../sim/hooks';
 import { si } from '../units';
 
@@ -182,6 +183,10 @@ export default function Aki({ query }: { query: URLSearchParams }) {
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
       {tab === 'stage' && <StageTab />}
       {tab === 'course' && <CourseTab />}
+      <BedsideEquations
+        ids={['fena', 'ureacr']}
+        intro="Two quick indices in the first hours of an AKI. Neither replaces the history, the urine sediment and the response to treatment."
+      />
       <Panel title="The five questions">
         <FiveQuestions
           normal={<p>The GFR matches excretion to intake from minute to minute; the creatinine sits at a steady level set by the balance of production and clearance.</p>}

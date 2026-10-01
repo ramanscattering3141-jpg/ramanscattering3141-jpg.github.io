@@ -3,6 +3,7 @@ import { PageHead, Related } from '../ui/page';
 import { Panel } from '../ui/kit';
 import { EquationCard } from '../ui/EquationCard';
 import { EQUATIONS, type EquationDef } from '../content/equations';
+import { href } from '../router';
 
 const GROUPS: EquationDef['group'][] = [
   'Units & osmolality',
@@ -26,10 +27,12 @@ function matches(e: EquationDef, q: string): boolean {
 export default function Equations({ query }: { query: URLSearchParams }) {
   const [q, setQ] = useState(query.get('q') ?? '');
   const [group, setGroup] = useState<EquationDef['group'] | 'all'>('all');
+  const [withCase, setWithCase] = useState(false);
   const shown = useMemo(
-    () => EQUATIONS.filter((e) => (group === 'all' || e.group === group) && matches(e, q)),
-    [q, group],
+    () => EQUATIONS.filter((e) => (group === 'all' || e.group === group) && (!withCase || !!e.patient) && matches(e, q)),
+    [q, group, withCase],
   );
+  const nCases = EQUATIONS.filter((e) => e.patient).length;
   const byGroup = useMemo(() => {
     const m = new Map<EquationDef['group'], EquationDef[]>();
     for (const g of GROUPS) m.set(g, []);
@@ -46,6 +49,7 @@ export default function Equations({ query }: { query: URLSearchParams }) {
       <Panel title="Find an equation">
         <input
           type="search"
+          aria-label="Search equations"
           value={q}
           placeholder="Search — osmolality, clearance, anion gap, TTKG…"
           onInput={(e) => setQ((e.target as HTMLInputElement).value)}
@@ -57,7 +61,15 @@ export default function Equations({ query }: { query: URLSearchParams }) {
             <button key={g} class={group === g ? 'active' : ''} onClick={() => setGroup(g)}>{g}</button>
           ))}
         </div>
-        <p class="control-hint" style={{ marginTop: 8, marginBottom: 0 }}>{shown.length} of {EQUATIONS.length} equations</p>
+        <div class="btn-row" style={{ marginTop: 8 }}>
+          <button class={withCase ? 'active' : ''} aria-pressed={withCase} onClick={() => setWithCase(!withCase)}>
+            Only those with a worked patient ({nCases})
+          </button>
+        </div>
+        <p class="control-hint" style={{ marginTop: 8, marginBottom: 0 }}>
+          {shown.length} of {EQUATIONS.length} equations. For patients that chain several equations together, see{' '}
+          <a href={href('/bedside')}>equations at the bedside</a>.
+        </p>
       </Panel>
 
       {GROUPS.filter((g) => byGroup.get(g)!.length > 0).map((g) => (
@@ -77,7 +89,7 @@ export default function Equations({ query }: { query: URLSearchParams }) {
         </Panel>
       )}
 
-      <Related paths={['/clearance', '/fractional-excretion', '/acid-base', '/free-water', '/creatinine', '/labs']} />
+      <Related paths={['/bedside', '/clearance', '/fractional-excretion', '/acid-base', '/free-water', '/creatinine', '/labs']} />
     </div>
   );
 }

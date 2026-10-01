@@ -136,7 +136,7 @@ export const chapter: ChapterContent = {
     { label: 'Colonic secretion in ESKD', value: '30–50% of dietary K⁺' },
     { label: 'Effect of adrenaline in stress', value: '−0.5 to −0.6 mmol/L' },
   ],
-  equations: ['ttkg', 'ukcr'],
+  equations: ['ttkg', 'ukcr', 'fek'],
   clinical: [
     'Chronic hyperkalaemia always means impaired distal K⁺ secretion — hypoaldosteronism or reduced distal flow/Na⁺ delivery — because adaptation would otherwise handle the load.',
     'Hypokalaemia from renal loss means the distal secretory process has been activated: mineralocorticoid excess with adequate flow, increased flow with adequate aldosterone (diuretics), or Na⁺ delivered with a non-reabsorbable anion.',

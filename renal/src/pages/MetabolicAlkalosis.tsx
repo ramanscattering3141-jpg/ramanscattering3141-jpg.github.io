@@ -136,16 +136,16 @@ function Generate() {
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#7bc47f' },
-                    { label: 'Chloride (mmol/L) ÷ 2', points: points.map((p) => ({ x: p.day, y: p.Cl / 2 })), color: '#6aa9e8' },
+                    { label: 'Bicarbonate', axis: 'Plasma HCO₃⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-green)' },
+                    { label: 'Chloride', axis: 'Plasma Cl⁻ (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.Cl })), color: 'var(--c-blue)' },
                   ] as Series[]}
                   height={170}
                 />
                 <LineChart
                   xLabel="days"
                   series={[
-                    { label: 'Arterial pH', points: points.map((p) => ({ x: p.day, y: p.pH })), color: '#e07b6a' },
-                    { label: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: '#f2b134' },
+                    { label: 'Arterial pH', axis: 'Arterial pH', points: points.map((p) => ({ x: p.day, y: p.pH })), color: 'var(--c-coral)' },
+                    { label: 'Urine pH', axis: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: 'var(--c-amber)' },
                   ] as Series[]}
                   height={170}
                 />
@@ -183,8 +183,8 @@ function ContractionDemo() {
         <Readout label="Bicarbonate pool" value={pool} digits={0} unit="mmol" title="unchanged throughout" />
         <Readout label="Concentration" value={hco3} digits={1} unit="mmol/L" tone={hco3 > 30 ? 'high' : 'normal'} />
       </div>
-      <BarRow label="Extracellular volume" value={ecf} max={24} unit=" L" color="#6aa9e8" />
-      <BarRow label="Bicarbonate concentration" value={hco3} max={48} unit=" mmol/L" color="#7bc47f" />
+      <BarRow label="Extracellular volume" value={ecf} max={24} unit=" L" color="var(--c-blue)" />
+      <BarRow label="Bicarbonate concentration" value={hco3} max={48} unit=" mmol/L" color="var(--c-green)" />
       <p class="control-hint">
         Rose's example takes 22 L to 17 L and the bicarbonate from 24 to 31 mmol/L. Nothing was added. In practice cell and bone buffering limits how far this goes, which is why a pure contraction
         alkalosis is usually modest — and why haemorrhage, which removes bicarbonate and chloride in plasma proportions, causes none at all.
@@ -395,16 +395,16 @@ function Treat() {
         <Panel title="Four days of treatment">
           {points && illBody && (
             <>
-              <LineChart
+              <LineChart yLabel="Plasma HCO₃⁻ (mmol/L)"
                 xLabel="days of treatment"
-                series={[{ label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: '#7bc47f' }] as Series[]}
+                series={[{ label: 'Bicarbonate (mmol/L)', points: points.map((p) => ({ x: p.day, y: p.HCO3 })), color: 'var(--c-green)' }] as Series[]}
                 height={150}
               />
-              <LineChart
+              <LineChart yLabel="pH"
                 xLabel="days of treatment"
                 series={[
-                  { label: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: '#f2b134' },
-                  { label: 'Arterial pH', points: points.map((p) => ({ x: p.day, y: p.pH })), color: '#e07b6a' },
+                  { label: 'Urine pH', points: points.map((p) => ({ x: p.day, y: p.urinePH })), color: 'var(--c-amber)' },
+                  { label: 'Arterial pH', points: points.map((p) => ({ x: p.day, y: p.pH })), color: 'var(--c-coral)' },
                 ] as Series[]}
                 height={160}
               />
