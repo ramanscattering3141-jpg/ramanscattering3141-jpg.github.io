@@ -21,6 +21,8 @@ export interface EqResult {
   digits?: number;
   /** a short interpretation of this particular result */
   read?: string;
+  /** set when the result is an analyte with a different conventional (US) unit, e.g. 'ca' */
+  analyte?: string;
 }
 
 export interface EquationDef {
@@ -806,7 +808,7 @@ export const EQUATIONS: EquationDef[] = [
       { key: 'ca', label: 'Total calcium', unit: 'mmol/L', min: 1.2, max: 4, step: 0.01, value: 1.95 },
       { key: 'alb', label: 'Albumin', unit: 'g/L', min: 10, max: 55, step: 1, value: 22 },
     ],
-    compute: (v) => ({ value: v.ca + 0.02 * (40 - v.alb), unit: 'mmol/L', digits: 2, read: 'Only an estimate: measure ionised calcium when it matters' }),
+    compute: (v) => ({ value: v.ca + 0.02 * (40 - v.alb), unit: 'mmol/L', digits: 2, analyte: 'ca', read: 'Only an estimate: measure ionised calcium when it matters' }),
     show: (v) => `${f(v.ca, 2)} + 0.02 × (40 − ${f(v.alb)})`,
     explain: 'About 40% of plasma calcium is bound to albumin. Low albumin lowers the total without changing the physiologically active ionised calcium.',
     chapters: [1, 30],

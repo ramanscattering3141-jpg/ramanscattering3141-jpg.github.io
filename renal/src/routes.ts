@@ -38,7 +38,7 @@ export const ROUTES: RouteDef[] = [
   { path: '/textbook', page: 'Textbook', title: 'Interactive textbook', group: 'start', blurb: 'The book’s thirty chapters, each rebuilt as explanation → diagram → simulation → clinical connection → questions.', keywords: ['chapter', 'Rose', 'Burton Rose', 'book', 'reading'] },
   { path: '/lessons', page: 'Lessons', title: 'Guided lessons', group: 'start', blurb: 'Step-by-step paths that unlock one experiment at a time.', keywords: ['learning mode', 'tutorial', 'course'] },
   { path: '/challenges', page: 'Challenges', title: 'Predict-then-observe challenges', group: 'start', blurb: 'Commit to a prediction, then run the physiology and see whether you were right.', keywords: ['quiz', 'questions', 'test', 'practice'] },
-  { path: '/tutor', page: 'Tutor', title: 'AI tutor', group: 'start', blurb: 'Ask a mechanistic question; answers come from the verified knowledge base with sources, and can open the relevant simulator.', keywords: ['ask', 'question', 'AI', 'chat', 'Claude'] },
+  { path: '/tutor', page: 'Tutor', title: 'Ask the tutor', group: 'start', blurb: 'Ask a mechanistic question; the answer is retrieved from the lab’s own verified knowledge base (no AI model, so it never invents), with sources and a link to the relevant simulator.', keywords: ['ask', 'question', 'AI', 'chat', 'Claude'] },
   { path: '/search', page: 'Search', title: 'Search', group: 'start', blurb: 'Search anatomy, transporters, hormones, diseases, drugs, equations and findings.' },
 
   // ---------------------------------------------------------------- laboratory

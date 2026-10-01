@@ -2,11 +2,12 @@ import { useMemo, useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, WhatIf, Related, Busy, useTabParam } from '../ui/page';
 import { Panel, Readout, Slider, Sources, Predict, BarRow, Tabs, Expand, LineChart, Chain, type Series } from '../ui/kit';
 import { BedsideEquations } from '../ui/EquationCard';
+import { DiureticMap } from '../ui/DiureticMap';
 import { NephronDiagram, type Mark, type StructureId } from '../ui/NephronDiagram';
 import { acute, makeParams, useAcute, useStep, NORMAL } from '../sim/hooks';
 import type { Drugs, ParamPatch } from '../engine/types';
 
-const TAB_IDS = ['classes', 'timecourse', 'braking', 'resistance'] as const;
+const TAB_IDS = ['map', 'classes', 'timecourse', 'braking', 'resistance'] as const;
 type Tab = (typeof TAB_IDS)[number];
 
 interface DrugSpec {
@@ -37,7 +38,7 @@ const CASES: { label: string; patch: ParamPatch; explain: string; tab?: Tab }[] 
 ];
 
 export default function Diuretics({ query }: { query: URLSearchParams }) {
-  const [tab, setTab] = useTabParam('/diuretics', TAB_IDS, 'classes', query);
+  const [tab, setTab] = useTabParam('/diuretics', TAB_IDS, 'map', query);
   return (
     <div>
       <PageHead
@@ -46,6 +47,7 @@ export default function Diuretics({ query }: { query: URLSearchParams }) {
       />
       <Tabs
         tabs={[
+          { id: 'map', label: 'Diuretic map' },
           { id: 'classes', label: 'The classes' },
           { id: 'timecourse', label: 'Why the diuresis stops' },
           { id: 'braking', label: 'How the kidney defends volume' },
@@ -54,6 +56,11 @@ export default function Diuretics({ query }: { query: URLSearchParams }) {
         active={tab}
         onChange={setTab}
       />
+      {tab === 'map' && (
+        <Panel title="Where each diuretic acts" note="Every class is drawn at its site with an inhibition bar (⊣). Hover, tap or tab to a segment or a drug for its transporters and its effect on sodium, potassium, calcium, magnesium, acid–base and water.">
+          <DiureticMap />
+        </Panel>
+      )}
       {tab === 'classes' && <Classes />}
       {tab === 'timecourse' && <TimeCourse />}
       {tab === 'braking' && <Braking />}

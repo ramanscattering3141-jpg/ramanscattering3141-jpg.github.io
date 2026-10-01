@@ -91,3 +91,26 @@ describe('bedside equations give the worked answers', () => {
     expect(calc('kdeficit', { k: 4, wt: 70 })).toBe(0);
   });
 });
+
+describe('unit preference conversions', async () => {
+  const u = await import('../../renal/src/ui/unitPref');
+  test('analytes are recognised from key and unit', () => {
+    expect(u.analyteOf('pcr', 'µmol/L')).toBe('creat');
+    expect(u.analyteOf('ucr', 'mmol/L')).toBe('ucreat');
+    expect(u.analyteOf('glu', 'mmol/L')).toBe('glucose');
+    expect(u.analyteOf('purea', 'mmol/L')).toBe('urea');
+    expect(u.analyteOf('alb', 'g/L')).toBe('alb');
+    expect(u.analyteOf('pmg', 'mmol/L')).toBe('mg');
+    expect(u.analyteOf('na', 'mmol/L')).toBeUndefined();
+  });
+  test('textbook conversions round-trip', () => {
+    expect(u.toDisplay('creat', 88.4, 'us')).toBeCloseTo(1, 5);
+    expect(u.toDisplay('glucose', 18, 'us')).toBeCloseTo(324, 5);
+    expect(u.toDisplay('urea', 5, 'us')).toBeCloseTo(14, 5);
+    expect(u.toDisplay('alb', 40, 'us')).toBeCloseTo(4, 5);
+    for (const a of ['glucose', 'urea', 'creat', 'ucreat', 'ca', 'mg', 'pi', 'alb'] as const) {
+      expect(u.fromDisplay(a, u.toDisplay(a, 3.7, 'us'), 'us')).toBeCloseTo(3.7, 9);
+    }
+    expect(u.toDisplay('creat', 88.4, 'si')).toBe(88.4);
+  });
+});

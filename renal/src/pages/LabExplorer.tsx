@@ -3,6 +3,7 @@ import { PageHead, Related } from '../ui/page';
 import { Panel, Readout, Slider, Sources, toneFor } from '../ui/kit';
 import { acidBase } from '../engine/body';
 import { describeAcidBase } from '../engine/simulate';
+import { displayRange, fromDisplay, round, toDisplay, unitLabel, useUnits, type Analyte } from '../ui/unitPref';
 
 // A rule-based interpreter: it takes the numbers a learner would be handed and applies the same
 // arithmetic the book teaches — anion gap, the delta ratio, Winter's expectation, the tonicity
@@ -17,6 +18,7 @@ interface Field {
   unit: string;
   normal: number;
   digits?: number;
+  analyte?: Analyte;
 }
 
 const FIELDS: Field[] = [
@@ -25,12 +27,13 @@ const FIELDS: Field[] = [
   { key: 'Cl', label: 'Chloride', min: 70, max: 130, step: 1, unit: 'mmol/L', normal: 104 },
   { key: 'HCO3', label: 'Bicarbonate', min: 3, max: 50, step: 1, unit: 'mmol/L', normal: 24 },
   { key: 'PCO2', label: 'PCO₂', min: 10, max: 90, step: 1, unit: 'mmHg', normal: 40 },
-  { key: 'albumin', label: 'Albumin', min: 10, max: 55, step: 1, unit: 'g/L', normal: 40 },
-  { key: 'glucose', label: 'Glucose', min: 2, max: 60, step: 0.5, unit: 'mmol/L', normal: 5, digits: 1 },
+  { key: 'albumin', label: 'Albumin', min: 10, max: 55, step: 1, unit: 'g/L', normal: 40, analyte: 'alb' },
+  { key: 'glucose', label: 'Glucose', min: 2, max: 60, step: 0.5, unit: 'mmol/L', normal: 5, digits: 1, analyte: 'glucose' },
 ];
 
 export default function LabExplorer({ query }: { query: URLSearchParams }) {
   void query;
+  const { units } = useUnits();
   const [v, setV] = useState<Record<string, number>>(() => Object.fromEntries(FIELDS.map((f) => [f.key, f.normal])));
   const set = (k: string, x: number) => setV((s) => ({ ...s, [k]: x }));
 
@@ -59,9 +62,23 @@ export default function LabExplorer({ query }: { query: URLSearchParams }) {
       <div class="grid grid-sidebar">
         <div>
           <Panel title="The results">
-            {FIELDS.map((f) => (
-              <Slider key={f.key} label={f.label} value={v[f.key]} min={f.min} max={f.max} step={f.step} unit={f.unit} normal={f.normal} onInput={(x) => set(f.key, x)} />
-            ))}
+            {FIELDS.map((f) => {
+              const rg = displayRange(f.analyte, f.min, f.max, f.step, units);
+              return (
+                <Slider
+                  key={f.key}
+                  label={f.label}
+                  value={round(toDisplay(f.analyte, v[f.key], units), rg.digits)}
+                  min={rg.min}
+                  max={rg.max}
+                  step={rg.step}
+                  unit={unitLabel(f.analyte, f.unit, units)}
+                  normal={round(toDisplay(f.analyte, f.normal, units), rg.digits)}
+                  onInput={(x) => set(f.key, fromDisplay(f.analyte, x, units))}
+                />
+              );
+            })}
+            {units === 'us' && <p class="control-hint">Albumin and glucose are entered in US units and converted to SI for the calculations.</p>}
           </Panel>
         </div>
         <div>

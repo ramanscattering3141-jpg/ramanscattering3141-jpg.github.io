@@ -4,6 +4,7 @@ import { Panel, Readout, Slider, toneFor } from '../ui/kit';
 import { makeParams, useSteady } from '../sim/hooks';
 import { si } from '../units';
 import type { ParamPatch } from '../engine/types';
+import { decodeState } from '../router';
 
 interface Control {
   key: string;
@@ -14,6 +15,8 @@ interface Control {
   unit?: string;
   normal: number;
   path?: 'drug' | 'transporter';
+  /** engine value = slider value × scale (e.g. glucose shown in mmol/L, engine in mg/dL) */
+  scale?: number;
 }
 
 const GROUPS: { title: string; controls: Control[] }[] = [
@@ -51,6 +54,13 @@ const GROUPS: { title: string; controls: Control[] }[] = [
     ],
   },
   {
+    title: 'Metabolic',
+    controls: [
+      { key: 'glucose', label: 'Plasma glucose (held)', min: 3, max: 45, step: 0.5, unit: 'mmol/L', normal: 5.5, scale: 18 },
+      { key: 'ketoAcid', label: 'Ketoacid production', min: 0, max: 20, step: 1, unit: 'mmol/h', normal: 0 },
+    ],
+  },
+  {
     title: 'Drugs',
     controls: [
       { key: 'furosemide', label: 'Loop diuretic', min: 0, max: 1, step: 0.1, normal: 0, path: 'drug' },
@@ -80,18 +90,35 @@ function buildPatch(vals: Record<string, number>): ParamPatch {
     const v = vals[c.key];
     if (v === undefined || v === c.normal) continue;
     if (c.path === 'drug') drugs[c.key] = v;
-    else patch[c.key] = v;
+    else patch[c.key] = v * (c.scale ?? 1);
   }
   if (Object.keys(drugs).length) patch.drugs = drugs;
   return patch as ParamPatch;
 }
 
+/** Slider values for a parameter patch (the inverse of buildPatch); unknown keys are ignored. */
+function valsFromPatch(patch: Record<string, unknown>): Record<string, number> {
+  const drugs = (patch.drugs ?? {}) as Record<string, number>;
+  return Object.fromEntries(
+    ALL.map((c) => {
+      const raw = c.path === 'drug' ? drugs[c.key] : (patch[c.key] as number | undefined);
+      if (typeof raw !== 'number') return [c.key, c.normal];
+      const v = raw / (c.scale ?? 1);
+      return [c.key, Math.min(c.max, Math.max(c.min, Math.round(v / c.step) * c.step))];
+    }),
+  );
+}
+
 export default function Sandbox({ query }: { query: URLSearchParams }) {
-  void query;
-  const [vals, setVals] = useState<Record<string, number>>(() => Object.fromEntries(ALL.map((c) => [c.key, c.normal])));
+  // A clinical case can open the sandbox pre-set to its patient: #/sandbox?s=<encoded {patch, label}>.
+  const shared = decodeState<{ patch: Record<string, unknown>; label?: string }>(query.get('s'));
+  const [loadedFrom, setLoadedFrom] = useState(shared?.label);
+  const [vals, setVals] = useState<Record<string, number>>(() => (shared?.patch ? valsFromPatch(shared.patch) : Object.fromEntries(ALL.map((c) => [c.key, c.normal]))));
   const set = (k: string, v: number) => setVals((s) => ({ ...s, [k]: v }));
-  const applyPreset = (patch: Record<string, number>) =>
+  const applyPreset = (patch: Record<string, number>) => {
+    setLoadedFrom(undefined);
     setVals(Object.fromEntries(ALL.map((c) => [c.key, patch[c.key] ?? c.normal])));
+  };
   const run = useSteady(makeParams(buildPatch(vals)), 40);
   const e = run.ev;
   const changed = ALL.filter((c) => vals[c.key] !== c.normal).length;
@@ -102,6 +129,11 @@ export default function Sandbox({ query }: { query: URLSearchParams }) {
         path="/sandbox"
         lede="The whole model, open. Set any combination of intake, losses, kidney, hormones and drugs, and read the steady state the body settles into. Nothing here is a fixed lesson — it is the same engine every other page drives, with all the dials exposed at once."
       />
+      {loadedFrom && (
+        <p class="note">
+          <strong>Loaded from the case “{loadedFrom}”.</strong> Every dial below is set to that patient. Change any of them to ask what would happen next.
+        </p>
+      )}
       <div class="btn-row" style={{ marginBottom: 12 }}>
         {PRESETS.map((p) => (
           <button key={p.label} onClick={() => applyPreset(p.patch)}>{p.label}</button>

@@ -4,6 +4,7 @@ import { type ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { GROUPS, ROUTES, isReady, routeByPath, type RouteDef } from './routes';
 import { href, navigate, useLocation } from './router';
+import { UnitsContext, loadUnits, saveUnits, type UnitSystem } from './ui/unitPref';
 import { ModeContext, applyTheme, loadMode, loadTheme, saveMode, type Mode, type Theme } from './ui/mode';
 
 const pageModules = import.meta.glob<{ default: ComponentType<{ query: URLSearchParams }> }>('./pages/*.tsx');
@@ -75,6 +76,11 @@ export function App() {
     setModeState(m);
     saveMode(m);
   };
+  const [units, setUnitsState] = useState<UnitSystem>(loadUnits);
+  const setUnits = (u: UnitSystem) => {
+    setUnitsState(u);
+    saveUnits(u);
+  };
 
   useEffect(() => {
     setNavOpen(false);
@@ -84,6 +90,7 @@ export function App() {
 
   return (
     <ModeContext.Provider value={{ mode, setMode }}>
+    <UnitsContext.Provider value={{ units, setUnits }}>
       <a class="skip-link" href="#main">
         Skip to content
       </a>
@@ -131,6 +138,14 @@ export function App() {
               </button>
             ))}
           </div>
+          <div class="mode-switch" role="group" aria-label="Units for entering lab values">
+            <button class={units === 'si' ? 'active' : ''} onClick={() => setUnits('si')} aria-pressed={units === 'si'} title="SI units (mmol/L, µmol/L), as reported in Canada, the UK and Europe">
+              SI units
+            </button>
+            <button class={units === 'us' ? 'active' : ''} onClick={() => setUnits('us')} aria-pressed={units === 'us'} title="Conventional units (mg/dL, BUN, g/dL) for the equation cards and the laboratory interpreter; simulators stay in SI">
+              mg/dL
+            </button>
+          </div>
           {GROUPS.map((g) => (
             <div class="nav-group" key={g.id}>
               <h5>{g.label}</h5>
@@ -166,6 +181,7 @@ export function App() {
           )}
         </main>
       </div>
+    </UnitsContext.Provider>
     </ModeContext.Provider>
   );
 }
