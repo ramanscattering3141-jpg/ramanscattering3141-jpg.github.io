@@ -434,7 +434,7 @@ export function runNephron(inp: NephronInput): NephronResult {
     const talNaReab = Math.min(talNaWanted, atlOut.Cl * 0.93, talCapacity);
     talVoltage = clamp(nkcc * Math.pow(clamp(t.ROMK, 0.05, 2), 0.5), 0, 1.6);
     const caReabTAL = atlOut.Ca * clamp(0.68 * talVoltage * t.claudin16 * clamp(1 - 0.35 * (t.CaSR - 1), 0.4, 1.2), 0, 0.85);
-    const mgReabTAL = atlOut.Mg * clamp(0.72 * talVoltage * t.claudin16 * clamp(1 - 0.4 * (t.CaSR - 1), 0.3, 1.2), 0, 0.9);
+    const mgReabTAL = atlOut.Mg * clamp(0.84 * talVoltage * t.claudin16 * clamp(1 - 0.4 * (t.CaSR - 1), 0.3, 1.2), 0, 0.9);
     // TAL also reabsorbs HCO3 (Na-H exchange) and NH4 on NKCC2 (the medullary recycling step).
     const hco3ReabTAL = atlOut.HCO3 * clamp(0.4 * nheActivity, 0, 0.7);
     const nh4ReabTAL = atlOut.NH4 * clamp(0.6 * nkcc, 0, 0.8);
@@ -577,7 +577,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   const caDct =
     inLoad.Ca *
     clamp(
-      0.6 *
+      0.8 *
         t.TRPV5 *
         Math.pow(Math.max(h.pth, 0.05), 0.35) *
         Math.pow(Math.max(h.calcitriol, 0.05), 0.15) *
@@ -593,7 +593,7 @@ function runDistal(inLoad: Record<SoluteId, number>, inp: NephronInput, medullaT
   // Hypomagnesaemia upregulates TRPM6, so the DCT recaptures more of what the loop lets through —
   // the compensation that keeps the magnesium near normal in most Bartter syndrome.
   const mgAvid = clamp(1 + 2.5 * (0.85 - pl.Mg), 1, 2.2);
-  const mgDct = inLoad.Mg * clamp(0.45 * t.TRPM6 * nccMg * mgAvid * clamp(1 + 0.2 * (pl.K - 4.2), 0.6, 1.2), 0, 0.9);
+  const mgDct = inLoad.Mg * clamp(0.65 * t.TRPM6 * nccMg * mgAvid * clamp(1 + 0.2 * (pl.K - 4.2), 0.6, 1.2), 0, 0.9);
   dctOut.Mg = Math.max(0, inLoad.Mg - mgDct);
 
   // --- CNT + CCD principal cells: ENaC-mediated Na entry creates the lumen-negative voltage

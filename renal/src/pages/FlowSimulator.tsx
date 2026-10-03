@@ -2,11 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { PageHead, Related } from '../ui/page';
 import { Panel, Sources, BarRow, Tabs } from '../ui/kit';
 import { NephronDiagram, TUBE_PATHS, FULL_TUBE } from '../ui/NephronDiagram';
-import { acute, makeParams } from '../sim/hooks';
-import { SEGMENTS, type ParamPatch, type SegmentId, type SoluteId } from '../engine/types';
+import type { SegmentId, SoluteId } from '../engine/types';
 import { SEGMENT_INFO } from '../content/segments';
-import { depletedBody } from '../engine/scenarios';
-import { initialBody } from '../engine/body';
+import { FLOW_SCENARIOS as SCENARIOS, flowEvaluation, fmtPct, perDay, planExit, soluteFate, type SoluteFate } from '../sim/flow';
 
 const SOLUTES: { id: SoluteId; label: string; color: string }[] = [
   { id: 'Na', label: 'Na⁺', color: 'var(--c-teal)' },
@@ -24,17 +22,6 @@ const SOLUTES: { id: SoluteId; label: string; color: string }[] = [
   { id: 'NH4', label: 'NH₄⁺', color: 'var(--c-vein)' },
 ];
 
-const SCENARIOS: { id: string; label: string; patch: ParamPatch; depleted?: number; hco3?: number }[] = [
-  { id: 'normal', label: 'Normal', patch: {} },
-  { id: 'loop', label: 'Loop diuretic', patch: { drugs: { furosemide: 1 } } },
-  { id: 'thiazide', label: 'Thiazide', patch: { drugs: { thiazide: 1 } } },
-  { id: 'sglt2i', label: 'SGLT2 inhibitor', patch: { drugs: { sglt2i: 1 } } },
-  { id: 'dm', label: 'Glucose 22 mmol/L', patch: { glucose: 400 } }, // engine glucose is mg/dL
-  { id: 'volume', label: 'Volume depletion', patch: {}, depleted: 3 },
-  { id: 'aldo', label: 'High aldosterone', patch: { aldoAutonomous: 5 } },
-  { id: 'acid', label: 'Metabolic acidosis', patch: {}, hco3: 13 },
-  { id: 'noadh', label: 'No ADH (central DI)', patch: { centralDI: 1 } },
-];
 
 interface Particle {
   s: number; // distance along the tube
@@ -53,6 +40,8 @@ interface Particle {
 }
 
 const SPEEDS = [0.1, 0.25, 0.5, 1, 2];
+/** Particles per second (at 1×) for the whole reference load; segments get their share of it. */
+const SPAWN_RATE = 16;
 const LEAVE_T = 1.4; // seconds a reabsorbed particle takes to cross into the capillary
 const ENTER_T = 0.9;
 
@@ -63,18 +52,12 @@ export default function FlowSimulator() {
   const [playing, setPlaying] = useState(!reduce);
   const [speed, setSpeed] = useState(1);
   const [resetKey, setResetKey] = useState(0);
-  const sc = SCENARIOS.find((s) => s.id === scen)!;
-  const ev = useMemo(() => {
-    const p = makeParams(sc.patch);
-    let body = sc.depleted ? depletedBody(p, sc.depleted) : undefined;
-    if (sc.hco3) body = { ...(body ?? initialBody(p)), hco3: sc.hco3 };
-    return acute(p, body);
-  }, [scen]);
-  const segs = ev.kidney.segments;
-  const filtered = Math.max(segs.PT.in[solute], 1e-12);
-  // Fraction of the filtered load reabsorbed (positive) or added (negative) in each segment.
-  const perSeg = SEGMENTS.map((id) => ({ id, delta: (segs[id].in[solute] - segs[id].out[solute]) / filtered, out: segs[id].out[solute] / filtered }));
-  const excreted = segs.IMCD.out[solute] / filtered;
+  const ev = useMemo(() => flowEvaluation(scen), [scen]);
+  // Share of the reference load (normally the filtered load) reabsorbed or added in each segment.
+  const fate = soluteFate(ev.kidney.segments, solute);
+  const perSeg = fate.segments;
+  const excreted = fate.excreted;
+  const ofWhat = fate.basis === 'filtered' ? 'filtered' : 'tubular';
   const color = SOLUTES.find((x) => x.id === solute)!.color;
 
   // On the drawing: a band under each segment scaled by what it takes back (green) or adds (red),
@@ -88,8 +71,8 @@ export default function FlowSimulator() {
 
   // ------------------------------------------------ particle animation
   const svgRef = useRef<HTMLDivElement>(null);
-  const cfg = useRef({ perSeg, solute, color, playing, speed });
-  cfg.current = { perSeg, solute, color, playing, speed };
+  const cfg = useRef({ fate, color, playing, speed });
+  cfg.current = { fate, color, playing, speed };
   useEffect(() => {
     const host = svgRef.current?.querySelector('svg');
     const layer = host?.querySelector('g.flow-particles') as SVGGElement | null;
@@ -117,7 +100,6 @@ export default function FlowSimulator() {
       b.start *= scale;
       b.end *= scale;
     }
-    const segOf = (id: SegmentId) => bounds.find((b) => b.id === id)!;
     /** A point on the tubule and the unit normal there (pointing away from the loop's centre line). */
     const wall = (at: number) => {
       const a = full.getPointAtLength(Math.max(0, at - 1));
@@ -136,18 +118,16 @@ export default function FlowSimulator() {
       return { x: p.x, y: p.y, nx, ny };
     };
 
-    /** Decide where a particle filtered at the glomerulus will leave, following segment fractions. */
-    const plan = (): number => {
-      let remaining = 1;
-      for (const b of bounds) {
-        const d = cfg.current.perSeg.find((p) => p.id === b.id)!;
-        if (d.delta > 0 && remaining > 1e-9) {
-          const pExit = Math.min(1, d.delta / remaining);
-          if (Math.random() < pExit) return b.start + Math.random() * (b.end - b.start);
-          remaining -= d.delta;
-        } else if (d.delta < 0) remaining -= d.delta; // secretion adds to what remains
-      }
-      return Infinity;
+    /**
+     * Decide where a particle will leave the tubule, starting from segment `from`. Each segment
+     * reabsorbs the same fraction of every particle that reaches it - filtered or secreted further
+     * up - so on average the particles reproduce the engine's segment-by-segment mass balance.
+     */
+    const plan = (fate: SoluteFate, from: number): number => {
+      const i = planExit(fate, from);
+      if (i < 0) return Infinity;
+      const b = bounds.find((x) => x.id === fate.segments[i].id)!;
+      return b.start + Math.random() * (b.end - b.start);
     };
 
     let ps: Particle[] = [];
@@ -156,6 +136,7 @@ export default function FlowSimulator() {
     let raf = 0;
     let last = performance.now();
     let spawnAcc = 0;
+    const secreteAcc = new Map<SegmentId, number>();
     const flowSpeed = total / 9; // seconds to traverse the whole nephron at 1×
     const draw = () => {
       while (dots.length < ps.length) {
@@ -201,22 +182,28 @@ export default function FlowSimulator() {
       last = now;
       const dt = cfg.current.playing ? wallDt * cfg.current.speed : 0;
       if (dt > 0) {
-        spawnAcc += dt * 16;
-        while (spawnAcc > 1) {
+        const fate = cfg.current.fate;
+        // Filtration: particles enter at the glomerulus in proportion to the filtered load.
+        spawnAcc += dt * SPAWN_RATE * fate.filteredShare;
+        while (spawnAcc >= 1) {
           spawnAcc -= 1;
-          ps.push({ s: 0, exitAt: plan(), leaving: 0, entering: 0, x: 0, y: 0, ox: 0, oy: 0, nx: 0, ny: 0 });
+          ps.push({ s: 0, exitAt: plan(fate, 0), leaving: 0, entering: 0, x: 0, y: 0, ox: 0, oy: 0, nx: 0, ny: 0 });
         }
-        // Secretion: particles cross in from the blood partway along, in proportion to the amount added.
-        for (const d of cfg.current.perSeg) {
-          if (d.delta < -0.001) {
-            const b = segOf(d.id);
-            if (Math.random() < Math.min(1, -d.delta) * dt * 14) {
-              const s0 = b.start + Math.random() * (b.end - b.start);
-              const w = wall(s0);
-              ps.push({ s: s0, exitAt: Infinity, leaving: 0, entering: ENTER_T, x: w.x + w.nx * 34, y: w.y + w.ny * 34, ox: w.x + w.nx * 34, oy: w.y + w.ny * 34, nx: w.nx, ny: w.ny });
-            }
+        // Secretion: particles cross in from the blood partway along, on the same scale, so a
+        // segment that adds 15% of the filtered load adds 15% as many particles as filtration.
+        fate.segments.forEach((d, i) => {
+          if (d.delta >= 0) return;
+          let acc = (secreteAcc.get(d.id) ?? 0) + dt * SPAWN_RATE * -d.delta;
+          const b = bounds.find((x) => x.id === d.id)!;
+          while (acc >= 1) {
+            acc -= 1;
+            const s0 = b.start + Math.random() * (b.end - b.start);
+            const w = wall(s0);
+            // Once inside, it is subject to whatever the segments downstream take back.
+            ps.push({ s: s0, exitAt: plan(fate, i + 1), leaving: 0, entering: ENTER_T, x: w.x + w.nx * 34, y: w.y + w.ny * 34, ox: w.x + w.nx * 34, oy: w.y + w.ny * 34, nx: w.nx, ny: w.ny });
           }
-        }
+          secreteAcc.set(d.id, acc);
+        });
         for (const p of ps) {
           if (p.leaving > 0) {
             // Out through the wall and on towards the peritubular capillary.
@@ -263,15 +250,16 @@ export default function FlowSimulator() {
       host.removeChild(full);
       layer.innerHTML = '';
     };
-  }, [resetKey]);
+    // A new solute or scenario starts from an empty tubule, so old particles never mix with new plans.
+  }, [resetKey, solute, scen]);
 
   const label = SOLUTES.find((s) => s.id === solute)!.label;
   return (
     <div>
-      <PageHead path="/flow" lede="Every particle entering the proximal tubule was filtered at the glomerulus. Follow one solute: particles cross out through the tubule wall into the blood where a segment reabsorbs it, cross in where a segment secretes it, and whatever is left reaches the urine. The green band under each segment shows how much of the filtered load it takes back." />
+      <PageHead path="/flow" lede="Particles enter the proximal tubule from the glomerulus in proportion to the filtered load. Follow one solute: particles cross out through the tubule wall into the blood where a segment reabsorbs it, cross in where a segment secretes it, and whatever is left reaches the urine. The green band under each segment shows how much of the filtered load it takes back, the red band how much it adds." />
       <div class="grid grid-main-side" style={{ '--main-side': 'minmax(0, 1.45fr) minmax(0, 1fr)' }}>
         <div class="sticky-figure">
-          <Panel title={`Where does filtered ${label} go?`}>
+          <Panel title={fate.basis === 'filtered' ? `Where does filtered ${label} go?` : `Where does ${label} go?`}>
             <div class="player" style={{ marginBottom: 8 }}>
           <button class="primary play" onClick={() => setPlaying(!playing)} aria-pressed={!playing}>
             {playing ? '❚❚ Pause' : '▶ Play'}
@@ -327,9 +315,25 @@ export default function FlowSimulator() {
         </div>
             </div>
           </Panel>
-          <Panel title={`Fate of filtered ${label}`} note="Share of the filtered load reabsorbed or added in each segment, first hours of the scenario.">
+          <Panel
+            title={fate.basis === 'filtered' ? `Fate of filtered ${label}` : `Fate of the ${label} entering the tubule`}
+            note={
+              fate.basis === 'filtered'
+                ? 'Share of the filtered load reabsorbed or added in each segment, first hours of the scenario.'
+                : `${label} is barely filtered, so shares are of everything entering the tubular fluid: the little filtered plus all that segments add.`
+            }
+          >
             <p class="muted" style={{ fontSize: '0.85rem' }}>
-              Filtered: {solute === 'water' ? `${(filtered * 1.44).toFixed(0)} L/day` : solute === 'glucose' ? `${((filtered * 1440) / 180.16).toFixed(0)} mmol/day` : solute === 'creat' ? `${((filtered * 1440) / 113.12).toFixed(1)} mmol/day` : `${(filtered * 1440).toFixed(0)} mmol/day`}
+              {fate.basis === 'filtered' ? (
+                <>Filtered: {perDay(solute, fate.filtered)}</>
+              ) : (
+                <>
+                  Filtered: {perDay(solute, fate.filtered)} · entering the tubule in all: {perDay(solute, fate.ref)}
+                </>
+              )}
+              <br />
+              Excreted (at this rate): {perDay(solute, fate.excretedAmount)}
+              {fate.basis === 'filtered' && solute !== 'NH4' ? ` (${fmtPct(excreted)} of the filtered load${excreted > 1 ? ': more than was filtered, because of secretion' : ''})` : ''}
             </p>
             {perSeg.map((d) => (
               <BarRow
@@ -341,16 +345,16 @@ export default function FlowSimulator() {
                 color={d.delta >= 0 ? 'var(--c-green)' : 'var(--c-red)'}
               />
             ))}
-            <BarRow label="Excreted in the urine" value={excreted * 100} max={Math.max(100, excreted * 100)} unit="%" color="var(--c-amber)" />
+            <BarRow label={`Excreted in the urine (% of ${ofWhat} load)`} value={excreted * 100} max={Math.max(100, excreted * 100)} unit="%" color="var(--c-amber)" />
           </Panel>
           <Panel title="Reading the pattern">
             <ul class="muted" style={{ fontSize: '0.88rem' }}>
-              <li>Na⁺ and water: the proximal tubule takes the bulk; the loop takes NaCl without water; the collecting duct fine-tunes both, water only with ADH.</li>
+              <li>Na⁺ and water: the proximal tubule takes the bulk; the descending limb takes water, the ascending limbs NaCl without water; the collecting duct fine-tunes both, water only with ADH.</li>
               <li>Glucose, amino acids, HCO₃⁻: almost all gone early in the proximal tubule — unless the load or the carriers change.</li>
               <li>K⁺: nearly all reabsorbed by the end of the loop; what reaches the urine was mostly secreted in the connecting tubule and collecting duct.</li>
-              <li>Urea: more leaves the loop than entered it — medullary recycling adds it back.</li>
+              <li>Urea: about half is reabsorbed proximally; more leaves the thin limbs than entered them — urea reabsorbed from the inner medullary collecting duct is secreted back in (medullary recycling).</li>
               <li>Creatinine: filtered plus a little secreted; so its clearance slightly exceeds GFR.</li>
-              <li>NH₄⁺: not filtered at all — made in the proximal tubule and trapped in the collecting duct.</li>
+              <li>NH₄⁺: barely filtered — made and secreted by the proximal tubule, partly reabsorbed in the thick ascending limb, then trapped in the collecting duct. Its shares are of all the NH₄⁺ entering the tubule.</li>
             </ul>
             <Sources cite={{ rose: [1, 3, 4, 5], evidence: 'physiology' }} />
           </Panel>
@@ -359,9 +363,4 @@ export default function FlowSimulator() {
       <Related paths={['/nephron', '/transport', '/diuretics', '/potassium']} />
     </div>
   );
-}
-
-function fmtPct(f: number) {
-  const p = f * 100;
-  return `${p < 10 ? p.toFixed(1) : p.toFixed(0)}%`;
 }

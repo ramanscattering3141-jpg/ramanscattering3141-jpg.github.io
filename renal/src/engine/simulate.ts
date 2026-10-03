@@ -595,7 +595,9 @@ function substep(state: SimState, params: Params, dt: number, prevReg?: Regulati
   b.ca = clamp(b.ca + (((caIntake - caOut) / 100) * dt + 0.045 * (boneBuffer - 1) * dt) * 0.3, 1.2, 4.0);
   // Fractional intestinal Mg²⁺ absorption rises when the body is depleted (active TRPM6 transport
   // in the gut), roughly doubling as the plasma level falls toward 0.5 mmol/L.
-  const mgIntake = 12 * clamp(1 + 2 * (0.85 - b.mg), 0.6, 2.2);
+  // Net absorption of ~4.5 mmol/day (about a third of a 12 mmol intake) balances a normal urinary
+  // Mg2+ of ~4.5 mmol/day, 3-5% of the filtered load.
+  const mgIntake = 4.5 * clamp(1 + 2 * (0.85 - b.mg), 0.6, 2.2);
   b.mg = clamp(b.mg + ((mgIntake - k.urine.exc.Mg) / 200) * dt, 0.2, 2.5);
 
   // How fast is the fastest store moving, as a fraction of itself per day? The integrator uses
