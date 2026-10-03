@@ -671,3 +671,7 @@ tbody tr.active th[scope='row'] { color: var(--accent); }
 .dmap-table td.cls { font-weight: 600; white-space: nowrap; }
 .dmap-table td.cls i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
 .dmap-table .ex { display: block; font-weight: 400; color: var(--ink-dim); font-size: 0.76rem; white-space: normal; max-width: 24ch; }
+
+/* Fixed-size diagrams keep a readable text size on phones and scroll sideways instead of shrinking. */
+.svg-scroll { overflow-x: auto; }
+@media (max-width: 700px) { .svg-scroll > svg { min-width: 560px; } .svg-scroll.wide > svg { min-width: 700px; } }

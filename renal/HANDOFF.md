@@ -70,6 +70,12 @@ Engine work done alongside these (all covered by the regression suite):
 - **Cases open in the sandbox**: each clinical case links to `/sandbox?s=…` (encodeState of its parameter patch); the sandbox reads it and shows where it came from. The sandbox gained glucose and ketoacid dials so the DKA case loads fully.
 - The tutor is titled “Ask the tutor” and described as retrieval, not AI.
 
+### Added on 2026-10-01 (charts pass)
+- **Chart attribute bug fixed:** the lab uses Preact without `preact/compat`, so camelCase SVG attributes (`textAnchor`, `strokeWidth`, `strokeDasharray`, `strokeLinejoin`) were written literally and ignored by the browser. In `LineChart` this made every y-tick label start-anchored (running into the axis), axis titles off-centre, all lines 1 px and dashed series solid. Always write SVG attributes in kebab-case (`text-anchor`, `stroke-width`) in this codebase; style objects may stay camelCase.
+- `LineChart`: the left margin now fits the widest tick label, and the y-axis title is wrapped onto its own line(s) above the plot (`wrapText` in `ui/kit.tsx`).
+- GFR page: the Starling profile is now two stacked panels. The top one shows each force on its own (titled so it is clear it is not the net), and the bottom one shows the net filtration pressure = Pgc − (Pbs + π), with its value at the afferent end, its mean, and where it reaches zero. It measures its width so text stays the same size on phones.
+- Glucose, ammonium, body-water and countercurrent diagrams re-laid out so no text is clipped or drawn over arrows. Fixed-size diagrams (those plus free water, RAAS and the acid–base map) sit in `.svg-scroll`, which keeps a minimum width on phones and scrolls sideways instead of shrinking text to 4–6 px.
+
 ### What a next session could still do
 The spec is broad; genuine polish items remain rather than missing modules:
 - Liddle syndrome is only partially reproduced (the ENaC gain suppresses renin/aldosterone but does not fully produce the hypertension/hypokalaemia, because escape and other loops compensate). Same for Gordon's blood pressure.
