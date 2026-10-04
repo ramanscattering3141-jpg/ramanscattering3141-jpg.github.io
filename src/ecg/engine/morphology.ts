@@ -120,7 +120,7 @@ export const TERRITORY: Record<Territory, { dirs: [Vec3, number][]; label: strin
   rv: { dirs: [[norm(vec(-0.85, 0.35, 0.4)), 1]], label: 'Right ventricle', artery: 'proximal RCA', leads: 'V1, V4R (with inferior STE, III > II)' },
   proxLAD: { dirs: [[norm(vec(-0.35, 0.1, 0.93)), 0.8], [norm(vec(0.15, 0.2, 0.97)), 1], [norm(vec(0.8, -0.55, 0.2)), 1]], label: 'Proximal LAD (anterior + septal + high lateral)', artery: 'proximal LAD', leads: 'V1–V4, I, aVL; reciprocal inferior STD' },
   wrapLAD: { dirs: [[norm(vec(0.15, 0.2, 0.97)), 1], [norm(vec(0.3, 0.9, 0.3)), 0.7]], label: '"Wraparound" LAD (anterior + inferoapical)', artery: 'LAD wrapping the apex', leads: 'V2–V5 and II, III, aVF' },
-  proxRCA: { dirs: [[norm(vec(0.1, 0.98, -0.12)), 1], [norm(vec(-0.85, 0.35, 0.4)), 0.55], [norm(vec(0.15, 0.2, -0.96)), 0.35]], label: 'Proximal RCA (inferior + RV ± posterior)', artery: 'proximal RCA', leads: 'II, III, aVF, V1, V4R' },
+  proxRCA: { dirs: [[norm(vec(0.1, 0.98, -0.12)), 1], [norm(vec(-0.85, 0.35, 0.4)), 0.95], [norm(vec(0.15, 0.2, -0.96)), 0.15]], label: 'Proximal RCA (inferior + RV ± posterior)', artery: 'proximal RCA', leads: 'II, III, aVF, V1, V4R' },
   lcx: { dirs: [[norm(vec(0.95, 0.05, -0.2)), 0.8], [norm(vec(0.15, 0.2, -0.96)), 1]], label: 'LCx (lateral + posterior)', artery: 'circumflex', leads: 'I, aVL, V5–V6; STD V1–V3' },
   diffuseSubendo: { dirs: [[D.cavity, 1]], label: 'Diffuse subendocardial ischaemia', artery: 'left main / multivessel / supply–demand', leads: 'STE aVR (± V1), diffuse STD' },
 };
@@ -206,7 +206,7 @@ export function buildP(p: Physio, site: AtrialSite): PMorph {
   // Pericarditis: atrial epicardial injury current depresses the PR segment (elevates it in aVR).
   if (p.pericarditis >= 1 && p.pericarditis < 2.5) {
     const k = p.pericarditis < 2 ? 1 : 0.4;
-    comps.push({ t0: pDur * 0.8, dur: 150, dir: norm(vec(-0.45, -0.85, -0.1)), amp: 0.045 * k, shape: 'plateau', tag: 'PR depression' });
+    comps.push({ t0: pDur * 0.8, dur: 150, dir: norm(vec(-0.45, -0.85, -0.1)), amp: 0.085 * k, shape: 'plateau', tag: 'PR depression' });
   }
   // Atrial repolarisation (Ta) — small wave opposite to P, mostly hidden in PR/QRS.
   comps.push({ t0: pDur, dur: 220, dir: scale(norm(add(s.ra, s.la)), -1), amp: 0.012 * ampK * ra, shape: 'bump', tag: 'Ta' });
@@ -356,7 +356,9 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
       // Fusion: the pathway pre-excites the ventricle near its insertion (slurred delta wave)
       // until the His–Purkinje impulse arrives and rapidly activates the rest.
       const f = clamp(hd / 170, 0, 1);
-      const delta = { ...full[0], dur: hd + 14, amp: 0.38 + 0.4 * f, tag: 'delta wave (pre-excited myocardium)' };
+      // The pre-excited mass keeps growing until the His–Purkinje wavefront takes over, so the
+      // delta wave is a slurred upstroke running straight into the QRS, not a separate bump.
+      const delta = { ...full[0], dur: (hd + 15) / 0.62, shape: 'tskew' as const, amp: 0.38 + 0.4 * f, tag: 'delta wave (pre-excited myocardium)' };
       const rest = transformAll(p, patternQRS(p, bundle, w * (0.78 - 0.15 * f))).map((x) => ({ ...x, t0: x.t0 + hd, amp: x.amp * (1 - 0.6 * f) }));
       act = [delta, ...(f > 0.5 ? [{ ...full[1], amp: full[1].amp * (f - 0.5) }] : []), ...rest];
     }
@@ -391,12 +393,13 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   const qStages = isch.stage === 'evolving' || isch.stage === 'old' || isch.stage === 'stemi' || isch.stage === 'aneurysm';
   if (qStages && isch.territory !== 'diffuseSubendo') {
     const n = territoryVector(isch.territory);
-    const qAmp = (isch.stage === 'stemi' ? 0.25 : isch.stage === 'evolving' ? 0.5 : isch.stage === 'aneurysm' ? 0.7 : 0.6) * isch.extent;
+    const qAmp = (isch.stage === 'stemi' ? 0.25 : isch.stage === 'evolving' ? 0.55 : isch.stage === 'aneurysm' ? 0.7 : 0.75) * isch.extent;
     act = act.map((x) => {
       const d = Math.max(0, x.dir[0] * n[0] + x.dir[1] * n[1] + x.dir[2] * n[2]);
       return { ...x, amp: x.amp * (1 - 0.55 * isch.extent * d * (isch.stage === 'stemi' ? 0.5 : 1)) };
     });
-    act.push(c(0, 38 * w, scale(n, -1), qAmp, 'loss of forces from infarcted wall (Q wave)'));
+    // Pathological Q: ≥ 40 ms wide (the bump's half-width is ~half its duration).
+    act.push(c(0, (isch.stage === 'stemi' ? 38 : 50) * w, scale(n, -1), qAmp, 'loss of forces from infarcted wall (Q wave)'));
   }
 
   // RV pressure load (acute PE): rightward terminal forces (S in I), small q in III.
@@ -413,6 +416,14 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // Voltage (habitus, effusion) and electrical alternans.
   const alt = p.alternans > 0 ? 1 + (ctx.index % 2 === 0 ? 0.3 : -0.3) * p.alternans : 1;
   act = act.map((x) => ({ ...x, amp: x.amp * vf * alt }));
+  // Even the slowest conduction (sine-wave hyperkalaemia, Na-channel toxicity) gives a QRS of
+  // at most ~300 ms, and activation must finish within the cycle.
+  const maxQrs = Math.min(300, Math.max(160, 0.9 * ctx.rr));
+  const rawEnd = qrsEnd(act);
+  if (rawEnd > maxQrs) {
+    const k = maxQrs / rawEnd;
+    act = act.map((x) => ({ ...x, t0: x.t0 * k, dur: x.dur * k }));
+  }
   const qrsDur = qrsEnd(act);
   const area = areaVector(act);
   const refArea = areaVector(ref.map((x) => ({ ...x, amp: x.amp * vf })));
@@ -422,6 +433,8 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // Takotsubo (subacute phase): repolarisation of the stunned apex is markedly prolonged.
   const tako = isch.stage === 'takotsubo' ? isch.extent : 0;
   let qt = qtAtRR(qtc, ctx.rr) + Math.max(0, qrsDur - 95) * 0.9 + 75 * tako;
+  // Restitution: repolarisation cannot outlast the cycle (fast VT, torsades, very fast SVT).
+  qt = Math.min(qt, Math.max(qrsDur + 110, 0.92 * ctx.rr));
   const hk = hyperKT(p.K);
   const lk = hypoK(p.K);
   let tDur = 175 * (1 + 0.3 * p.drugs.qtDrug + 0.25 * p.hypothermia + 0.3 * tako) * (1 - 0.28 * hk) * clamp(Math.pow(ctx.rr / 1000, 0.3), 0.75, 1.15);
@@ -431,6 +444,14 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
     tStart = minST;
     tDur = Math.max(90, qt - tStart);
     qt = tStart + tDur;
+  }
+  // Severe hyperkalaemia (≳ 9 mmol/L): the very slow, broad QRS runs straight into a broad T wave
+  // with no ST segment, so the complex becomes a sine wave.
+  const sine = smoothstep(8.4, 9.4, p.K);
+  if (sine > 0) {
+    tStart = tStart + sine * (qrsDur * 0.72 - tStart);
+    tDur = tDur + sine * (Math.max(150, qrsDur * 1.1) - tDur);
+    qt = Math.max(qt * (1 - sine), tStart + tDur);
   }
 
   const comps: Comp[] = [...act];
@@ -450,13 +471,16 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   if (p.lvMass > 1.45) {
     const k = Math.min(1, (p.lvMass - 1.45) / 0.8);
     const lvD = globalTransform(p, D.lv);
-    T = add(T, scale(lvD, -0.55 * k * vf));
-    ST = add(ST, scale(lvD, -0.07 * k * vf));
+    T = add(T, scale(lvD, -0.85 * k * vf));
+    ST = add(ST, scale(lvD, -0.12 * k * vf));
     notes.push('LV strain');
   }
   if (p.rvMass > 1.9 || p.rvStrain > 0.3) {
     const k = Math.min(1, Math.max((p.rvMass - 1.9) / 1.2, p.rvStrain));
     T = add(T, scale(norm(vec(-0.45, 0.1, 0.9)), -0.4 * k * vf));
+    // Acute RV pressure load also inverts T in III (the "T3" of S1Q3T3): the strained RV lies
+    // rightward-inferiorly.
+    if (p.rvStrain > 0) T = add(T, scale(norm(vec(-0.6, 0.8, 0)), -0.22 * p.rvStrain * vf));
   }
   // ARVC: abnormal RV repolarisation → T inversion in the right precordial leads (V1–V3 ±V4).
   if (p.arvc > 0) T = add(T, scale(norm(vec(-0.45, 0.1, 0.9)), -0.38 * p.arvc * vf));
@@ -500,7 +524,7 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
         // Proximal LAD occlusion without the usual transmural ST vector: J-point depression
         // toward the precordium that slopes up into tall, symmetric (hyperacute) T waves, with
         // a small ST vector toward the cavity (STE in aVR).
-        ST = add(ST, add(scale(n, -0.15 * e), scale(D.cavity, 0.08 * e)));
+        ST = add(ST, add(scale(n, -0.22 * e), scale(D.cavity, 0.08 * e)));
         T = add(T, scale(n, 0.62 * e));
         tShape = 'bump';
         break;
@@ -578,7 +602,7 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   let brugada = p.brugada;
   if (brugada === 2 && p.drugs.naBlocker > 0.5) brugada = 1;
   if (brugada) {
-    local.push({ weights: { V1: 1, V2: 0.9, V3: 0.25 }, t0: qrsDur - 10, dur: qt - qrsDur + 20, kind: brugada === 1 ? 'brugada1' : 'brugada2', amp: 0.32 * vf });
+    local.push({ weights: { V1: 1, V2: 0.9, V3: 0.25 }, t0: qrsDur - 10, dur: qt - qrsDur + 20, kind: brugada === 1 ? 'brugada1' : 'brugada2', amp: (brugada === 1 ? 0.32 : 0.5) * vf });
   }
   // ARVC epsilon wave: low-amplitude late potentials from slowly activated islands of surviving
   // RV myocardium, recorded only by the electrodes overlying the RV (V1–V3).

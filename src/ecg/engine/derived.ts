@@ -38,12 +38,12 @@ export function ventricularWidthFactor(p: Physio): number {
   f *= 1 + 0.85 * p.drugs.naBlocker; // slowed phase 0 upstroke → slower conduction
   f *= 1 + 0.08 * p.drugs.amiodarone;
   // Hyperkalaemia: depolarised resting potential inactivates Na channels → slower conduction.
-  if (p.K > 6.5) f *= 1 + (p.K - 6.5) * 0.32;
+  if (p.K > 6.5) f *= 1 + (p.K - 6.5) * 0.32 + 0.4 * Math.max(0, p.K - 8) ** 2; // sine wave at ~9
   f *= 1 + 0.25 * p.hypothermia;
   f *= 1 + 0.12 * p.myocarditis;
   f *= 1 + 0.06 * Math.max(0, p.lvMass - 1);
   if (p.Mg > 2) f *= 1 + (p.Mg - 2) * 0.12; // marked hypermagnesaemia slows conduction
-  return clamp(f, 0.6, 3.2);
+  return clamp(f, 0.6, 3.4);
 }
 
 /** Atrial conduction multiplier (P-wave duration). */

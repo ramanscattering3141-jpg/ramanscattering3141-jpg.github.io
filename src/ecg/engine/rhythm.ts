@@ -634,7 +634,14 @@ export function simulate(p: Physio, opts: SimOptions): SimResult {
     }
     const rr = clamp(t - V.last, 200, 4000);
     V.last = t;
-    V.refr = t + 0.72 * qtAtRR(qtc, rr) * (route === "his" ? 1 : 1.05);
+    // Refractoriness follows action-potential restitution: at very short cycle lengths (fast VT,
+    // torsades) the APD shortens to well below the resting QT, so it cannot exceed ~80% of the
+    // cycle that produced this beat.
+    // Within a sustained ventricular tachycardia the tissue is driven at the VT cycle, so that is
+    // the cycle its action potentials adapt to (even for the first beat after a long pause).
+    const sustainedVT = src.k === 'focus' && ['VT', 'torsades de pointes', 'polymorphic VT', 'bidirectional VT'].includes(src.mech);
+    const cycle = sustainedVT ? Math.min(rr, 60000 / R.vtRate) : rr;
+    V.refr = t + Math.max(160, Math.min(0.72 * qtAtRR(qtc, rr) * (route === "his" ? 1 : 1.05), 0.8 * cycle));
     let ev: VentEvent;
     if (src.k === 'his') {
       ev = {
@@ -664,10 +671,16 @@ export function simulate(p: Physio, opts: SimOptions): SimResult {
     if (route === 'focus' || route === 'paced') {
       if (R.pvc.retrograde) hisArriveLater(t + R.vaDelay * 0.6);
       else {
-        // Concealed retrograde penetration of the His–Purkinje system/AV node: the next sinus
-        // impulse finds the node partly refractory (longer PR after an interpolated PVC).
-        FP.lastExit = Math.max(FP.lastExit, t + 60);
-        HIS.last = Math.max(HIS.last, t + 40);
+        // Concealed retrograde penetration of the His–Purkinje system/AV node: the wavefront
+        // reaches the node ~VA ms after the ectopic beat and leaves it refractory. A sinus P wave
+        // falling within the ectopic beat's ST–T is therefore blocked (fully compensatory pause);
+        // one arriving after it conducts, with a longer PR (interpolated PVC at slow sinus rates).
+        FP.lastExit = Math.max(FP.lastExit, t + R.vaDelay + 160);
+        if (dual) {
+          FP.lastEntry = Math.max(FP.lastEntry, t + R.vaDelay);
+          SP.lastEntry = Math.max(SP.lastEntry, t + R.vaDelay);
+        }
+        HIS.last = Math.max(HIS.last, t + 60);
         resetJunction(t + 40);
       }
     }

@@ -250,7 +250,7 @@ export class EcgPanel {
       ['PR', m.prRange && m.prRange[1] - m.prRange[0] > 20 ? `${m.prRange[0]}–${m.prRange[1]} ms` : f(m.pr, ' ms')],
       ['QRS', f(m.qrs, ' ms')],
       ['QT / QTc (Bazett · Fridericia)', m.qt ? `${m.qt} / ${m.qtcBazett} · ${m.qtcFridericia} ms` : '—'],
-      ['Frontal QRS axis', m.axis === null ? 'indeterminate' : `${m.axis}° (${m.axisLabel})`],
+      ['Frontal QRS axis', m.axis === null ? 'indeterminate' : `${m.axis}° (${m.axisLabel})${m.trueAxis !== m.axis ? ` — recorded with swapped cables; true axis ${m.trueAxis}°` : ''}`],
       ['AV relationship', m.avRelation],
     ];
     this.meas.replaceChildren(h('div', { class: 'meas-title' }, 'Model measurements (ground truth from the simulation)'), h('dl', null, ...items.map(([k, v]) => h('div', { class: 'meas-item' }, h('dt', null, k), h('dd', null, v)))));

@@ -18,8 +18,11 @@ export interface Measurements {
   qt: number | null;
   qtcBazett: number | null;
   qtcFridericia: number | null;
+  /** Frontal axis as it appears on the recorded leads (what a reader measures). */
   axis: number | null;
   axisLabel: string;
+  /** The heart's own axis; differs from `axis` only when limb cables are swapped. */
+  trueAxis: number | null;
   avRelation: string;
   conductedFraction: number;
   dominant: string;
@@ -96,11 +99,17 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
     best = c;
     dominant = k;
   }
-  const domBeats = sig.beats.filter((b) => b.ev.mechanism === dominant && b.ev.t >= 0);
+  // Within the dominant mechanism, measure a typical beat: occasional aberrant (functionally
+  // blocked) conducted beats must not stand in for the underlying conduction.
+  const domAll = sig.beats.filter((b) => b.ev.mechanism === dominant && b.ev.t >= 0);
+  const domTypical = domAll.filter((b) => b.ev.aberrant === 'none');
+  const domBeats = domTypical.length >= domAll.length / 2 ? domTypical : domAll;
   const mid = domBeats[Math.floor(domBeats.length / 2)];
   const qrs = mid ? Math.round(mid.morph.qrsDur) : null;
   // QT is only meaningful for organised non-tachyarrhythmic beats: prefer supraventricular/paced beats.
-  const qtPool = sig.beats.filter((b) => b.ev.t >= 0 && ['conducted', 'junction', 'ap', 'paced', 'escape', 'AIVR'].includes(b.ev.mechanism));
+  const qtAll = sig.beats.filter((b) => b.ev.t >= 0 && ['conducted', 'junction', 'ap', 'paced', 'escape', 'AIVR'].includes(b.ev.mechanism));
+  const qtTypical = qtAll.filter((b) => b.ev.aberrant === 'none' && b.ev.mechanism === dominant);
+  const qtPool = qtTypical.length ? qtTypical : qtAll;
   const qtBeat = qtPool[Math.floor(qtPool.length / 2)];
   const qt = qtBeat ? Math.round(qtBeat.morph.qt) : null;
   const rrForQT = qtBeat ? qtBeat.rr : meanRR;
@@ -109,7 +118,12 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
   const polymorphic = dominant === 'torsades de pointes' || dominant === 'polymorphic VT';
   // Dextrocardia mirrors the real heart vector (x → −x); cable reversal does not change the heart.
   const area = mid ? (p.dextrocardia ? ([-mid.morph.qrsArea[0], mid.morph.qrsArea[1], mid.morph.qrsArea[2]] as const) : mid.morph.qrsArea) : null;
-  const axis = area && !polymorphic && !cont ? Math.round(axisOf(area)) : null;
+  const trueAxis = area && !polymorphic && !cont ? Math.round(axisOf(area)) : null;
+  // A limb-cable swap reflects every frontal-plane vector about a fixed line: RA↔LA about +90°
+  // (lead I inverted, II↔III), LA↔LL about +30° (I↔II, III inverted), RA↔LL about −30°.
+  const mirror = { none: null, raLa: 90, laLl: 30, raLl: -30 }[p.leadReversal ?? 'none'];
+  const wrap = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
+  const axis = trueAxis === null || mirror === null ? trueAxis : Math.round(wrap(2 * mirror - trueAxis));
 
   let avRelation = 'n/a';
   if (af) avRelation = 'no organised atrial activity (fibrillatory waves)';
@@ -136,6 +150,7 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
     qtcFridericia: qtcF,
     axis,
     axisLabel: axisLabel(axis),
+    trueAxis,
     avRelation,
     conductedFraction: as.length ? conducted / as.length : 0,
     dominant,
