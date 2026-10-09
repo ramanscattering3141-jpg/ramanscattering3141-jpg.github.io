@@ -40,7 +40,7 @@ function makeQuestion(level: number, seed: number): Q {
       case 'pr':
         return { preset: item.preset, q: 'How would you describe the PR interval?', options: ['short (< 120 ms)', 'normal (120–200 ms)', 'prolonged (> 200 ms)', 'progressively lengthening'], correct: '', explain: 'Measure from P onset to QRS onset with the caliper.', twelve: true };
       case 'qt':
-        return { preset: item.preset, q: 'How would you describe the QTc?', options: ['short (< 360 ms)', 'normal', 'prolonged (≥ 450 ms ♂ / ≥ 460 ms ♀)'], correct: '', explain: 'QTc (Bazett) = QT/√RR (RR in seconds); prolonged ≥ 450 ms in men, ≥ 460 ms in women; use Fridericia at fast rates.', twelve: true };
+        return { preset: item.preset, q: 'How would you describe the QTc?', options: ['short (≤ 390 ms)', 'normal', 'prolonged (≥ 450 ms ♂ / ≥ 460 ms ♀)'], correct: '', explain: 'QTc (Bazett) = QT/√RR (RR in seconds); prolonged ≥ 450 ms in men, ≥ 460 ms in women; short ≤ 390 ms (short-QT syndrome usually ≤ 360 ms); use Fridericia at fast rates.', twelve: true };
       default:
         return { preset: item.preset, q: 'What is the QRS duration?', options: ['< 110 ms', '110–119 ms', '≥ 120 ms'], correct: '', explain: 'Measure in the lead with the widest QRS.', twelve: true };
     }
@@ -61,7 +61,7 @@ export function renderChallenge(root: HTMLElement): () => void {
   const renderScore = (): void => {
     scoreEl.textContent = [1, 2, 3, 4, 5].map((l) => `L${l}: ${stats[l]?.[0] ?? 0}/${stats[l]?.[1] ?? 0}`).join(' · ');
   };
-  const next = (): void => {
+  const next = (attempt = 0): void => {
     panel?.destroy();
     info.textContent = LEVEL_INFO[level].text;
     const seed = newSeed();
@@ -73,9 +73,15 @@ export function renderChallenge(root: HTMLElement): () => void {
     let correct = q.correct;
     if (!correct) {
       const m = run.m;
+      // Measurement questions are only asked when the quantity is actually measurable on this tracing.
+      const unmeasurable = q.q.includes('axis') ? m.axis === null : q.q.includes('PR') ? m.pr === null : q.q.includes('QTc') ? m.qtcBazett === null : m.qrs === null;
+      if (unmeasurable && attempt < 8) {
+        next(attempt + 1);
+        return;
+      }
       if (q.q.includes('axis')) correct = axisLabel(m.axis);
-      else if (q.q.includes('PR')) correct = m.pr === null ? 'normal (120–200 ms)' : m.prRange && m.prRange[1] - m.prRange[0] > 40 ? 'progressively lengthening' : m.pr < 120 ? 'short (< 120 ms)' : m.pr > 200 ? 'prolonged (> 200 ms)' : 'normal (120–200 ms)';
-      else if (q.q.includes('QTc')) correct = (m.qtcBazett ?? 420) < 360 ? 'short (< 360 ms)' : (m.qtcBazett ?? 420) >= (phys.sex === 'F' ? 460 : 450) ? 'prolonged (≥ 450 ms ♂ / ≥ 460 ms ♀)' : 'normal';
+      else if (q.q.includes('PR')) correct = m.prRange && m.prRange[1] - m.prRange[0] > 40 ? 'progressively lengthening' : (m.pr ?? 160) < 120 ? 'short (< 120 ms)' : (m.pr ?? 160) > 200 ? 'prolonged (> 200 ms)' : 'normal (120–200 ms)';
+      else if (q.q.includes('QTc')) correct = (m.qtcBazett ?? 420) <= 390 ? 'short (≤ 390 ms)' : (m.qtcBazett ?? 420) >= (phys.sex === 'F' ? 460 : 450) ? 'prolonged (≥ 450 ms ♂ / ≥ 460 ms ♀)' : 'normal';
       else correct = (m.qrs ?? 90) >= 120 ? '≥ 120 ms' : (m.qrs ?? 90) >= 110 ? '110–119 ms' : '< 110 ms';
     }
     const fb = h('div');
@@ -90,7 +96,7 @@ export function renderChallenge(root: HTMLElement): () => void {
         stats[level] = [st[0] + (ok ? 1 : 0), st[1] + 1];
         storageSet('ecg.challenge.stats', stats);
         renderScore();
-        fb.replaceChildren(p(ok ? '✔ Correct.' : `✘ Answer: ${correct}.`), p(q.explain), p(`Model measurements: rate ${run.m.ventRate ?? '—'}, PR ${run.m.pr ?? '—'} ms, QRS ${run.m.qrs ?? '—'} ms, QTc ${run.m.qtcBazett ?? '—'} ms, axis ${run.m.axis ?? '—'}°.`, 'ref-meta'), ...(q.dx ? [h('p', null, h('a', { href: `#/dx/${q.dx}` }, 'Review the mechanism →'))] : []), h('div', { class: 'btn-row' }, button('Next question', next, 'btn-primary')));
+        fb.replaceChildren(p(ok ? '✔ Correct.' : `✘ Answer: ${correct}.`), p(q.explain), p(`Model measurements: rate ${run.m.ventRate ?? '—'}, PR ${run.m.pr ?? '—'} ms, QRS ${run.m.qrs ?? '—'} ms, QTc ${run.m.qtcBazett ?? '—'} ms, axis ${run.m.axis ?? '—'}°.`, 'ref-meta'), ...(q.dx ? [h('p', null, h('a', { href: `#/dx/${q.dx}` }, 'Review the mechanism →'))] : []), h('div', { class: 'btn-row' }, button('Next question', () => next(), 'btn-primary')));
       }, 'quiz-opt'),
     );
     const qText = q.q.includes('QTc') ? `${q.q} (${phys.sex === 'F' ? 'female' : 'male'} patient)` : q.q;

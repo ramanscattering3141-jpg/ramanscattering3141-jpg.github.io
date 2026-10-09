@@ -39,6 +39,7 @@ export function ventricularWidthFactor(p: Physio): number {
   f *= 1 + 0.08 * p.drugs.amiodarone;
   // Hyperkalaemia: depolarised resting potential inactivates Na channels → slower conduction.
   if (p.K > 6.5) f *= 1 + (p.K - 6.5) * 0.32;
+  if (p.K > 8) f *= 1 + (p.K - 8) * 0.2; // pre-terminal: very wide, bizarre QRS (≥ 180 ms at K⁺ > 9)
   f *= 1 + 0.25 * p.hypothermia;
   f *= 1 + 0.12 * p.myocarditis;
   f *= 1 + 0.06 * Math.max(0, p.lvMass - 1);

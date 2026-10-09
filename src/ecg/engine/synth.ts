@@ -172,7 +172,30 @@ export function synthesize(p: Physio, sim: SimResult, opts: SynthOptions = {}): 
   const leadIds: LeadId[] = electrodeEffects ? [...new Set<LeadId>([...requested, 'I', 'II'])] : requested;
   const out: Partial<Record<LeadId, Float32Array>> = {};
   const noiseAmp = opts.noise === false ? 0 : p.noise;
-  const rngN = mulberry32(p.rhythm.seed * 97 + 3);
+  // Baseline wander and muscle noise arise at the ELECTRODES, so every lead is the same linear
+  // combination of electrode noises as of electrode potentials (Einthoven I + III = II and
+  // aVR + aVL + aVF = 0 hold exactly, noise included).
+  const electrodeNoise = new Map<string, Float32Array>();
+  const noiseAt = (key: string, k: number): Float32Array => {
+    let a = electrodeNoise.get(key);
+    if (a) return a;
+    a = new Float32Array(n);
+    const rngN = mulberry32(p.rhythm.seed * 97 + 3 + k * 7919);
+    const phase = rngN() * 6.28;
+    const phase2 = rngN() * 6.28;
+    let emg = 0;
+    const g = noiseAmp / Math.SQRT2;
+    for (let i = 0; i < n; i++) {
+      const t = (from + i * dt) / 1000;
+      emg = 0.7 * emg + 0.3 * gauss(rngN);
+      a[i] = g * (0.05 * Math.sin(2 * Math.PI * 0.22 * t + phase) + 0.025 * Math.sin(2 * Math.PI * 0.07 * t + phase2) + 0.012 * emg);
+    }
+    electrodeNoise.set(key, a);
+    return a;
+  };
+  // Pacing / shock artefacts are dipoles too (projected on each lead axis like the heart vector).
+  const CHEST: LeadId[] = ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V4R', 'V7', 'V8', 'V9'];
+  const SPIKE_DIR = { A: vec(0.3, 0.8, 0.4), V: vec(0.15, -0.7, -0.6), shock: norm(vec(0.75, 0.45, -0.3)) };
   for (const id of leadIds) {
     const L = LEADS[id];
     const arr = new Float32Array(n);
@@ -190,31 +213,29 @@ export function synthesize(p: Physio, sim: SimResult, opts: SynthOptions = {}): 
         for (let i = i0; i <= i1; i++) arr[i] += wgt * localAt(term, from + i * dt - a);
       }
     }
-    // Pacing stimuli: very brief, large, lead-dependent artefacts.
+    // Pacing stimuli: very brief, large artefacts (small with bipolar leads). Their size differs
+    // between leads with the projection of the stimulus dipole, exactly like any cardiac signal.
     for (const s of sim.spikes) {
       const i = idx(s.t);
       if (i < 0 || i >= n - 2) continue;
+      const d = SPIKE_DIR[s.chamber];
+      const proj = g * (d[0] * ax + d[1] * ay + d[2] * az);
       if (s.chamber === 'shock') {
-        for (let j = 0; j < 40 && i + j < n; j++) arr[i + j] += 3 * Math.exp(-j / 8) * (j < 3 ? 1 : -0.4);
+        for (let j = 0; j < 40 && i + j < n; j++) arr[i + j] += 3.5 * proj * Math.exp(-j / 8) * (j < 3 ? 1 : -0.4);
         continue;
       }
-      const bip = p.rhythm.pacer.bipolar;
-      const dir = s.chamber === 'A' ? vec(0.3, 0.8, 0.4) : vec(0.15, -0.7, -0.6);
-      const proj = dir[0] * ax + dir[1] * ay + dir[2] * az;
-      const h = (bip ? 0.6 : 2.2) * (0.35 + 0.65 * Math.abs(proj)) * Math.sign(proj || 1);
+      const h = (p.rhythm.pacer.bipolar ? 0.9 : 3) * proj;
       arr[i] += h;
       arr[i + 1] += h * 0.6;
       arr[i + 2] -= h * 0.15;
     }
     if (noiseAmp > 0) {
-      const phase = rngN() * 6.28;
-      const phase2 = rngN() * 6.28;
-      let emg = 0;
-      for (let i = 0; i < n; i++) {
-        const t = (from + i * dt) / 1000;
-        emg = 0.7 * emg + 0.3 * gauss(rngN);
-        arr[i] += noiseAmp * (0.05 * Math.sin(2 * Math.PI * 0.22 * t + phase) + 0.025 * Math.sin(2 * Math.PI * 0.07 * t + phase2) + 0.012 * emg);
-      }
+      const k = ELECTRODE_COEF[id];
+      const ra = noiseAt('RA', 1);
+      const la = noiseAt('LA', 2);
+      const ll = noiseAt('LL', 3);
+      const own = L.plane === 'horizontal' ? noiseAt(id, 10 + CHEST.indexOf(id)) : null;
+      for (let i = 0; i < n; i++) arr[i] += k[0] * ra[i] + k[1] * la[i] + k[2] * ll[i] + (own ? own[i] : 0);
     }
     out[id] = arr;
   }

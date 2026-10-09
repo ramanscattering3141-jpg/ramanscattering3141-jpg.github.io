@@ -18,7 +18,7 @@
 
 import type { ApLocation, AtrialSite, InterventionKind, Physio, RhythmParams, VentSite } from './params';
 import { effectiveSinusRate } from './params';
-import { apErpAdd, avnModifiers, hvAdd, qtAtRR, qtcEffective } from './derived';
+import { apErpAdd, avnModifiers, hvAdd, qtcEffective } from './derived';
 import { gauss, mulberry32, type Rng } from './random';
 import { clamp } from './vec';
 
@@ -297,6 +297,8 @@ interface Path {
   tok: number;
 }
 const newPath = (): Path => ({ lastEntry: -1e9, lastExit: -1e9, busy: -1e9, dir: 'ante', tok: 0 });
+
+const SUSTAINED_VT = ['VT', 'polymorphic VT', 'torsades de pointes', 'bidirectional VT'];
 
 export function simulate(p: Physio, opts: SimOptions): SimResult {
   const R: RhythmParams = p.rhythm;
@@ -628,13 +630,18 @@ export function simulate(p: Physio, opts: SimOptions): SimResult {
         return;
       }
     }
-    if (t < V.refr) {
+    // A sustained VT circuit/trigger only fires into recovered tissue by definition: its own next
+    // impulse is not blocked by the (restitution-shortened) refractoriness of the previous VT beat.
+    const ownVT = src.k === 'focus' && SUSTAINED_VT.includes(src.mech) && cur?.mechanism === src.mech && t - V.last >= 0.8 * (60000 / R.vtRate);
+    if (t < V.refr && !ownVT) {
       log(t, 'V', 'block', 'ventricular myocardium refractory');
       return;
     }
     const rr = clamp(t - V.last, 200, 4000);
     V.last = t;
-    V.refr = t + 0.72 * qtAtRR(qtc, rr) * (route === "his" ? 1 : 1.05);
+    // Refractoriness follows APD restitution, which shortens steeply at short cycles (√RR, not ∛RR):
+    // otherwise a long-QT heart could not sustain torsades at 200–250/min.
+    V.refr = t + 0.72 * qtc * Math.sqrt(rr / 1000) * (route === "his" ? 1 : 1.05);
     let ev: VentEvent;
     if (src.k === 'his') {
       ev = {
@@ -664,9 +671,11 @@ export function simulate(p: Physio, opts: SimOptions): SimResult {
     if (route === 'focus' || route === 'paced') {
       if (R.pvc.retrograde) hisArriveLater(t + R.vaDelay * 0.6);
       else {
-        // Concealed retrograde penetration of the His–Purkinje system/AV node: the next sinus
-        // impulse finds the node partly refractory (longer PR after an interpolated PVC).
-        FP.lastExit = Math.max(FP.lastExit, t + 60);
+        // Concealed retrograde penetration of the His–Purkinje system/AV node (it reaches the node
+        // about one VA-conduction time after the ectopic beat): a sinus P falling within the
+        // ectopic beat's QRS–ST is blocked (→ fully compensatory pause); a later one conducts,
+        // possibly with a longer PR (interpolated PVC).
+        FP.lastExit = Math.max(FP.lastExit, t + R.vaDelay);
         HIS.last = Math.max(HIS.last, t + 40);
         resetJunction(t + 40);
       }

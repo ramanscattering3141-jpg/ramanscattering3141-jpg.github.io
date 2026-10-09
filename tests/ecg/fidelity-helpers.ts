@@ -205,6 +205,7 @@ export interface PFeatures {
   peakSep: number;
   /** V1 terminal negative area (mm·s, Morris index: depth mm × duration s) */
   termNegArea: number;
+  termNegDur: number;
   modelDur: number;
 }
 
@@ -237,13 +238,25 @@ export function pFeatures(r: EcgRun, aIdx: number, l: LeadId): PFeatures {
     if (Math.min(v[pk[0]], v[pk[pk.length - 1]]) - lo < 0.01) peaks = 1;
     else peakSep = pk[pk.length - 1] - pk[0];
   }
-  // terminal negative portion (after the last sign change to negative)
-  let area = 0;
-  for (let i = v.length - 1; i >= 0 && v[i] <= 0; i--) area += -v[i];
-  return { pos, neg, dur: first >= 0 ? last - first + 1 : 0, peaks, peakSep, termNegArea: (area * 10) / 1000, modelDur: pm.pDur };
+  // Terminal negative portion (Morris index): depth (mm) × duration (s) of the negative deflection
+  // in the second half of the P wave.
+  const half = Math.floor(pm.pDur / 2);
+  let iMin = half;
+  for (let i = half; i < Math.min(v.length, Math.round(pm.pDur) + 5); i++) if (v[i] < v[iMin]) iMin = i;
+  let termNegArea = 0;
+  let termNegDur = 0;
+  if (v[iMin] < -0.005) {
+    let a0 = iMin;
+    let a1 = iMin;
+    while (a0 > 0 && v[a0 - 1] < -0.005) a0--;
+    while (a1 < v.length - 1 && v[a1 + 1] < -0.005) a1++;
+    termNegDur = a1 - a0 + 1;
+    termNegArea = -v[iMin] * 10 * (termNegDur / 1000);
+  }
+  return { pos, neg, dur: first >= 0 ? last - first + 1 : 0, peaks, peakSep, termNegArea, termNegDur, modelDur: pm.pDur };
 }
 
-/** Signal-derived QRS duration: span over which the summed absolute 12-lead deviation of the activation exceeds 4 % of its peak. */
+/** Signal-derived QRS duration: span over which the spatial magnitude of the activation vector exceeds 2.5 % of its peak. */
 export function qrsDurFromSignal(r: EcgRun, b: BeatInfo): number {
   // Use only activation components so overlapping ST/T do not bias the end.
   const comps = b.morph.comps.filter((c) => c.t0 < b.morph.qrsDur - 13 && !/ST segment|T wave|U wave|J-point|Osborn/.test(c.tag));
@@ -267,7 +280,7 @@ export function qrsDurFromSignal(r: EcgRun, b: BeatInfo): number {
   }
   let on = -1;
   let off = -1;
-  for (let i = 0; i < mags.length; i++) if (mags[i] > 0.04 * peak) {
+  for (let i = 0; i < mags.length; i++) if (mags[i] > 0.025 * peak) {
     if (on < 0) on = i;
     off = i;
   }
@@ -282,6 +295,8 @@ function shape(s: string, u: number): number {
       return Math.sin(Math.PI * u ** 1.45) ** 2;
     case 'spike':
       return u < 0.5 ? u * 2 : (1 - u) * 2;
+    case 'ramp':
+      return u < 0.7 ? Math.pow(u / 0.7, 1.3) : Math.pow(1 - (u - 0.7) / 0.3, 2);
     default:
       return Math.sin(Math.PI * u) ** 2;
   }
@@ -294,3 +309,37 @@ export function allQrs(r: EcgRun, b: BeatInfo, leads: LeadId[] = TWELVE): Record
 }
 
 export const mm = (mV: number): number => Math.round(mV * 100) / 10;
+
+/** Value of lead `l` at absolute time t (ms). */
+export function valueAt(r: EcgRun, l: LeadId, t: number): number {
+  return at(r, l, t);
+}
+
+/** Net QRS area (mV·ms) of beat b in lead l, relative to the QRS-onset level. */
+export function netQrsArea(r: EcgRun, b: BeatInfo, l: LeadId): number {
+  const base = at(r, l, b.ev.t);
+  let s = 0;
+  for (let t = 0; t <= b.morph.qrsDur; t++) s += at(r, l, b.ev.t + t) - base;
+  return s;
+}
+
+/** Visible beats (inside the strip). */
+export const visBeats = (r: EcgRun): BeatInfo[] => r.sig.beats.filter((b) => b.ev.t >= 0 && b.ev.t < r.sim.duration);
+
+/** Frontal axis computed from the SIGNAL: net QRS areas in I and aVF (aVF de-augmented by √3/2). */
+export function signalAxis(r: EcgRun, b: BeatInfo): number {
+  const i = netQrsArea(r, b, 'I');
+  const f = netQrsArea(r, b, 'aVF') / (Math.sqrt(3) / 2);
+  return (Math.atan2(f, i) * 180) / Math.PI;
+}
+
+/** Time (ms from QRS onset) to reach half of the largest absolute QRS deflection in lead l. */
+export function halfRiseTime(r: EcgRun, b: BeatInfo, l: LeadId): number {
+  const base = at(r, l, b.ev.t);
+  let peak = 0;
+  for (let t = 0; t <= b.morph.qrsDur; t++) peak = Math.max(peak, Math.abs(at(r, l, b.ev.t + t) - base));
+  for (let t = 0; t <= b.morph.qrsDur; t++) if (Math.abs(at(r, l, b.ev.t + t) - base) >= peak / 2) return t;
+  return b.morph.qrsDur;
+}
+
+export { buildP, PRESETS, makePhysio, runEcg };
