@@ -80,7 +80,7 @@ export const FINDINGS: Finding[] = [
       { level: 'cell', text: 'Injured cells (ischaemia, inflammation) have a less negative resting potential and a lower plateau; or epicardial cells lose their plateau (Brugada) or repolarise early (early repolarisation).' },
       { level: 'vector', text: 'A voltage difference between injured and healthy tissue during the ST segment creates an "injury current"; with epicardial/transmural injury the ST vector points toward the injured surface.' },
       { level: 'lead', text: 'Leads facing it record ST elevation; opposite leads record reciprocal ST depression.' },
-      { level: 'diagnosis', text: 'Pattern distinguishes causes: territorial + reciprocal (STEMI); diffuse + PR depression (pericarditis); V1–V2 coved (Brugada); discordant to a wide QRS (LBBB, LVH, paced); J notch (early repolarisation).' },
+      { level: 'diagnosis', text: 'Pattern distinguishes causes: territorial + reciprocal (STEMI); diffuse + PR depression (pericarditis); V1–V2 coved (Brugada); discordant to a wide or high-voltage QRS (LBBB, paced, LVH); J notch (early repolarisation).' },
     ],
     causes: [
       { id: 'stemi', note: 'transmural ischaemia — territorial with reciprocal STD' },
@@ -167,7 +167,7 @@ export const FINDINGS: Finding[] = [
     id: 'q-waves',
     name: 'Pathological Q waves',
     aliases: ['Q wave', 'infarct Q'],
-    normal: [{ level: 'vector', text: 'Small septal q waves (< 40 ms) in I, aVL, V5–V6: the septum is activated left→right first, moving away from left-sided leads.' }],
+    normal: [{ level: 'vector', text: 'Small septal q waves (< 30 ms) in I, aVL, V5–V6: the septum is activated left→right first, moving away from left-sided leads.' }],
     abnormal: [
       { level: 'cell', text: 'Necrotic (scarred) myocardium generates no depolarising forces.' },
       { level: 'vector', text: 'The initial vector is dominated by the opposite wall → points AWAY from the scar.' },
@@ -187,7 +187,7 @@ export const FINDINGS: Finding[] = [
     aliases: ['QT prolongation', 'QTc'],
     normal: [{ level: 'cell', text: 'QT ≈ ventricular action-potential duration (phase 0 → end of phase 3); shortens as heart rate rises.' }],
     abnormal: [
-      { level: 'cell', text: 'Less outward K⁺ current (IKr block, LQT1/2, hypokalaemia) or more inward current (late Na⁺, LQT3) → longer phase 3 → wider, later T.' },
+      { level: 'cell', text: 'Less outward K⁺ current (IKr block, LQT1/2, hypokalaemia) or more inward current (late Na⁺, LQT3) → longer plateau and phase 3 → wider, later T.' },
       { level: 'cell', text: 'Low Ca²⁺ lengthens phase 2 → longer ST with a normal T.' },
       { level: 'clinical', text: 'Prolonged, heterogeneous repolarisation → EADs → torsades de pointes.' },
     ],
@@ -288,7 +288,7 @@ export const FINDINGS: Finding[] = [
     aliases: ['LAD', 'left axis'],
     normal: [{ level: 'vector', text: 'Mean frontal QRS vector −30° to +90° (dominated by LV free-wall forces pointing leftward and inferior).' }],
     abnormal: [
-      { level: 'vector', text: 'Forces rotated superiorly: late activation of the anterosuperior LV (LAFB), inferior-wall scar (loss of inferior forces), LV pacing sites, some pre-excitation, LVH (mild).' },
+      { level: 'vector', text: 'Forces rotated superiorly: late activation of the anterosuperior LV (LAFB), inferior-wall scar (loss of inferior forces), RV apical pacing (activation spreads upward from the apex), some pre-excitation, LVH (mild).' },
       { level: 'lead', text: 'Lead II becomes predominantly negative (axis < −30°).' },
     ],
     causes: [

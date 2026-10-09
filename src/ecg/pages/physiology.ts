@@ -13,7 +13,7 @@ const WAVES: { name: string; steps: WhyStep[] }[] = [
     steps: [
       { level: 'conduction', text: 'Starts at the sinus node in the high right atrium; spreads through the RA, then via Bachmann’s bundle to the LA.' },
       { level: 'vector', text: 'Mean vector inferior and leftward (≈ +50°): RA component anterior-inferior, LA component leftward-posterior.' },
-      { level: 'waveform', text: 'Upright in II (≤ 120 ms, ≤ 2.5 mm), inverted in aVR, often biphasic in V1 (RA positive then LA negative).' },
+      { level: 'waveform', text: 'Upright in II (< 120 ms, < 2.5 mm), inverted in aVR, often biphasic in V1 (RA positive then LA negative).' },
     ],
   },
   {
@@ -44,7 +44,7 @@ const WAVES: { name: string; steps: WhyStep[] }[] = [
     name: 'T wave (ventricular repolarisation)',
     steps: [
       { level: 'cell', text: 'Epicardial action potentials are shorter than endocardial ones.' },
-      { level: 'conduction', text: 'So repolarisation, although it starts later in the epicardium’s activation order, finishes there first: it travels epicardium → endocardium.' },
+      { level: 'conduction', text: 'So although the epicardium is activated last, it repolarises first: repolarisation travels epicardium → endocardium.' },
       { level: 'waveform', text: 'A repolarisation wave moving away from a lead writes upward → T concordant with the main QRS deflection.' },
     ],
   },

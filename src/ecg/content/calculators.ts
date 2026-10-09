@@ -58,7 +58,7 @@ export interface SgarbossaInput {
   concordantSTDV1V3: boolean;
   /** Discordant ST elevation ≥ 5 mm (original criterion 3). */
   discordantSTE5: boolean;
-  /** Most discordant lead: ST deviation (mm, signed) and preceding R or S amplitude (mm, signed). */
+  /** Lead with the most discordant ST elevation: J-point ST deviation (mm, signed) and preceding S-wave amplitude (mm, negative). */
   discordantST?: number;
   discordantRS?: number;
 }
@@ -67,8 +67,9 @@ export function sgarbossa(x: SgarbossaInput): { score: number; original: boolean
   const score = (x.concordantSTE ? 5 : 0) + (x.concordantSTDV1V3 ? 3 : 0) + (x.discordantSTE5 ? 2 : 0);
   let smithRatio: number | null = null;
   if (x.discordantST !== undefined && x.discordantRS !== undefined && x.discordantRS !== 0) smithRatio = x.discordantST / x.discordantRS;
-  // Smith-modified rule: criterion 3 replaced by ST/S ratio ≤ −0.25 (proportionally excessive discordance).
-  const smithDisc = smithRatio !== null && smithRatio <= -0.25 && Math.abs(x.discordantST ?? 0) >= 1;
+  // Smith-modified rule: criterion 3 replaced by discordant ST ELEVATION ≥ 1 mm with ST/S ratio ≤ −0.25
+  // (proportionally excessive discordance; Smith 2012, validated by Meyers 2015).
+  const smithDisc = smithRatio !== null && smithRatio <= -0.25 && (x.discordantST ?? 0) >= 1;
   return { score, original: score >= 3, smithRatio, smith: x.concordantSTE || x.concordantSTDV1V3 || smithDisc };
 }
 
@@ -81,10 +82,10 @@ export interface WctStep {
 
 /** Brugada 1991 four-step algorithm. */
 export const BRUGADA_WCT: WctStep[] = [
-  { id: 'rs', question: 'Is an RS complex ABSENT from all precordial leads (V1–V6)?', ifYes: 'VT', why: 'Concordant precordial complexes (all positive or all negative) imply activation starting from the base or apex of the ventricle itself — impossible with bundle-branch conduction.' },
+  { id: 'rs', question: 'Is an RS complex ABSENT from all precordial leads (V1–V6)?', ifYes: 'VT', why: 'With bundle-branch aberrancy at least one precordial lead almost always shows an RS complex. No RS anywhere (e.g. concordance — all positive or all negative) implies activation starting in ventricular muscle, from the base or apex.' },
   { id: 'rsInterval', question: 'Is the R-to-S interval (onset of R to nadir of S) > 100 ms in any precordial lead?', ifYes: 'VT', why: 'Aberrant conduction still uses Purkinje fibres initially, so the first part of the QRS is fast; VT starts in muscle, so initial activation is slow.' },
   { id: 'avd', question: 'Is there AV dissociation (P waves unrelated to QRS, capture or fusion beats)?', ifYes: 'VT', why: 'The atria beating independently prove the tachycardia arises below the AV node (though VA conduction can exist in VT, so its absence does not exclude VT).' },
-  { id: 'morph', question: 'Do V1–V2 and V6 meet the morphology criteria for VT (e.g. RBBB-type: monophasic R or qR in V1, R/S < 1 or QS in V6; LBBB-type: R in V1–V2 > 30 ms, > 60 ms to S nadir, notched S; any Q in V6)?', ifYes: 'VT', why: 'Aberrancy reproduces the typical bundle-branch shapes (rsR′ in V1, qRs in V6); deviations imply a myocardial origin.' },
+  { id: 'morph', question: 'Do V1–V2 and V6 meet the morphology criteria for VT (e.g. RBBB-type: monophasic R, QR or RS in V1, R/S < 1, QS or QR in V6; LBBB-type: R in V1–V2 > 30 ms, > 60 ms from QRS onset to S nadir, notched S downstroke; QR or QS in V6)?', ifYes: 'VT', why: 'Aberrancy reproduces the typical bundle-branch shapes (rsR′ in V1, qRs in V6); deviations imply a myocardial origin.' },
 ];
 
 /** Vereckei 2008 aVR algorithm. */

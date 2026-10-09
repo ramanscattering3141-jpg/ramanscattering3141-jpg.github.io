@@ -32,7 +32,7 @@ function makeQuestion(level: number, seed: number): Q {
     const item = pick(rng, L2);
     switch (item.kind) {
       case 'axis':
-        return { preset: item.preset, q: 'What is the frontal QRS axis?', options: ['normal', 'left axis deviation', 'right axis deviation', 'extreme (northwest) axis'], correct: '', explain: 'Leads I and aVF: both positive = normal; I positive/aVF negative = check II (negative → LAD); I negative/aVF positive = RAD.', twelve: true };
+        return { preset: item.preset, q: 'What is the frontal QRS axis?', options: ['normal', 'left axis deviation', 'right axis deviation', 'extreme (northwest) axis'], correct: '', explain: 'Leads I and aVF: both positive = normal; I positive/aVF negative = check II (positive → still normal, to −30°; negative → LAD); I negative/aVF positive = RAD; both negative = extreme axis.', twelve: true };
       case 'conduction':
         return { preset: item.preset, q: 'Which conduction abnormality is present?', options: shuffle(rng, uniq([item.answer!, ...shuffle(rng, L2_CONDUCTION_OPTIONS.filter((x) => x !== item.answer)).slice(0, 3)])), correct: item.answer!, explain: 'Look at V1 (RBBB: rSR′; LBBB: QS/rS), I/V6 (wide S vs broad notched R), axis (fascicles), PR and delta wave (pre-excitation).', twelve: true };
       case 'morph':
@@ -40,7 +40,7 @@ function makeQuestion(level: number, seed: number): Q {
       case 'pr':
         return { preset: item.preset, q: 'How would you describe the PR interval?', options: ['short (< 120 ms)', 'normal (120–200 ms)', 'prolonged (> 200 ms)', 'progressively lengthening'], correct: '', explain: 'Measure from P onset to QRS onset with the caliper.', twelve: true };
       case 'qt':
-        return { preset: item.preset, q: 'How would you describe the QTc?', options: ['short (< 360 ms)', 'normal', 'prolonged (> 460 ms)'], correct: '', explain: 'QTc (Bazett) = QT/√RR; use Fridericia at fast rates.', twelve: true };
+        return { preset: item.preset, q: 'How would you describe the QTc?', options: ['short (< 360 ms)', 'normal', 'prolonged (≥ 450 ms ♂ / ≥ 460 ms ♀)'], correct: '', explain: 'QTc (Bazett) = QT/√RR (RR in seconds); prolonged ≥ 450 ms in men, ≥ 460 ms in women; use Fridericia at fast rates.', twelve: true };
       default:
         return { preset: item.preset, q: 'What is the QRS duration?', options: ['< 110 ms', '110–119 ms', '≥ 120 ms'], correct: '', explain: 'Measure in the lead with the widest QRS.', twelve: true };
     }
@@ -75,7 +75,7 @@ export function renderChallenge(root: HTMLElement): () => void {
       const m = run.m;
       if (q.q.includes('axis')) correct = axisLabel(m.axis);
       else if (q.q.includes('PR')) correct = m.pr === null ? 'normal (120–200 ms)' : m.prRange && m.prRange[1] - m.prRange[0] > 40 ? 'progressively lengthening' : m.pr < 120 ? 'short (< 120 ms)' : m.pr > 200 ? 'prolonged (> 200 ms)' : 'normal (120–200 ms)';
-      else if (q.q.includes('QTc')) correct = (m.qtcBazett ?? 420) < 360 ? 'short (< 360 ms)' : (m.qtcBazett ?? 420) > 460 ? 'prolonged (> 460 ms)' : 'normal';
+      else if (q.q.includes('QTc')) correct = (m.qtcBazett ?? 420) < 360 ? 'short (< 360 ms)' : (m.qtcBazett ?? 420) >= (phys.sex === 'F' ? 460 : 450) ? 'prolonged (≥ 450 ms ♂ / ≥ 460 ms ♀)' : 'normal';
       else correct = (m.qrs ?? 90) >= 120 ? '≥ 120 ms' : (m.qrs ?? 90) >= 110 ? '110–119 ms' : '< 110 ms';
     }
     const fb = h('div');
@@ -93,7 +93,8 @@ export function renderChallenge(root: HTMLElement): () => void {
         fb.replaceChildren(p(ok ? '✔ Correct.' : `✘ Answer: ${correct}.`), p(q.explain), p(`Model measurements: rate ${run.m.ventRate ?? '—'}, PR ${run.m.pr ?? '—'} ms, QRS ${run.m.qrs ?? '—'} ms, QTc ${run.m.qtcBazett ?? '—'} ms, axis ${run.m.axis ?? '—'}°.`, 'ref-meta'), ...(q.dx ? [h('p', null, h('a', { href: `#/dx/${q.dx}` }, 'Review the mechanism →'))] : []), h('div', { class: 'btn-row' }, button('Next question', next, 'btn-primary')));
       }, 'quiz-opt'),
     );
-    host.replaceChildren(h('section', { class: 'card' }, h('h2', null, LEVEL_INFO[level].title), panel.el, h('h3', null, q.q), ...btns, fb));
+    const qText = q.q.includes('QTc') ? `${q.q} (${phys.sex === 'F' ? 'female' : 'male'} patient)` : q.q;
+    host.replaceChildren(h('section', { class: 'card' }, h('h2', null, LEVEL_INFO[level].title), panel.el, h('h3', null, qText), ...btns, fb));
   };
   root.append(
     h(

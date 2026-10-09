@@ -32,7 +32,7 @@ export function renderFundamentals(root: HTMLElement, parts: string[]): (() => v
         { level: 'vector', text: 'At each instant the dipoles of the whole heart sum to a single "heart vector" with a direction and a size.' },
         { level: 'lead', text: 'A lead is a line of sight with a positive pole: it records the projection of the heart vector on that line (a dot product).' },
         { level: 'waveform', text: 'Wavefront toward the positive pole → upward deflection; away → downward; perpendicular → small or biphasic.' },
-        { level: 'waveform', text: 'Repolarisation is the reverse charge moving; a repolarisation wave moving AWAY from a lead also writes upward — which is why the T wave is normally upright even though repolarisation ends where depolarisation began.' },
+        { level: 'waveform', text: 'Repolarisation is the reverse charge moving; a repolarisation wave moving AWAY from a lead also writes upward — which is why the T wave is normally upright: repolarisation travels epicardium → endocardium, ending where depolarisation began.' },
       ]),
     ),
     refList(['ecgStd1', 'ionChannels2009', 'durrer1970']),
@@ -75,7 +75,7 @@ function leads(root: HTMLElement): () => void {
         '**Precordial leads** (V1–V6) measure each chest electrode against Wilson’s central terminal and look at the heart in the horizontal plane — from the right ventricle/septum (V1–V2) round to the lateral LV (V5–V6).',
         '**Contiguous leads** view neighbouring regions: inferior (II, III, aVF), lateral (I, aVL, V5–V6), septal/anterior (V1–V4). Ischaemic changes are judged in contiguous groups.',
         '**aVR** looks into the cavity from the right shoulder: almost everything normal is negative in aVR, and ST elevation there means the injury vector points toward the cavity/RV outflow.',
-        'Precordial electrodes sit close to the heart, so they are also influenced by local ("proximity") potentials — the reason Brugada changes appear only in V1–V2.',
+        'Precordial electrodes sit close to the heart, so they are also influenced by local ("proximity") potentials — the reason Brugada changes are confined to the right precordial leads (V1–V2) overlying the RV outflow tract.',
       ]),
     ),
   );
@@ -130,7 +130,7 @@ function actionPotentials(root: HTMLElement): void {
         ['0 — upstroke', 'INa (working myocardium); ICa,L (nodal cells)', 'QRS (ventricles), P (atria); slope determines conduction velocity → QRS width'],
         ['1 — early repolarisation', 'Ito', 'J point; J/Osborn waves, Brugada, early repolarisation'],
         ['2 — plateau', 'ICa,L vs IKs/IKr', 'ST segment (isoelectric because all cells are at similar voltage)'],
-        ['3 — repolarisation', 'IKr, IKs, IK1', 'T wave; its duration sets the QT'],
+        ['3 — repolarisation', 'IKr, IKs, IK1', 'T wave; the end of phase 3 in the last cells to repolarise marks the end of the QT'],
         ['4 — rest / diastolic depolarisation', 'IK1 (working cells); If, ICa,T (pacemakers)', 'TP segment; heart rate (pacemaker slope)'],
       ].map((r) => h('tr', null, ...r.map((c) => h('td', null, c))))))),
     ),
@@ -146,12 +146,12 @@ function systematic(root: HTMLElement): () => void {
     ['Rate', '300 ÷ large squares between R waves (regular) or QRS count × 6 in a 10-s strip (irregular).', 'Rate = the fastest pacemaker that reaches the ventricles, filtered by AV-nodal refractoriness.'],
     ['Rhythm', 'Regular? P before every QRS? QRS after every P? P morphology sinus?', 'Where does activation start, and does every atrial impulse get through the node?'],
     ['Axis', 'Lead I and aVF (then II) positivity; isoelectric lead is perpendicular to the axis.', 'Direction of the mean ventricular vector (mass, conduction, infarcts).'],
-    ['P wave', 'Upright II, ≤ 120 ms, ≤ 2.5 mm; biphasic V1 with small terminal negativity.', 'Atrial origin and atrial size/conduction.'],
+    ['P wave', 'Upright II, < 120 ms, < 2.5 mm; biphasic V1 with small terminal negativity.', 'Atrial origin and atrial size/conduction.'],
     ['PR', '120–200 ms; constant?', 'Mostly AV-nodal delay; short with pre-excitation, long with nodal slowing.'],
     ['QRS', '< 110–120 ms; morphology in V1/V6; Q waves; voltage.', 'Speed and sequence of ventricular activation; mass; scar.'],
     ['ST segment', 'Isoelectric? Elevation/depression, shape, distribution, reciprocity.', 'Voltage gradients during the plateau (injury currents).'],
     ['T wave', 'Concordant with QRS? Shape (peaked, flat, inverted).', 'Sequence and speed of repolarisation; primary vs secondary change.'],
-    ['QT / QTc', 'QTc (Bazett overcorrects at fast rates; Fridericia preferred there). Long > 450 (M) / 460 (F); short < 340–360.', 'Action-potential duration (K⁺, Ca²⁺ channels, drugs, genes).'],
+    ['QT / QTc', 'QTc (Bazett overcorrects at fast rates; Fridericia preferred there). Prolonged ≥ 450 ms (M) / ≥ 460 ms (F); short ≤ 390 ms (short-QT syndrome usually ≤ 360 ms).', 'Action-potential duration (K⁺, Ca²⁺ channels, drugs, genes).'],
   ];
   root.append(h('section', { class: 'card' }, h('div', { class: 'table-scroll' }, h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Step'), h('th', null, 'What to measure'), h('th', null, 'Physiology it reflects'))), h('tbody', null, ...steps.map((r) => h('tr', null, h('td', null, h('strong', null, r[0])), h('td', null, r[1]), h('td', null, r[2]))))))));
   const panel = new EcgPanel({ duration: 10000 });

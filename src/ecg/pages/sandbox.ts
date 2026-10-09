@@ -51,7 +51,7 @@ const EXPERIMENTS: Experiment[] = [
   { id: 'ap', label: 'Add an accessory pathway (right free wall)', base: 'nsr', change: { rhythm: { ap: { present: true, location: 'rightFreeWall' } } }, explain: 'The pathway bypasses the nodal delay: short PR, delta wave, wide fused QRS, secondary ST–T change.', leads: ['II', 'V1'] },
   { id: 'lv', label: 'Increase LV mass', base: 'nsr', change: { lvMass: 1.9 }, explain: 'A larger LV dipole raises lateral R and right precordial S voltage; thick walls repolarise abnormally (strain).', leads: ['V1', 'V5'] },
   { id: 'axis', label: 'Shift the mean QRS axis 30° left', base: 'nsr', change: { axisShift: -30 }, explain: 'Rotating the ventricular vector superiorly makes II/III/aVF less positive and aVL/I more positive.', leads: ['I', 'aVF'] },
-  { id: 'vagal', label: 'Increase vagal tone', base: 'nsr', change: { autonomic: -0.8 }, explain: 'Acetylcholine slows sinus phase 4 (bradycardia) and AV-nodal conduction (longer PR); QT lengthens with rate.', leads: ['II'] },
+  { id: 'vagal', label: 'Increase vagal tone', base: 'nsr', change: { autonomic: -0.8 }, explain: 'Acetylcholine slows sinus phase 4 (bradycardia) and AV-nodal conduction (longer PR); the QT lengthens as the rate slows.', leads: ['II'] },
   { id: 'ikr', label: 'Block IKr (QT-prolonging drug)', base: 'nsr', change: { drugs: { qtDrug: 1 } }, explain: 'Slower phase 3 → later, broader T → long QT.', leads: ['II', 'V2'] },
   { id: 'ca', label: 'Lower calcium (2.35 → 1.7 mmol/L)', base: 'nsr', change: { Ca: 1.7 }, explain: 'Longer plateau (phase 2) → longer ST segment → long QT with a normal T wave.', leads: ['II'] },
   { id: 'rca', label: 'Occlude the proximal RCA', base: 'nsr', change: { ischemia: { territory: 'proxRCA', stage: 'stemi', extent: 0.9 } }, explain: 'Injury current toward the inferior/right wall → STE II, III, aVF (III > II), reciprocal STD in I/aVL.', leads: ['II', 'V1'] },
@@ -303,7 +303,7 @@ function adenosineDemo(root: HTMLElement): () => void {
       res,
       panel.el,
     ),
-    h('section', { class: 'card' }, h('h2', null, 'Principle'), whyList([{ level: 'cell', text: 'A1-receptor activation opens IK,Ado (same channel as IK,ACh) and reduces cAMP → AV-nodal cells hyperpolarise and conduction fails for seconds.' }, { level: 'conduction', text: 'If the AV node is inside the circuit (AVNRT, AVRT) → termination. If it is downstream of the mechanism (sinus tachycardia, AT, flutter, AF) → transient AV block that reveals atrial activity. If the problem is below the node or already dissociated (infranodal block, CHB, VT) → no benefit.' }, { level: 'treatment', text: '2025 AHA: adenosine for regular narrow-complex tachycardia; in wide-complex tachycardia only if regular and monomorphic; not for irregular wide-complex tachycardia (e.g. pre-excited AF).' }])),
+    h('section', { class: 'card' }, h('h2', null, 'Principle'), whyList([{ level: 'cell', text: 'A1-receptor activation opens IK,Ado (same channel as IK,ACh) and reduces cAMP → AV-nodal cells hyperpolarise and conduction fails for seconds.' }, { level: 'conduction', text: 'If the AV node is inside the circuit (AVNRT, AVRT) → termination. If it is downstream of the mechanism (sinus tachycardia, most atrial tachycardias, flutter, AF) → transient AV block that reveals atrial activity (a minority of focal ATs, being cAMP-mediated, terminate). If the problem is below the node or already dissociated (infranodal block, CHB, VT) → no benefit.' }, { level: 'treatment', text: '2025 AHA: adenosine for regular narrow-complex tachycardia; in wide-complex tachycardia only if regular and monomorphic; not for irregular wide-complex tachycardia (e.g. pre-excited AF).' }])),
     refList(['svt2015', 'acls2025']),
   );
   run();
@@ -527,7 +527,7 @@ function stLab(root: HTMLElement): () => void {
 // ---------------------------------------------------------------------------------------------
 
 function hierarchy(root: HTMLElement): () => void {
-  root.append(header('N · Physiology Sandbox', 'Pacemaker hierarchy & escape rhythms', 'SA node → atrial tissue → AV junction → His–Purkinje → ventricular myocardium: each level is slower. The fastest pacemaker that reaches the ventricles resets (overdrive-suppresses) the slower ones. Disable higher pacemakers and watch the next level escape.'));
+  root.append(header('N · Physiology Sandbox', 'Pacemaker hierarchy & escape rhythms', 'SA node → atrial tissue → AV junction (node–His) → ventricular Purkinje fibres: each level is slower. The fastest pacemaker that reaches the ventricles resets (overdrive-suppresses) the slower ones. Disable higher pacemakers and watch the next level escape.'));
   const st = { sa: true, atrial: false, junction: true, vent: true, block: 'none' as 'none' | 'nodal' | 'infra', saRate: 72, atrialRate: 55, jRate: 45, vRate: 32, site: 'lvApex' as VentSite };
   const panel = new EcgPanel({ heart: true, duration: 12000, layout: 'strips', leads: ['II', 'V1'], showLadder: true, showLabels: true });
   const out = h('div', { class: 'callout' });
@@ -552,7 +552,7 @@ function hierarchy(root: HTMLElement): () => void {
     const r = panel.show(pp);
     const dom = r.m.dominant;
     const who = dom === 'conducted' ? (st.atrial && (!st.sa || st.saRate < st.atrialRate) ? 'an ectopic atrial focus' : 'the sinus node') : dom === 'junction' ? 'the AV junction' : dom === 'escape' ? 'a ventricular escape focus' : 'nothing (asystole)';
-    out.replaceChildren(p(`**Driving the ventricles:** ${who}${r.m.ventRate ? ` at ${r.m.ventRate}/min, QRS ${r.m.qrs} ms` : ''}.`), p(dom === 'junction' ? 'Junctional escape uses the His–Purkinje system → narrow QRS; retrograde P waves appear if the node conducts backwards.' : dom === 'escape' ? 'Ventricular escape spreads cell-to-cell → wide QRS; the morphology depends on the focus location (change it below).' : dom === 'conducted' ? 'Every lower pacemaker is reset before it reaches threshold (overdrive suppression).' : 'No pacemaker below the failure — this is why ventricular standstill is lethal and pacing is needed.'));
+    out.replaceChildren(p(`**Driving the ventricles:** ${who}${r.m.ventRate ? ` at ${r.m.ventRate}/min, QRS ${r.m.qrs} ms` : ''}.`), p(dom === 'junction' ? 'Junctional escape uses the His–Purkinje system → narrow QRS; retrograde P waves appear if the node conducts backwards.' : dom === 'escape' ? 'Ventricular escape spreads cell-to-cell → wide QRS; the morphology depends on the focus location (change it below).' : dom === 'conducted' ? 'Every lower pacemaker is depolarised and reset before it reaches threshold, and overdrive suppression further depresses its automaticity.' : 'No pacemaker below the failure — this is why ventricular standstill is lethal and pacing is needed.'));
   }, 80);
   root.append(
     h(
@@ -575,7 +575,7 @@ function hierarchy(root: HTMLElement): () => void {
       out,
       panel.el,
     ),
-    h('section', { class: 'card' }, h('h2', null, 'Why escapes differ'), whyList([{ level: 'cell', text: 'Phase-4 slope falls down the conduction system: SA 60–100, junction 40–60, ventricle 20–40/min.' }, { level: 'conduction', text: 'Junctional escape enters the His bundle → both bundles → Purkinje → synchronous activation → narrow QRS.' }, { level: 'conduction', text: 'Ventricular escape starts in myocardium/distal Purkinje → cell-to-cell → wide QRS whose shape points away from the focus.' }, { level: 'clinical', text: 'The lower the escape, the slower and less reliable it is — hence the urgency of pacing in infranodal block.' }])),
+    h('section', { class: 'card' }, h('h2', null, 'Why escapes differ'), whyList([{ level: 'cell', text: 'Phase-4 slope falls down the conduction system: SA 60–100, junction 40–60, ventricle 20–40/min.' }, { level: 'conduction', text: 'Junctional escape enters the His bundle → both bundles → Purkinje → synchronous activation → narrow QRS.' }, { level: 'conduction', text: 'Ventricular escape starts in the distal Purkinje network below the block → spreads largely cell-to-cell through myocardium → wide QRS whose vector points away from the focus.' }, { level: 'clinical', text: 'The lower the escape, the slower and less reliable it is — hence the urgency of pacing in infranodal block.' }])),
     refList(['brady2018', 'ionChannels2009']),
   );
   rerun();

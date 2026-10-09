@@ -28,7 +28,7 @@ export function renderSearch(root: HTMLElement, _parts: string[], q: URLSearchPa
     if (!list.length) continue;
     root.append(h('h2', null, title), h('div', { class: 'grid' }, ...list.map((x) => h('a', { class: 'tile', href: x.href }, h('h3', null, x.title), h('p', null, x.subtitle)))));
   }
-  if (/adenosine/i.test(query)) root.append(h('div', { class: 'callout warn' }, p('Situations where adenosine should not be relied upon: irregular or polymorphic wide-complex tachycardia (including pre-excited AF), VT due to scar (no effect), and AF/flutter/atrial tachycardia (reveals the atrial rhythm rather than treating it). See the [adenosine demonstrator](#/sandbox/adenosine) and [ACLS reference](#/acls).')));
+  if (/adenosine/i.test(query)) root.append(h('div', { class: 'callout warn' }, p('Situations where adenosine should not be relied upon: irregular or polymorphic wide-complex tachycardia (including pre-excited AF), VT due to scar (no effect), and AF/flutter/most atrial tachycardias (usually reveals the atrial rhythm rather than treating it). See the [adenosine demonstrator](#/sandbox/adenosine) and [ACLS reference](#/acls).')));
 }
 
 export function renderSources(root: HTMLElement): void {

@@ -26,9 +26,9 @@ export const EXTRA_DX: Dx[] = [
       { level: 'clinical', text: 'Deep narrow Q waves + LVH in a young person (or athlete) → echocardiography/CMR.' },
     ],
     differential: [
-      { dx: 'oldMI', how: 'Infarct Q waves are broader (≥ 40 ms), follow a coronary territory and come with regional wall-motion loss.' },
+      { dx: 'oldMI', how: 'Infarct Q waves are usually broader (UDMI: ≥ 30 ms in most leads, ≥ 20 ms in V2–V3), follow a coronary territory and come with regional wall-motion loss.' },
       { dx: 'lvh', how: 'Hypertensive/valvular LVH rarely produces deep septal Q waves.' },
-      { dx: 'athlete', how: 'Athletes may have isolated voltage criteria but not pathological Q waves or T inversion beyond the juvenile pattern.' },
+      { dx: 'athlete', how: 'Athletes may have isolated voltage criteria but not pathological Q waves, ST depression or T inversion beyond the recognised normal variants (juvenile pattern, black-athlete repolarisation variant).' },
       { dx: 'wpw', how: 'Negative delta waves mimic Q waves; look for short PR and slurred upstroke.' },
     ],
     presentation: 'Often asymptomatic; exertional dyspnoea, chest pain, syncope (particularly exertional), palpitations; a systolic murmur that increases with Valsalva in obstructive HCM.',
@@ -62,7 +62,7 @@ export const EXTRA_DX: Dx[] = [
     differential: [
       { dx: 'rvotVT', how: 'Idiopathic RVOT VT: normal resting ECG (no TWI/epsilon), LBBB with INFERIOR axis, normal CMR.' },
       { dx: 'brugada', how: 'Coved STE in V1–V2 rather than epsilon/TWI; typically no structural disease.' },
-      { dx: 'athlete', how: 'TWI V1–V3 can be normal in black athletes (preceded by J-point elevation, convex ST) and V1–V2 in juveniles < 16.' },
+      { dx: 'athlete', how: 'TWI V1–V4 can be normal in black athletes (preceded by J-point elevation and convex ST elevation) and V1–V3 in athletes < 16 y (juvenile pattern).' },
       { dx: 'pe', how: 'Acute RV strain: TWI V1–V4 with tachycardia and a clinical context.' },
     ],
     acute: ['VT: standard wide-complex tachycardia algorithm; synchronised cardioversion if unstable'],
@@ -89,7 +89,7 @@ export const EXTRA_DX: Dx[] = [
     ],
     differential: [
       { dx: 'hcm', how: 'Pathological Q waves, lateral T inversion or ST depression are NOT training-related.' },
-      { dx: 'arvc', how: 'TWI beyond V1 (V2 in juveniles / the black-athlete variant) or epsilon waves need work-up.' },
+      { dx: 'arvc', how: 'TWI beyond V1 (beyond V3 in athletes < 16 y; beyond V4 in the black-athlete variant with preceding J-point/convex ST elevation) or epsilon waves need work-up.' },
       { dx: 'mobitz2', how: 'Mobitz II or complete block is never a normal athletic adaptation.' },
       { dx: 'lqts', how: 'QTc ≥ 470 ms (men) / ≥ 480 ms (women) is abnormal in athletes.' },
     ],
@@ -193,7 +193,7 @@ export const EXTRA_DX: Dx[] = [
     why: [
       { level: 'cell', text: 'Adrenergic stimulation → Ca²⁺ overload of the sarcoplasmic reticulum → spontaneous diastolic Ca²⁺ release through leaky RyR2.' },
       { level: 'cell', text: 'Na⁺/Ca²⁺ exchange (3 Na⁺ in per Ca²⁺ out) creates an inward current → delayed afterdepolarisation → triggered action potential.' },
-      { level: 'conduction', text: 'Triggered beats arise alternately from two Purkinje sites (e.g. left anterior and posterior fascicles).' },
+      { level: 'conduction', text: 'Triggered beats arise alternately from two His–Purkinje sites (e.g. right- and left-ventricular Purkinje networks).' },
       { level: 'waveform', text: 'Alternating origin → alternating frontal axis beat to beat: bidirectional VT.' },
       { level: 'treatment', text: 'β-blockade removes the trigger; flecainide additionally blocks RyR2 release/Na⁺ current; left cardiac sympathetic denervation removes sympathetic input.' },
     ],
@@ -225,7 +225,7 @@ export const EXTRA_DX: Dx[] = [
     ],
     differential: [
       { dx: 'leadReversal', how: 'RA/LA reversal also inverts lead I, but chest-lead R progression is normal.' },
-      { dx: 'rvh', how: 'Right axis with tall R in V1 but normal lead I P wave and normal R progression to V6.' },
+      { dx: 'rvh', how: 'Right axis with tall R in V1, but the P wave in lead I is upright (the atria are not mirrored).' },
       { dx: 'lpfb', how: 'Right axis without P-wave inversion in I.' },
     ],
     refs: ['leadReversal2007', 'ecgStd1'],
@@ -277,10 +277,10 @@ export const EXTRA_DX: Dx[] = [
       { level: 'clinical', text: 'Assess the patient: a conscious, well-perfused patient during "VT/VF" suggests artefact — but never delay treatment of a pulseless patient.' },
     ],
     differential: [
-      { dx: 'monoVT', how: 'Real VT: no underlying sinus QRS marching through, AV dissociation with P waves, haemodynamic effect, present in all leads.' },
+      { dx: 'monoVT', how: 'Real VT: no native sinus QRS marching through, often AV dissociation, a pulse (or pulse-oximeter) rate that matches the tachycardia, present in all leads.' },
       { dx: 'vf', how: 'Real VF: the patient is pulseless and unresponsive.' },
       { dx: 'af', how: 'Tremor mimics f waves, but RR intervals remain regular in sinus rhythm.' },
-      { dx: 'flutter', how: 'Tremor at ~300/min can mimic flutter; flutter waves are identical in all inferior leads rather than absent from one.' },
+      { dx: 'flutter', how: 'Tremor at ~300/min can mimic flutter; flutter waves appear in all the inferior leads (II, III, aVF) rather than being absent from one.' },
     ],
     refs: ['artifact1999', 'leadReversal2007'],
   },

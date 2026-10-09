@@ -122,7 +122,7 @@ function renderSgarbossa(root: HTMLElement): Cleanup {
     const r = sgarbossa({ concordantSTE: x.concordantSTE, concordantSTDV1V3: x.concordantSTDV1V3, discordantSTE5: x.discordantSTE5, discordantST: x.st, discordantRS: x.rs });
     out.replaceChildren(
       p(`**Original Sgarbossa score: ${r.score}** → ${r.original ? 'meets the ≥ 3 threshold (specific for acute MI)' : 'below 3 (low sensitivity: does not exclude MI)'}.`),
-      p(`**Smith-modified:** ST/S ratio = ${r.smithRatio === null ? '—' : r.smithRatio.toFixed(2)} → ${r.smith ? 'POSITIVE (concordant change or ST/S ≤ −0.25)' : 'negative'}.`),
+      p(`**Smith-modified:** ST/S ratio = ${r.smithRatio === null ? '—' : r.smithRatio.toFixed(2)} → ${r.smith ? 'POSITIVE (a concordant criterion, or discordant ST elevation ≥ 1 mm with ST/S ≤ −0.25)' : 'negative'}.`),
     );
   };
   const panel = new EcgPanel({ heart: false, duration: 8000, layoutToggle: false });
@@ -143,8 +143,8 @@ function renderSgarbossa(root: HTMLElement): Cleanup {
       toggle('Concordant ST depression ≥ 1 mm in V1, V2 or V3 (3 points)', false, (v) => ((x.concordantSTDV1V3 = v), upd())),
       toggle('Discordant ST elevation ≥ 5 mm (2 points — original criterion 3)', false, (v) => ((x.discordantSTE5 = v), upd())),
       h('h3', null, 'Smith modification (replaces criterion 3)'),
-      slider({ label: 'ST deviation at J point in the most discordant lead', min: -10, max: 10, step: 0.5, value: x.st, unit: 'mm', onInput: (v) => ((x.st = v), upd()) }),
-      slider({ label: 'Preceding R or S amplitude in that lead (S negative)', min: -40, max: 40, step: 1, value: x.rs, unit: 'mm', onInput: (v) => ((x.rs = v), upd()) }),
+      slider({ label: 'ST elevation at the J point (vs PR segment) in the lead with the most discordant STE', min: -10, max: 10, step: 0.5, value: x.st, unit: 'mm', onInput: (v) => ((x.st = v), upd()) }),
+      slider({ label: 'Preceding S-wave depth in that lead (entered as negative)', min: -40, max: 40, step: 1, value: x.rs, unit: 'mm', onInput: (v) => ((x.rs = v), upd()) }),
       out,
     ),
     h(
@@ -255,11 +255,12 @@ function renderLeadLab(root: HTMLElement): Cleanup {
     panel.stop();
     panel.show(presetPhysio('nsr', { noise: art === 'none' ? 0.08 : 0.05, leadReversal: rev, dextrocardia: dextro, artifact: { kind: art, electrode: el, amp: art === 'tremor' ? 0.8 : 0.9 } }));
     const spared = { RA: 'III', LA: 'II', LL: 'I' }[el];
+    const ownAug = { RA: 'aVR', LA: 'aVL', LL: 'aVF' }[el];
     explain.replaceChildren(
       ...[
       p(text[rev]),
       dextro ? p('**Dextrocardia:** the heart vector is mirrored → P, QRS and T inverted in I, aVR/aVL exchanged, and R waves DECREASE from V1 to V6. Unlike RA/LA reversal, the chest leads are abnormal; right-sided chest leads would look normal.') : null,
-      art !== 'none' ? p(`**${art === 'motion' ? 'Motion' : 'Tremor'} artefact at ${el}:** appears in every lead that uses ${el} (full size in two bipolar leads, half size in two augmented leads, one-third size in every chest lead) and is absent from lead ${spared}. Native QRS complexes continue at the sinus rate — the model’s measurements still say sinus rhythm.`) : null,
+      art !== 'none' ? p(`**${art === 'motion' ? 'Motion' : 'Tremor'} artefact at ${el}:** appears in every lead that uses ${el} (full size in two bipolar leads and in ${ownAug}, half size in the other two augmented leads, one-third size in every chest lead) and is absent from lead ${spared}. Native QRS complexes continue at the sinus rate — the model’s measurements still say sinus rhythm.`) : null,
       ].filter((x): x is HTMLParagraphElement => !!x),
     );
   };
