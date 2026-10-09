@@ -12,6 +12,8 @@ import { ExplainerView } from './explainer';
 import { h } from './dom';
 import { button, segmented } from './controls';
 import type { Heart3D } from './heart3d';
+import { HemoView } from './hemoView';
+import { simulateHemo, type HemoResult } from '../engine/hemo';
 
 export interface PanelOptions extends Partial<EcgViewOptions> {
   duration?: number;
@@ -20,6 +22,8 @@ export interface PanelOptions extends Partial<EcgViewOptions> {
   heart3d?: boolean;
   /** Larger heart (dedicated 3-D page). */
   large?: boolean;
+  /** Mechanics & haemodynamics section (Wiggers diagram, sounds, JVP, PV loop): 'open', 'closed' (default with a heart) or false. */
+  hemo?: 'open' | 'closed' | false;
   measurements?: boolean;
   compact?: boolean;
   layoutToggle?: boolean;
@@ -56,6 +60,9 @@ export class EcgPanel {
   private heartSlot: HTMLDivElement | null = null;
   private explainer: ExplainerView | null = null;
   private mode: '3d' | '2d' = '2d';
+  private hemoDetails: HTMLDetailsElement | null = null;
+  private hemoView: HemoView | null = null;
+  private hemoRes: HemoResult | null = null;
   private opts: PanelOptions;
   private destroyed = false;
 
@@ -113,7 +120,14 @@ export class EcgPanel {
       this.heartSlot.append(this.heart.root);
       if (want3d) void this.setMode('3d');
     }
-    const body = h('div', { class: 'panel-body' }, top, playback, h('div', { class: 'panel-ecg' }, this.view.el));
+    if (opts.heart && opts.hemo !== false) {
+      this.hemoDetails = h('details', { class: 'hemo-details' }, h('summary', null, h('strong', null, 'Mechanics & haemodynamics'), ' — pressures, valves, heart sounds, JVP and the pressure–volume loop, driven by this rhythm'));
+      this.hemoDetails.addEventListener('toggle', () => {
+        if (this.hemoDetails!.open) this.ensureHemoView();
+      });
+      if (opts.hemo === 'open') this.hemoDetails.open = true;
+    }
+    const body = h('div', { class: 'panel-body' }, top, playback, this.hemoDetails, h('div', { class: 'panel-ecg' }, this.view.el));
     this.el = h('div', { class: `ecg-panel ${opts.compact ? 'compact' : ''}` }, tools, body, opts.measurements === false ? null : this.meas);
     if (opts.heart) {
       this.el.tabIndex = -1;
@@ -180,7 +194,7 @@ export class EcgPanel {
         }
         this.heartSlot.replaceChildren(this.heart3d.root);
         this.mode = '3d';
-        if (this.run) this.heart3d.setRun(this.run);
+        if (this.run) this.heart3d.setRun(this.run, this.getHemo());
         this.heart3d.setTime(this.t);
         return;
       } catch {
@@ -202,11 +216,35 @@ export class EcgPanel {
     return run;
   }
 
+  /** Haemodynamics for the current run (computed once per run, on demand). */
+  getHemo(): HemoResult | null {
+    if (!this.run) return null;
+    if (!this.hemoRes) this.hemoRes = simulateHemo(this.run);
+    return this.hemoRes;
+  }
+
+  private ensureHemoView(): void {
+    if (!this.hemoDetails) return;
+    if (!this.hemoView) {
+      this.hemoView = new HemoView();
+      this.hemoView.onSeek = (t) => {
+        this.stop();
+        this.setTime(t);
+      };
+      this.hemoDetails.append(this.hemoView.el);
+    }
+    if (this.run) this.hemoView.setRun(this.run, this.getHemo() ?? undefined);
+    this.hemoView.setTime(this.t);
+  }
+
   setRun(run: EcgRun): void {
     this.run = run;
+    this.hemoRes = null;
     this.view.setRun(run);
     this.heart?.setRun(run);
-    this.heart3d?.setRun(run);
+    if (this.heart3d && this.mode === '3d') this.heart3d.setRun(run, this.getHemo());
+    // A closed haemodynamics section is refreshed when it is next opened (ensureHemoView).
+    if (this.hemoView && this.hemoDetails?.open) this.hemoView.setRun(run, this.getHemo() ?? undefined);
     this.renderMeasurements();
     this.opts.onRun?.(run);
     if (this.scrub) this.scrub.max = String(run.sim.duration);
@@ -236,6 +274,7 @@ export class EcgPanel {
     this.view.setCursorAndSegment(this.t, m ? { t0: m.phase.t0, t1: m.phase.t1, label: m.phase.id === 'blockedP' ? 'blocked P' : m.phase.id } : null);
     if (this.mode === '3d') this.heart3d?.setTime(this.t);
     else this.heart?.setTime(this.t);
+    if (this.hemoView && this.hemoDetails?.open) this.hemoView.setTime(this.t);
     if (this.scrub) this.scrub.value = String(Math.round(this.t));
     if (this.timeOut) this.timeOut.textContent = `${Math.round(this.t)} ms`;
   }
@@ -308,6 +347,7 @@ export class EcgPanel {
     this.destroyed = true;
     this.stop();
     this.view.destroy();
+    this.hemoView?.destroy();
     this.heart3d?.destroy();
     this.heart3d = null;
   }

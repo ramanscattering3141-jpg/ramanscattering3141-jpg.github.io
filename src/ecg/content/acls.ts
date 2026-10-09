@@ -25,7 +25,7 @@ export const ACLS: AclsCard[] = [
     title: 'Cardiac arrest — VF / pulseless VT (shockable)',
     presets: ['vf', 'pulselessVT'],
     dx: 'vf',
-    recognition: ['Unresponsive, no normal breathing, no pulse', 'VF: chaotic waveform, no QRS; pVT: regular wide-complex tachycardia without pulse'],
+    recognition: ['Unresponsive, no normal breathing, no pulse', 'VF: chaotic waveform, no QRS; pVT: VT (usually a regular wide-complex tachycardia) without a pulse'],
     action: ['Start high-quality CPR (rate 100–120/min, depth ≥ 5 cm, full recoil, minimise interruptions); give oxygen, attach monitor/defibrillator', 'Shock as soon as possible, then resume CPR immediately for 2 min; rhythm check every 2 min', 'IV/IO access; advanced airway with capnography when appropriate', 'Treat reversible causes (Hs & Ts)'],
     drugs: ['Epinephrine 1 mg IV/IO every 3–5 min', 'Amiodarone 300 mg IV/IO bolus, second dose 150 mg — or lidocaine 1–1.5 mg/kg, then 0.5–0.75 mg/kg (shock-refractory VF/pVT)'],
     electrical: ['Biphasic: manufacturer recommendation (e.g. initial 120–200 J); if unknown, use maximum available. Subsequent doses equivalent or higher', 'VF/pVT persisting after ≥ 3 shocks: usefulness of vector change (anterior–posterior pads) or double sequential external defibrillation not established (Class 2b, 2025)'],
@@ -40,7 +40,7 @@ export const ACLS: AclsCard[] = [
     recognition: ['PEA: organised electrical activity, no pulse', 'Asystole: flat line (confirm in 2 leads, check gain/leads)'],
     action: ['High-quality CPR', 'Epinephrine as soon as possible', 'Rhythm check every 2 min; shock only if the rhythm becomes shockable', 'Search for and treat reversible causes: Hypovolaemia, Hypoxia, Hydrogen ion (acidosis), Hypo/Hyperkalaemia, Hypothermia; Tension pneumothorax, Tamponade, Toxins, Thrombosis (pulmonary, coronary)'],
     drugs: ['Epinephrine 1 mg IV/IO every 3–5 min'],
-    electrical: ['No defibrillation; transcutaneous pacing is not recommended for asystolic arrest'],
+    electrical: ['No defibrillation; routine pacing is not recommended in asystolic arrest (Class 3: No Benefit)'],
     why: 'There is no chaotic rhythm to reset: electricity is present (PEA) or absent (asystole), but output is missing. Only CPR, vasopressor support and correcting the cause restore circulation.',
   },
   {

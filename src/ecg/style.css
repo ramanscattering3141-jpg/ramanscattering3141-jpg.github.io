@@ -1294,3 +1294,206 @@ table.t th {
   margin-right: 4px;
   vertical-align: -1px;
 }
+
+/* ---- 3-D heart: inspector, colour-mode legends ---- */
+.h3d-lab.cor {
+  color: #ff9e9e;
+}
+.h3d-leg i.grad {
+  width: 70px;
+}
+.h3d-leg i.grad.volt {
+  background: linear-gradient(90deg, #1a237e, #1e88e5 20%, #26c6da 45%, #ffee58 70%, #fb8c00 85%, #d50000);
+}
+.h3d-leg i.grad.iso {
+  background: linear-gradient(90deg, hsl(0 85% 52%), hsl(60 85% 52%), hsl(140 85% 52%), hsl(200 85% 52%), hsl(280 85% 52%));
+}
+.h3d-insp {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 0.84rem;
+}
+.h3d-insp h4 {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+}
+.h3d-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 4px 0;
+}
+.h3d-dl {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+.h3d-dl div {
+  display: grid;
+  grid-template-columns: 9.5em 1fr;
+  gap: 8px;
+}
+.h3d-dl dt {
+  color: var(--muted);
+}
+.h3d-dl dd {
+  margin: 0;
+}
+.h3d-cur {
+  margin: 6px 0 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+}
+.h3d-ap {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  aspect-ratio: 320 / 120;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: block;
+}
+
+/* ---- Mechanics & haemodynamics ---- */
+.hemo-details {
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.hemo-details > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+.hemo {
+  padding: 0 10px 10px;
+}
+.hemo-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: start;
+}
+.hemo-phase p {
+  margin: 4px 0 0;
+  font-size: 0.84rem;
+}
+.hemo-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #111;
+}
+.hemo-valves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  justify-content: flex-end;
+  max-width: 440px;
+  font-size: 0.76rem;
+}
+.hemo-valve {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.hemo-valve.open {
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+  color: var(--good);
+}
+.hemo-valve.shut {
+  color: var(--muted);
+}
+.hemo-live {
+  width: 100%;
+  text-align: right;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+}
+.hemo-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+  margin: 8px 0;
+}
+.hemo-tile {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+.hemo-tile .k {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.hemo-tile .v {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+.hemo-tile .s {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.hemo-tile.warn {
+  border-color: var(--danger);
+}
+.hemo-tile.warn .v {
+  color: var(--danger);
+}
+.hemo-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 10px;
+  align-items: start;
+}
+.hemo-wig {
+  width: 100%;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: crosshair;
+}
+.hemo-pv {
+  width: 100%;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.hemo-cap {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.hemo-ctl {
+  margin-top: 6px;
+  align-items: center;
+}
+.hemo-notes h4 {
+  margin: 10px 0 4px;
+  font-size: 0.88rem;
+}
+.hemo-notes ul {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 0.86rem;
+}
+@media (max-width: 760px) {
+  .hemo-row,
+  .hemo-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hemo-valves {
+    justify-content: flex-start;
+  }
+  .hemo-live {
+    text-align: left;
+  }
+  .h3d-dl div {
+    grid-template-columns: 7em 1fr;
+  }
+}

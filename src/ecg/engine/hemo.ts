@@ -108,6 +108,9 @@ export interface HemoResult {
   summary: HemoSummary;
   /** Plain-language mechanical notes for this rhythm (e.g. "cannon a waves"). */
   notes: string[];
+  /** LV end-systolic elastance (mmHg/mL) and unstressed volume (mL): the ESPVR line of the PV loop. */
+  lvEes: number;
+  lvV0: number;
 }
 
 export const PHASE_LABEL: Record<CyclePhase, string> = {
@@ -218,7 +221,7 @@ function paramsFor(p: Physio): Params {
   const lvStiff = Math.pow(lvMass, 1.6) * (1 + 1.4 * p.hcm) * (isch.stage !== 'none' && isch.stage !== 'old' ? 1.25 : 1) * (1 + 0.25 * p.hypothermia);
   const rvStiff = Math.pow(Math.max(0.6, p.rvMass), 1.3);
   const lv: Ventricle = { ees: 2.3 * lvK * Math.pow(lvMass, 0.4) * (1 + 0.2 * p.hcm), v0: 10, a: 0.27 * lvStiff, k: 0.03 * (1 + 0.15 * (lvMass - 1)) };
-  const rv: Ventricle = { ees: ((globalThis as unknown as { __rve?: number }).__rve ?? 0.5) * rvK * Math.pow(Math.max(0.6, p.rvMass), 0.5), v0: 15, a: 0.22 * rvStiff, k: 0.024 };
+  const rv: Ventricle = { ees: 0.5 * rvK * Math.pow(Math.max(0.6, p.rvMass), 0.5), v0: 15, a: 0.22 * rvStiff, k: 0.024 };
   const tamponade = p.alternans > 0.2 ? 6 + 10 * p.alternans : 0;
   return {
     lv,
@@ -227,10 +230,10 @@ function paramsFor(p: Physio): Params {
     ra: { emin: 0.1 / Math.pow(Math.max(0.5, p.raSize), 0.8), emax: 0.3, v0: 5 * p.raSize },
     rMv: 0.006,
     rTv: 0.005,
-    rAv: 0.004,
+    rAv: 0.008, // aortic valve + proximal aortic impedance
     lAv: 0.0006,
-    rPv: 0.003,
-    lPv: (globalThis as unknown as { __lpv?: number }).__lpv ?? 0.0016,
+    rPv: 0.03, // pulmonary valve + characteristic impedance
+    lPv: 0.0016,
     cAo: 0.35,
     rC: 0.04,
     lC: 0.0012,
@@ -256,14 +259,11 @@ function paramsFor(p: Physio): Params {
 /** Normalised activation of a contracting segment τ ms after its local mechanical onset. */
 function twitch(tau: number, tp: number, tr: number): number {
   if (tau <= 0) return 0;
-  // Brisk rise (cross-bridge recruitment), slower approach to the end-systolic peak.
   if (tau < tp) {
+    // Brisk initial rise (short isovolumetric contraction), still rising at end-systole so that
+    // ejection is elastance-limited and ends close to the end of the T wave.
     const u = tau / tp;
-    const g = (globalThis as unknown as { __tw?: number }).__tw ?? 0;
-    if (g === 0) return 0.5 * (1 - Math.cos(Math.PI * Math.pow(u, 0.62)));
-    if (g === 1) return u * (1.5 - 0.5 * u * u);
-    if (g === 2) return Math.min(1, u * (1.25 - 0.25 * u * u * u));
-    return Math.pow(u, 0.75);
+    return u * (1.5 - 0.5 * u * u);
   }
   if (tau < tp + tr) return 0.5 * (1 + Math.cos((Math.PI * (tau - tp)) / tr));
   return 0;
@@ -299,7 +299,7 @@ function segmentTiming(p: Physio, ev: VentEvent | null, qrs: number): { lv: numb
   if (!ev || ev.route === 'his') {
     let bundle = p.bundle as string;
     if (ev?.aberrant === 'rbbb' && !bundle.startsWith('rbbb')) bundle = 'rbbb';
-    if (bundle === 'lbbb') return { lv: spread(35, q - 5), rv: spread(0, 55), sync: 0.86 };
+    if (bundle === 'lbbb') return { lv: spread(45, q), rv: spread(0, 50), sync: 0.86 };
     if (bundle.startsWith('rbbb')) return { lv: spread(0, 75), rv: spread(45, q - 5), sync: 0.97 };
     if (bundle === 'ivcd') return { lv: spread(5, q - 10), rv: spread(5, q - 20), sync: 0.92 };
     return { lv: spread(0, Math.min(80, q - 10)), rv: spread(5, Math.min(75, q - 15)), sync: 1 };
@@ -318,7 +318,7 @@ function segmentTiming(p: Physio, ev: VentEvent | null, qrs: number): { lv: numb
   const fascicular = site === 'fascicularPosterior' || site === 'fascicularAnterior';
   if (fascicular) return { lv: spread(0, 70), rv: spread(40, q - 5), sync: 0.93 };
   const rvSide = VENT_SITE[site].rv;
-  return rvSide ? { lv: spread(40, q), rv: spread(0, 60), sync: 0.84 } : { lv: spread(0, q - 30), rv: spread(45, q), sync: 0.84 };
+  return rvSide ? { lv: spread(50, q), rv: spread(0, 60), sync: 0.84 } : { lv: spread(0, q - 30), rv: spread(45, q), sync: 0.84 };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -362,9 +362,15 @@ function buildActivation(run: EcgRun, P: Params, tStart: number, tEnd: number): 
     const seg = segmentTiming(p, ev, qrs);
     // Mechanical systole ends (aortic closure, S2) close to the end of the T wave: the active state
     // peaks shortly before that and decays over isovolumetric relaxation.
-    const G = globalThis as unknown as { __tpo?: number; __trf?: number };
-    const tp = Math.max(110, qt - P.emd - (G.__tpo ?? 40));
-    const tr = Math.max(80, (G.__trf ?? 0.4) * tp);
+    // Electromechanical systole (QRS onset → A2) shortens with heart rate more steeply than the QT
+    // (Weissler's regression, QS2 ≈ 546 − 2.1·HR ms in men, 549 − 2.0·HR in women); an abnormally
+    // long or short QT (drugs, ions, channelopathy) lengthens or shortens it partly.
+    const hr = 60000 / Math.max(240, rr);
+    const qs2 = (p.sex === 'F' ? 549 - 2.0 * hr : 546 - 2.1 * hr) + 0.6 * (qt - qtAtRR(410, Math.max(240, rr)));
+    const tp = Math.max(100, Math.min(qt, qs2) - P.emd - 40);
+    // Relaxation accelerates at fast rates and with sympathetic tone (frequency-dependent
+    // acceleration of relaxation), preserving some diastolic filling time.
+    const tr = Math.max(55, 0.4 * tp * Math.sqrt(Math.min(1, Math.max(0.3, rr / 800))) * (1 - 0.15 * Math.max(0, p.autonomic)));
     const poly = /poly|torsade|bidirect/i.test(ev.mechanism ?? '');
     mechV.push({ t: ev.t, ev, lvSeg: seg.lv, rvSeg: seg.rv, tp, tr, gain: seg.sync * (poly ? 0.6 : 1) });
   }
@@ -397,8 +403,7 @@ function buildActivation(run: EcgRun, P: Params, tStart: number, tEnd: number): 
     // Later-activated segments have shorter action potentials (and twitches), so the whole
     // ventricle relaxes at about the same time — as in real hearts.
     const addSeg = (arr: Float32Array, d: number, w: number, rvSide: boolean): void => {
-      const G = globalThis as unknown as { __rvo?: number; __shf?: number };
-      const tp = Math.max(90, b.tp - (G.__shf ?? 0.3) * d + (rvSide ? (G.__rvo ?? 18) : 0));
+      const tp = Math.max(90, b.tp - 0.15 * d - (rvSide ? 10 : 0));
       for (let s = s0; s < s1; s++) arr[s] += w * twitch(tStart + s - b.t - P.emd - d, tp, b.tr);
     };
     for (const d of b.lvSeg) addSeg(tmpL, d, b.gain / b.lvSeg.length, false);
@@ -764,6 +769,8 @@ export function simulateHemo(run: EcgRun): HemoResult {
     const iPre = Math.round(a.laOn - from);
     if (iPre < 0 || i >= n) continue;
     if ((out.valves[i] & 1) === 0 || (out.valves[iPre] & 1) === 0) continue;
+    // Only a contraction into a fully relaxed ventricle after early filling has ended (late diastole).
+    if (out.eLv[iPre] > 0.02 || out.qMv[iPre] > 0.3 * peakMvFlow || iPre < 60 || out.eLv[iPre - 60] > 0.02) continue;
     const rise = out.lvP[i] - out.lvP[iPre];
     if (rise > 5) sounds.push({ t: from + i, kind: 'S4', component: 'S4', amp: Math.min(1, (rise - 5) / 6 + 0.3) });
   }
@@ -807,13 +814,18 @@ export function simulateHemo(run: EcgRun): HemoResult {
     const i0 = Math.max(0, Math.round(t0 - from));
     const i1 = Math.min(n - 1, Math.round(t1 - from));
     if (i1 - i0 < 30) continue;
-    // End-diastole = mitral closure (or QRS onset if the valve was already shut).
-    let ied = i0;
-    for (let i = i0; i < Math.min(n, i0 + 90); i++)
-      if ((out.valves[i] & 1) === 0) {
-        ied = i;
+    // End-diastole = mitral valve closure just before ejection (or the largest pre-ejection volume).
+    let ia = -1;
+    for (let i = i0; i < Math.min(n, i0 + 250); i++)
+      if (out.valves[i] & 4) {
+        ia = i;
         break;
       }
+    let ied = i0;
+    if (ia > 0) {
+      ied = ia;
+      while (ied > Math.max(0, i0 - 200) && (out.valves[ied - 1] & 1) === 0) ied--;
+    } else for (let i = i0; i < Math.min(n, i0 + 160); i++) if (out.lvV[i] > out.lvV[ied]) ied = i;
     const edv = out.lvV[ied];
     let esv = Infinity;
     let rvEs = Infinity;
@@ -875,7 +887,7 @@ export function simulateHemo(run: EcgRun): HemoResult {
     pulseDeficit: Math.max(0, Math.round(hr - pulseRate)),
   };
 
-  return { fs, from, n, ...out, phase, pcg, valveEvents, sounds, beats, summary, notes: mechanicalNotes(run, summary, sounds, beats, mechA.length > 0, cannon, atrialBeats) };
+  return { fs, from, n, ...out, phase, pcg, valveEvents, sounds, beats, summary, notes: mechanicalNotes(run, summary, sounds, beats, mechA.length > 0, cannon, atrialBeats), lvEes: P.lv.ees, lvV0: P.lv.v0 };
 }
 
 /** Plain-language interpretation of the mechanical picture for the current rhythm. */
@@ -903,21 +915,22 @@ function mechanicalNotes(run: EcgRun, s: HemoSummary, sounds: SoundEvent[], beat
     }
     if (splits.length) {
       const m = splits.reduce((x, y) => x + y, 0) / splits.length;
-      if (m < -10) out.push(`Reversed (paradoxical) splitting of S2: P2 precedes A2 by ≈ ${Math.round(-m)} ms because the left ventricle is activated — and therefore finishes ejecting — late (LBBB, RV pacing, RV-origin ectopy).`);
-      else if (m > 45) out.push(`Wide splitting of S2 (A2–P2 ≈ ${Math.round(m)} ms): the right ventricle is activated late (RBBB / LV-origin ectopy) or ejects against a high pulmonary resistance.`);
+      if (m < -12) out.push(`Reversed (paradoxical) splitting of S2: P2 precedes A2 by ≈ ${Math.round(-m)} ms because the left ventricle is activated — and therefore finishes ejecting — late (LBBB, RV pacing, RV-origin ectopy).`);
+      else if (m > 55) out.push(`Wide splitting of S2 (A2–P2 ≈ ${Math.round(m)} ms): the right ventricle is activated late (RBBB / LV-origin ectopy) or ejects against a high pulmonary resistance.`);
     }
   }
   if (sounds.some((x) => x.kind === 'S4')) out.push('S4: atrial contraction into a stiff, non-compliant ventricle (hypertrophy, ischaemia, HCM) produces a late-diastolic sound just before S1.');
   if (sounds.some((x) => x.kind === 'S3')) out.push('S3: high atrial pressure and rapid early filling decelerating in a failing or overfilled ventricle.');
-  const s1 = sounds.filter((x) => x.component === 'M1').map((x) => x.amp);
+  const s1 = sounds.filter((x) => x.component === 'M1' && x.t > run.sig.from + 900).map((x) => x.amp);
   if (s1.length >= 4) {
-    const mx = Math.max(...s1);
-    const mn = Math.min(...s1);
-    if (mx - mn > 0.35) out.push('Variable intensity of S1: the PR interval varies (AV dissociation, Wenckebach, AF), so the mitral leaflets are at a different position each time systole starts.');
+    const mean = s1.reduce((a, b) => a + b, 0) / s1.length;
+    const varied = s1.filter((a) => Math.abs(a - mean) > 0.2 * mean).length;
+    if (varied >= Math.max(2, s1.length * 0.25)) out.push('Variable intensity of S1: the PR interval varies (AV dissociation, Wenckebach, AF), so the mitral leaflets are at a different position each time systole starts.');
   }
-  const svs = beats.filter((b) => b.ejected).map((b) => b.sv);
+  const svs = beats.filter((b) => b.ejected && b.t > run.sig.from + 800 && b.t < run.sig.from + (run.sig.n * 1000) / run.sig.fs - 450).map((b) => b.sv);
   if (s.sbp > 0 && s.sbp < 90) out.push(`Hypotension (≈ ${s.sbp}/${s.dbp} mmHg): too little filling time or contractility for an adequate stroke volume.`);
-  if (svs.length >= 3 && Math.max(...svs) - Math.min(...svs) > 25 && !cont.some((c) => c.kind === 'fib')) out.push('Stroke volume varies beat to beat with the preceding filling time (Frank–Starling).');
+  const svMean = svs.length ? svs.reduce((a, b) => a + b, 0) / svs.length : 0;
+  if (svs.length >= 3 && Math.max(...svs) - Math.min(...svs) > Math.max(25, 0.4 * svMean) && !cont.some((c) => c.kind === 'fib')) out.push('Stroke volume varies beat to beat with the preceding filling time (Frank–Starling).');
   if (p.alternans > 0.2) out.push('Large pericardial effusion with raised intrapericardial pressure: all diastolic pressures rise toward the pericardial pressure and stroke volume falls (tamponade physiology).');
   return out;
 }
