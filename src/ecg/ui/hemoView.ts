@@ -235,7 +235,8 @@ export class HemoView {
       ctx.textAlign = 'right';
       for (const v of ticks) {
         const yy = b - 4 - ((v - lo) / (hi - lo)) * (b - a - 8);
-        ctx.fillText(String(v), L - 4, yy + 3);
+        // Keep each tick label inside its own track so it never collides with the neighbour's.
+        ctx.fillText(String(v), L - 4, Math.min(b - 2, Math.max(a + 10, yy + 3)));
         ctx.strokeStyle = line;
         ctx.setLineDash([2, 3]);
         ctx.beginPath();
@@ -334,7 +335,12 @@ export class HemoView {
           lab = 'S2';
         } else dy = s.component === 'P2' ? 10 : 0;
       }
-      ctx.fillText(lab, X(s.t) - 6, box.pcg[0] + 11 + dy);
+      // S4 sits just before S1 (and S3 just after S2): anchor them away from the neighbouring label.
+      if (s.component === 'S4') {
+        ctx.textAlign = 'right';
+        ctx.fillText(lab, X(s.t) + 4, box.pcg[0] + 11 + dy);
+        ctx.textAlign = 'left';
+      } else ctx.fillText(lab, X(s.t) - 6, box.pcg[0] + 11 + dy);
     }
     ctx.font = '11px system-ui, sans-serif';
     // JVP with a / c / v labels
@@ -418,6 +424,11 @@ export class HemoView {
       if (ev.kind === 'close') {
         const c = argmax(i, Math.min(i1, i + 50));
         if (hm.eRa[c] < 0.3) put(c, 'c');
+        // x descent: atrial relaxation and descent of the AV ring during ventricular ejection,
+        // the trough between c and v (before the tricuspid valve re-opens).
+        const next = hm.valveEvents.find((e) => e.valve === 'tricuspid' && e.kind === 'open' && e.t > ev.t);
+        const zEnd = next ? Math.min(i1, Math.round(next.t - hm.from) - 40) : Math.min(i1, c + 260);
+        if (zEnd > c + 20) put(argmin(c + 10, zEnd), 'x', true);
       } else {
         const v = argmax(Math.max(i0, i - 60), i);
         if (hm.eRa[v] < 0.3) put(v, 'v');
@@ -452,6 +463,11 @@ export class HemoView {
     const vt = run.sim.ventricular.map((v) => v.t).filter((x) => x >= hm.from);
     let a = vt.filter((x) => x <= this.t).pop();
     let z = vt.find((x) => x > this.t);
+    // Before the first recorded QRS, show the first complete beat rather than a partial one.
+    if (a === undefined && vt.length > 1) {
+      a = vt[0];
+      z = vt[1];
+    }
     if (a === undefined) a = Math.max(hm.from, this.t - 900);
     if (z === undefined) z = Math.min(hm.from + hm.n - 1, a + 1200);
     if (z - a > 2500) z = a + 2500;
@@ -465,7 +481,7 @@ export class HemoView {
       pmax = Math.max(pmax, hm.lvP[i] + 10);
     }
     const L = 34;
-    const B = H - 22;
+    const B = H - 30;
     const X = (v: number): number => L + (v / vmax) * (W - L - 8);
     const Y = (pp: number): number => B - (Math.max(0, pp) / pmax) * (B - 8);
     ctx.strokeStyle = line;
@@ -478,7 +494,9 @@ export class HemoView {
     ctx.fillStyle = muted;
     ctx.font = '10px system-ui, sans-serif';
     ctx.fillText('mmHg', 2, 12);
-    ctx.fillText('LV volume (mL)', W - 86, H - 6);
+    ctx.textAlign = 'center';
+    ctx.fillText('LV volume (mL)', (L + W - 8) / 2, H - 4);
+    ctx.textAlign = 'left';
     for (const v of [0, 50, 100, 150]) if (v < vmax) ctx.fillText(String(v), X(v) - 6, B + 12);
     for (const pp of [0, 50, 100]) if (pp < pmax) ctx.fillText(String(pp), 6, Y(pp) + 3);
     // ESPVR

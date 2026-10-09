@@ -1,5 +1,6 @@
-// Source registry. Every record below was checked against its PubMed entry (PMID, DOI,
-// journal, volume and pages) on the date in `verified`. No citation in this app is
+// Source registry. Every journal record below was checked against its PubMed entry (PMID, DOI,
+// journal, volume and pages) on the date in `verified`; the one web resource (the LITFL ECG
+// library, used to cross-check named signs) is marked as such. No citation in this app is
 // invented; clinical statements reference these IDs. When a newer guideline exists it is
 // listed and flagged in `supersedes` / `note`.
 
@@ -694,6 +695,17 @@ export const SOURCES: Record<string, Source> = {
     verified: V,
     kind: 'primary',
     note: 'Original derivation of the CHA₂DS₂-VASc score.',
+  },
+  litflEcg: {
+    id: 'litflEcg',
+    authors: 'Burns E, Buttner R (Life in the Fast Lane)',
+    title: 'LITFL ECG Library: basics, diagnoses, eponyms and the Top 100 ECG cases',
+    year: 2026,
+    venue: 'Life in the Fast Lane (litfl.com), free open-access medical education; continuously updated',
+    url: 'https://litfl.com/ecg-library/',
+    verified: V,
+    kind: 'review',
+    note: 'Secondary educational resource used to cross-check the wording of named signs, criteria and patterns (each entry cites its primary literature). Not peer reviewed; guideline statements in this app cite the guidelines themselves.',
   },
   artifact1999: {
     id: 'artifact1999',

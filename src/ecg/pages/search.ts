@@ -32,7 +32,7 @@ export function renderSearch(root: HTMLElement, _parts: string[], q: URLSearchPa
 }
 
 export function renderSources(root: HTMLElement): void {
-  root.append(header('Evidence', 'Sources & evidence policy', 'Every clinically consequential module cites one or more records below. Each record was checked against PubMed (PMID, DOI, journal, volume, pages) on the verification date shown. Where a newer guideline exists it is used as the primary source (e.g. 2025 AHA ACLS, 2023 ACC/AHA/ACCP/HRS AF, 2025 ESC myocarditis & pericarditis, 2026 AHA/ACC PE).'));
+  root.append(header('Evidence', 'Sources & evidence policy', 'Every clinically consequential module cites one or more records below. Each journal record was checked against PubMed (PMID, DOI, journal, volume, pages) on the verification date shown; the LITFL ECG library (a free open-access teaching resource) is listed as a secondary source used to cross-check the wording of named signs and criteria. Where a newer guideline exists it is used as the primary source (e.g. 2025 AHA ACLS, 2023 ACC/AHA/ACCP/HRS AF, 2025 ESC myocarditis & pericarditis, 2026 AHA/ACC PE).'));
   const kinds: [string, string][] = [
     ['guideline', 'Guidelines'],
     ['consensus', 'Consensus documents'],

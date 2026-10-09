@@ -92,7 +92,7 @@ export function synthesize(p: Physio, sim: SimResult, opts: SynthOptions = {}): 
         const ph = (((t - c.t0) % cl) + cl) % cl / cl;
         const saw = ph < 0.72 ? 0.55 - ph / 0.72 : -0.45 + (ph - 0.72) / 0.28;
         const ant = Math.exp(-((ph - 0.8) ** 2) / 0.012);
-        const k = 0.16 * vfK;
+        const k = 0.24 * vfK;
         vx[i] += k * sgn * 0.08 * saw;
         vy[i] += k * sgn * saw;
         vz[i] += k * (0.25 * sgn * saw * -1 + 0.55 * ant);
@@ -224,7 +224,7 @@ export function synthesize(p: Physio, sim: SimResult, opts: SynthOptions = {}): 
         for (let j = 0; j < 40 && i + j < n; j++) arr[i + j] += 3.5 * proj * Math.exp(-j / 8) * (j < 3 ? 1 : -0.4);
         continue;
       }
-      const h = (p.rhythm.pacer.bipolar ? 0.9 : 3) * proj;
+      const h = (p.rhythm.pacer.bipolar ? 1.3 : 3) * proj;
       arr[i] += h;
       arr[i + 1] += h * 0.6;
       arr[i + 2] -= h * 0.15;

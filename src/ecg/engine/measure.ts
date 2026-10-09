@@ -44,6 +44,8 @@ export interface Measurements {
   avRelation: string;
   conductedFraction: number;
   dominant: string;
+  /** Time (ms) of the representative beat used for QRS duration and axis (null if none). */
+  repBeatT: number | null;
 }
 
 const median = (a: number[]): number => {
@@ -201,7 +203,11 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
   const domBeats = visBeats.filter((b) => b.ev.mechanism === dominant);
   const domNormal = domBeats.filter((b) => b.ev.aberrant === 'none' && !isPremature(b.ev));
   const domPool = domNormal.length ? domNormal : domBeats;
-  const mid = domPool[Math.floor(domPool.length / 2)];
+  // Representative beat: the one of median QRS width (in a stable order, so with a constant
+  // morphology it is simply the middle beat). Rhythms whose width varies beat to beat (pre-excited
+  // AF, fusion) are then described by a typical complex rather than an arbitrary one.
+  const byWidth = [...domPool].sort((a, b) => a.morph.qrsDur - b.morph.qrsDur);
+  const mid = byWidth.length ? (new Set(byWidth.map((b) => Math.round(b.morph.qrsDur))).size === 1 ? domPool[Math.floor(domPool.length / 2)] : byWidth[Math.floor(byWidth.length / 2)]) : undefined;
   const qrs = mid ? Math.round(mid.morph.qrsDur) : null;
 
   // QT is only meaningful for organised non-tachyarrhythmic beats: prefer supraventricular/paced
@@ -281,5 +287,6 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
     avRelation,
     conductedFraction: as.length ? conducted / as.length : 0,
     dominant,
+    repBeatT: mid ? mid.ev.t : null,
   };
 }

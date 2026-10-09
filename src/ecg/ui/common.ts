@@ -37,7 +37,7 @@ export function refList(ids: string[]): HTMLElement {
         'li',
         null,
         h('strong', null, s.title),
-        h('div', { class: 'ref-meta' }, `${s.authors}. ${s.venue}. `, s.doi ? h('a', { href: `https://doi.org/${s.doi}`, target: '_blank', rel: 'noopener' }, `doi:${s.doi}`) : null, s.pmid ? ` · PMID ${s.pmid}` : '', ` · verified ${s.verified}`),
+        h('div', { class: 'ref-meta' }, `${s.authors}. ${s.venue}. `, s.doi ? h('a', { href: `https://doi.org/${s.doi}`, target: '_blank', rel: 'noopener' }, `doi:${s.doi}`) : s.url ? h('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.url.replace(/^https?:\/\//, '')) : null, s.pmid ? ` · PMID ${s.pmid}` : '', ` · verified ${s.verified}`),
         s.note ? h('div', { class: 'ref-meta' }, s.note) : null,
       ),
     );

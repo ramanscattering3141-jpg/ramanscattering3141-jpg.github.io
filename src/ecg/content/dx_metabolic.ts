@@ -131,7 +131,7 @@ export const METABOLIC_DX: Dx[] = [
     preset: 'hypothermia',
     definition: 'Core temperature < 35 °C; ECG changes become prominent below ~32 °C.',
     mechanism: 'Cold enhances the transient outward current (Ito) notch in epicardium more than endocardium → transmural voltage gradient at the J point (Osborn wave); it slows all ion-channel kinetics (bradycardia, prolonged PR/QRS/QT) and predisposes to AF and VF.',
-    ecg: ['J (Osborn) waves: positive hump at the J point, most visible in inferior/lateral leads, larger with colder temperature', 'Sinus bradycardia, prolonged PR, QRS, QT', 'Shivering artefact', 'AF (often slow), VF at very low temperatures'],
+    ecg: ['J (Osborn) waves: positive hump at the J point, most prominent in the mid–lateral precordial (V4–V5) and inferolateral leads, negative in aVR and V1; taller with colder temperature (typically < 30 °C)', 'Sinus bradycardia, prolonged PR, QRS, QT', 'Shivering artefact', 'AF (often slow), VF at very low temperatures'],
     why: [
       { level: 'cell', text: 'Epicardial phase-1 notch deepens relative to endocardium.' },
       { level: 'vector', text: 'Transmural gradient at the end of depolarisation → a J-point vector.' },

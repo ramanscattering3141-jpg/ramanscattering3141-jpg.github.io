@@ -163,6 +163,8 @@ interface Params {
   rPv: number;
   lPv: number;
   cAo: number;
+  /** Viscoelastic (wall-viscosity) resistance of the proximal aorta: damps valve–aorta ringing. */
+  rWall: number;
   rC: number;
   lC: number;
   cSa: number;
@@ -235,7 +237,8 @@ function paramsFor(p: Physio): Params {
     rPv: 0.03, // pulmonary valve + characteristic impedance
     lPv: 0.0016,
     cAo: 0.35,
-    rC: 0.04,
+    rWall: 0.02,
+    rC: 0.06,
     lC: 0.0012,
     cSa: 1.15 * (1 - Math.min(0.45, Math.max(0, p.age - 40) * 0.008)),
     rSys: 0.95 * (1 + 0.25 * Math.max(0, symp)) * (1 + 0.3 * p.hypothermia),
@@ -490,6 +493,8 @@ function integrate(P: Params, act: Activation, from: number, n: number, dtMs: nu
   let Ppv = 8;
   let Psv = Math.max(2, (P.totalStressed - (Vlv + Vrv + Vla + Vra + P.cAo * Pao + P.cSa * Psa + P.cPa * Ppa + P.cPv * Ppv)) / P.cSv);
   let Qav = 0;
+  let avBack = 0;
+  let pvBack = 0;
   let Qpv = 0;
   let Qc = 0;
   let avOpen = false;
@@ -523,6 +528,8 @@ function integrate(P: Params, act: Activation, from: number, n: number, dtMs: nu
     const eRv = act.rv[i0] + (act.rv[i0 + 1] - act.rv[i0]) * fr;
     const eLa = act.la[i0] + (act.la[i0 + 1] - act.la[i0]) * fr;
     const eRa = act.ra[i0] + (act.ra[i0 + 1] - act.ra[i0]) * fr;
+    // Proximal aortic pressure = elastic (capacitor) pressure + viscous wall term (Voigt element).
+    const PaoE = Pao + P.rWall * (Qav - Qc);
     // Descent of the AV plane during ejection enlarges the atria (x descent of the JVP).
     const Plv = vPress(P.lv, eLv, Vlv);
     const Prv = vPress(P.rv, eRv, Vrv);
@@ -530,10 +537,14 @@ function integrate(P: Params, act: Activation, from: number, n: number, dtMs: nu
     const Pra = aPress(P.ra, eRa, Vra, 0.32 * Math.max(0, rvEdv - Vrv));
 
     // AV valves: pressure-driven with a little hysteresis (no chatter at equal pressures).
-    const mvNow: boolean = mvOpen ? Pla >= Plv : Pla > Plv + 0.4 && t - mvT > 25;
-    const tvNow: boolean = tvOpen ? Pra >= Prv : Pra > Prv + 0.3 && t - tvT > 25;
-    const Qmv = mvNow ? (Pla - Plv) / P.rMv : 0;
-    const Qtv = tvNow ? (Pra - Prv) / P.rTv : 0;
+    // Once open, the leaflets only coapt when the ventricle builds a small closing pressure: after
+    // atrial relaxation the gradient merely reverses by a fraction of a mmHg and forward flow simply
+    // stops (blood momentum keeps the leaflets apart), so closure — and S1 — follows the onset of
+    // ventricular contraction, after the QRS, as in real hearts.
+    const mvNow: boolean = mvOpen ? Plv - Pla < 2.5 : Pla > Plv + 0.4 && t - mvT > 25;
+    const tvNow: boolean = tvOpen ? Prv - Pra < 2 : Pra > Prv + 0.3 && t - tvT > 25;
+    const Qmv = mvNow ? Math.max(0, Pla - Plv) / P.rMv : 0;
+    const Qtv = tvNow ? Math.max(0, Pra - Prv) / P.rTv : 0;
     if (mvNow !== mvOpen) {
       if (t >= from) valveEvents.push({ t, valve: 'mitral', kind: mvNow ? 'open' : 'close' });
       mvT = t;
@@ -557,18 +568,22 @@ function integrate(P: Params, act: Activation, from: number, n: number, dtMs: nu
     if (Qmv > peakMvFlow && t > from) peakMvFlow = Qmv;
 
     // Semilunar valves cannot re-open until the ventricle has relaxed after closing.
-    if (!avOpen && Plv > Pao + 0.5 && t - avT > 150) {
+    if (!avOpen && Plv > PaoE + 0.5 && t - avT > 150) {
       avOpen = true;
       if (t >= from) valveEvents.push({ t, valve: 'aortic', kind: 'open' });
     }
     if (avOpen) {
-      Qav += ((Plv - Pao - P.rAv * Qav) / P.lAv) * dt;
-      if (Qav <= 0) {
+      Qav += ((Plv - PaoE - P.rAv * Qav) / P.lAv) * dt;
+      // A small regurgitant "closing volume" flows back before the cusps coapt: the brief backflow
+      // and its sudden arrest write the incisura (dicrotic notch) on the aortic pressure.
+      if (Qav < 0) avBack += -Qav * dt;
+      if (Qav <= 0 && avBack > 0.8) {
         Qav = 0;
+        avBack = 0;
         avOpen = false;
         avT = t;
         if (t >= from) valveEvents.push({ t, valve: 'aortic', kind: 'close' });
-        closes.push({ t, valve: 'aortic', flow: 0, p: Pao, dpdt: 0 });
+        closes.push({ t, valve: 'aortic', flow: 0, p: PaoE, dpdt: 0 });
       }
     }
     if (!pvOpen && Prv > Ppa + 0.5 && t - pvT > 150) {
@@ -577,15 +592,17 @@ function integrate(P: Params, act: Activation, from: number, n: number, dtMs: nu
     }
     if (pvOpen) {
       Qpv += ((Prv - Ppa - P.rPv * Qpv) / P.lPv) * dt;
-      if (Qpv <= 0) {
+      if (Qpv < 0) pvBack += -Qpv * dt;
+      if (Qpv <= 0 && pvBack > 0.8) {
         Qpv = 0;
+        pvBack = 0;
         pvOpen = false;
         pvT = t;
         if (t >= from) valveEvents.push({ t, valve: 'pulmonary', kind: 'close' });
         closes.push({ t, valve: 'pulmonary', flow: 0, p: Ppa, dpdt: 0 });
       }
     }
-    Qc += ((Pao - Psa - P.rC * Qc) / P.lC) * dt;
+    Qc += ((PaoE - Psa - P.rC * Qc) / P.lC) * dt;
     const Qsys = (Psa - Psv) / P.rSys;
     const dv = Psv - Pra;
     const Qvr = dv > 0 ? dv / P.rVr : dv / (P.rVr * 6); // venous valves limit reflux
@@ -601,7 +618,7 @@ function integrate(P: Params, act: Activation, from: number, n: number, dtMs: nu
       const i = act.t0 + s / perMs - from;
       if (i >= 0 && i < n) {
         tr.lvP[i] = Plv;
-        tr.aoP[i] = Pao;
+        tr.aoP[i] = PaoE;
         tr.laP[i] = Pla;
         tr.rvP[i] = Prv;
         tr.paP[i] = Ppa;
@@ -767,12 +784,16 @@ export function simulateHemo(run: EcgRun): HemoResult {
     if (a.gain < 0.5) continue;
     const i = Math.round(a.laOn + ATP - from);
     const iPre = Math.round(a.laOn - from);
-    if (iPre < 0 || i >= n) continue;
-    if ((out.valves[i] & 1) === 0 || (out.valves[iPre] & 1) === 0) continue;
+    // The circulation starts from an assumed state at the start of the strip; the first ~second is
+    // a settling transient (overfilled ventricle), so no S4 is reported from it.
+    if (iPre < 800 || i >= n) continue;
+    // The contraction must begin into an open mitral valve (in a stiff ventricle the kick itself may
+    // push LV pressure above LA pressure and close the valve before the atrial peak).
+    if ((out.valves[iPre] & 1) === 0) continue;
     // Only a contraction into a fully relaxed ventricle after early filling has ended (late diastole).
     if (out.eLv[iPre] > 0.02 || out.qMv[iPre] > 0.3 * peakMvFlow || iPre < 60 || out.eLv[iPre - 60] > 0.02) continue;
     const rise = out.lvP[i] - out.lvP[iPre];
-    if (rise > 5) sounds.push({ t: from + i, kind: 'S4', component: 'S4', amp: Math.min(1, (rise - 5) / 6 + 0.3) });
+    if (rise > 7) sounds.push({ t: from + i, kind: 'S4', component: 'S4', amp: Math.min(1, (rise - 7) / 6 + 0.3) });
   }
   sounds.sort((a, b) => a.t - b.t);
 

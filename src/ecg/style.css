@@ -624,7 +624,15 @@ table.t th {
 .ecg-base {
   display: block;
 }
+.ecg-scale {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .ecg-readout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
   font-size: 0.78rem;
   color: var(--muted);
   padding: 3px 8px;
@@ -879,6 +887,7 @@ table.t th {
   font-size: 0.85rem;
 }
 .refs li {
+  overflow-wrap: anywhere;
   margin: 6px 0;
 }
 .ref-meta {

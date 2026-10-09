@@ -19,7 +19,7 @@ import { add, blend, clamp, len, norm, rotFrontal, rotHorizontal, scale, smooths
 import { atrialAmpFactor, atrialWidthFactor, hyperKT, hypoK, qtAtRR, qtcEffective, ventricularWidthFactor, voltageFactor } from './derived';
 import { mulberry32 } from './random';
 
-export type Shape = 'bump' | 'tskew' | 'plateau' | 'spike' | 'sag' | 'decay' | 'ramp';
+export type Shape = 'bump' | 'tskew' | 'plateau' | 'spike' | 'sag' | 'decay' | 'ramp' | 'tent';
 
 export interface Comp {
   t0: number;
@@ -70,6 +70,12 @@ export function shapeAt(s: Shape, u: number): number {
       return smoothstep(0, 0.1, u) * (1 - smoothstep(0.55, 1, u));
     case 'spike':
       return u < 0.5 ? u * 2 : (1 - u) * 2;
+    case 'tent': {
+      // Hyperkalaemic T wave: symmetrical, narrow-based and sharply peaked ("tented"),
+      // with gently rounded feet.
+      const x = 1 - Math.abs(2 * u - 1);
+      return Math.pow(x, 1.6) * smoothstep(0, 0.12, x);
+    }
     case 'sag':
       // Digoxin "reverse tick": gradual sagging depression that recovers into the T wave.
       return Math.sin(Math.PI * Math.pow(u, 0.75));
@@ -85,7 +91,7 @@ export function shapeAt(s: Shape, u: number): number {
 }
 
 /** ∫shape du for area calculations. */
-const SHAPE_AREA: Record<Shape, number> = { bump: 0.5, tskew: 0.5, plateau: 0.7, spike: 0.5, sag: 0.62, decay: 0.44, ramp: 0.4 };
+const SHAPE_AREA: Record<Shape, number> = { bump: 0.5, tskew: 0.5, plateau: 0.7, spike: 0.5, sag: 0.62, decay: 0.44, ramp: 0.4, tent: 0.38 };
 
 export function areaVector(comps: Comp[]): Vec3 {
   let a: Vec3 = ZERO;
@@ -104,7 +110,7 @@ const D = {
   basal: norm(vec(-0.3, -0.62, -0.7)),
   rvFree: norm(vec(-0.72, 0.3, 0.62)),
   rvLate: norm(vec(-0.62, 0.12, 0.78)), // unopposed late RV activation in RBBB
-  tNormal: norm(vec(0.55, 0.68, 0.35)),
+  tNormal: norm(vec(0.55, 0.64, 0.52)),
   cavity: norm(vec(-0.75, -0.55, 0.25)), // toward aVR / ventricular cavity
   lv: norm(vec(0.75, 0.35, -0.55)),
   // Hypertrophied basal septum: its (normally small) left→right initial force becomes large and
@@ -194,21 +200,21 @@ export function buildP(p: Physio, site: AtrialSite): PMorph {
   const comps: Comp[] = [];
   let pDur: number;
   if (s.order === 'RA') {
-    const raDur = 55 * w * (0.85 + 0.15 * p.raSize);
-    const laOn = (32 + p.interatrialDelay) * w;
-    const laDur = 52 * w * (0.8 + 0.35 * la);
-    comps.push({ t0: 0, dur: raDur, dir: rot(s.ra), amp: 0.14 * ra * ampK, shape: 'bump', tag: 'RA' });
-    comps.push({ t0: laOn, dur: laDur, dir: rot(s.la), amp: 0.085 * la * ampK, shape: 'bump', tag: 'LA' });
+    const raDur = 62 * w * (0.85 + 0.15 * p.raSize);
+    const laOn = (36 + p.interatrialDelay) * w;
+    const laDur = 58 * w * (0.8 + 0.35 * la);
+    comps.push({ t0: 0, dur: raDur, dir: rot(s.ra), amp: 0.165 * ra * ampK, shape: 'bump', tag: 'RA' });
+    comps.push({ t0: laOn, dur: laDur, dir: rot(s.la), amp: 0.088 * la * ampK, shape: 'bump', tag: 'LA' });
     pDur = Math.max(raDur, laOn + laDur);
   } else if (s.order === 'LA') {
     const laDur = 55 * w * (0.8 + 0.3 * la);
-    comps.push({ t0: 0, dur: laDur, dir: rot(s.la), amp: 0.09 * la * ampK, shape: 'bump', tag: 'LA' });
-    comps.push({ t0: 30 * w, dur: 55 * w, dir: rot(s.ra), amp: 0.07 * ra * ampK, shape: 'bump', tag: 'RA' });
+    comps.push({ t0: 0, dur: laDur, dir: rot(s.la), amp: 0.105 * la * ampK, shape: 'bump', tag: 'LA' });
+    comps.push({ t0: 30 * w, dur: 55 * w, dir: rot(s.ra), amp: 0.085 * ra * ampK, shape: 'bump', tag: 'RA' });
     pDur = Math.max(laDur, 85 * w);
   } else {
     // Retrograde septal activation: both atria depolarise simultaneously from the septum → short P.
     const dur = 70 * w;
-    comps.push({ t0: 0, dur, dir: rot(norm(add(s.ra, s.la))), amp: 0.14 * ampK, shape: 'bump', tag: 'retro' });
+    comps.push({ t0: 0, dur, dir: rot(norm(add(s.ra, s.la))), amp: 0.16 * ampK, shape: 'bump', tag: 'retro' });
     pDur = dur;
   }
   // Pericarditis: atrial epicardial injury current depresses the PR segment (elevates it in aVR).
@@ -511,14 +517,15 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
         tShape = 'bump';
         break;
       case 'stemi':
-        ST = add(ST, scale(n, 0.24 * e));
+        ST = add(ST, scale(n, 0.28 * e));
         // Isolated posterior injury is seen only "in the mirror" by V1–V3: horizontal ST depression
-        // while their (normally anterior) T waves stay upright.
-        T = add(T, scale(n, (isch.territory === 'posterior' ? 0.04 : 0.28) * e));
+        // ending in an upright T wave (LITFL: "upright T waves in V1–3"), the reciprocal of the
+        // posterior T-wave change; V7–V9 face the injury directly and show ST elevation.
+        T = add(T, scale(n, (isch.territory === 'posterior' ? -0.3 : 0.28) * e));
         break;
       case 'evolving':
         ST = add(ST, scale(n, 0.1 * e));
-        T = add(T, scale(n, -0.42 * e));
+        T = add(T, scale(n, -0.46 * e));
         tShape = 'bump';
         break;
       case 'old':
@@ -578,7 +585,7 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // Electrolytes.
   if (hk > 0) {
     T = scale(T, 1 + 1.6 * hk);
-    tShape = 'bump';
+    tShape = hk > 0.3 ? 'tent' : 'bump';
   }
   if (lk > 0) {
     T = scale(T, 1 - 0.8 * lk);
@@ -587,7 +594,7 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   if (p.drugs.digoxin > 0) {
     const d = Math.min(1.3, p.drugs.digoxin);
     const qrsDir = norm(area);
-    ST = add(ST, scale(qrsDir, -0.11 * d * vf));
+    ST = add(ST, scale(qrsDir, -0.15 * d * vf));
     T = scale(T, 1 - 0.35 * d);
   }
   if (p.drugs.qtDrug > 0) T = scale(T, 1 - 0.25 * p.drugs.qtDrug);

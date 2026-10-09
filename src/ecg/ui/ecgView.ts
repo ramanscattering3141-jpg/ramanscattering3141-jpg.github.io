@@ -63,15 +63,19 @@ export class EcgView {
   onSeek: ((t: number) => void) | null = null;
   private cal: { x0: number; x1: number; y: number } | null = null;
   private ro: ResizeObserver;
-  private readout: HTMLDivElement;
+  private readout: HTMLSpanElement;
+  private scaleTag: HTMLSpanElement;
 
   constructor(opts: EcgViewOptions) {
     this.o = { ...DEF, ...opts };
     this.base = h('canvas', { class: 'ecg-base', 'aria-hidden': 'true' });
     this.over = h('canvas', { class: 'ecg-over' });
-    this.readout = h('div', { class: 'ecg-readout', 'aria-live': 'polite' });
+    this.readout = h('span', { 'aria-live': 'polite' });
+    // Paper speed and gain sit under the tracing (not on the canvas), so they stay visible when a
+    // wide tracing scrolls horizontally on a narrow screen.
+    this.scaleTag = h('span', { class: 'ecg-scale' });
     this.scroller = h('div', { class: 'ecg-scroll' }, h('div', { class: 'ecg-stack' }, this.base, this.over));
-    this.el = h('div', { class: 'ecg-view' }, this.scroller, this.readout);
+    this.el = h('div', { class: 'ecg-view' }, this.scroller, h('div', { class: 'ecg-readout' }, this.readout, this.scaleTag));
     this.over.setAttribute('role', 'img');
     this.ro = new ResizeObserver(() => this.layout());
     this.ro.observe(this.el);
@@ -236,13 +240,19 @@ export class EcgView {
       ctx.strokeStyle = ink;
       ctx.lineWidth = isHl ? 0.36 : 0.26;
       ctx.beginPath();
+      // On a dense canvas, pairs of samples are drawn as their min and max (in time order) rather
+      // than dropping every other sample, so 1–2 ms events (pacing spikes) are never lost.
       const step = this.pxmm * mmPerMs * (1000 / sig.fs) < 0.5 ? 2 : 1;
-      for (let i = i0; i <= i1; i += step) {
-        const t = sig.from + (i * 1000) / sig.fs;
-        const x = st.x0 + (t - st.t0) * mmPerMs;
-        const yv = st.y0 - data[i] * o.gain;
-        if (i === i0) ctx.moveTo(x, yv);
-        else ctx.lineTo(x, yv);
+      const xAt = (i: number): number => st.x0 + (sig.from + (i * 1000) / sig.fs - st.t0) * mmPerMs;
+      ctx.moveTo(xAt(i0), st.y0 - data[i0] * o.gain);
+      for (let i = i0 + 1; i <= i1; i += step) {
+        if (step === 2 && i + 1 <= i1) {
+          const a = data[i];
+          const b = data[i + 1];
+          const x = xAt(i);
+          ctx.lineTo(x, st.y0 - a * o.gain);
+          ctx.lineTo(x, st.y0 - b * o.gain);
+        } else ctx.lineTo(xAt(i), st.y0 - data[i] * o.gain);
       }
       ctx.stroke();
       if (st.label) {
@@ -261,11 +271,7 @@ export class EcgView {
     }
     if (o.showLabels && this.rhythmStrip) this.drawLabels(ctx, this.rhythmStrip);
     if (o.showLadder && this.rhythmStrip) this.drawLadder(ctx, this.rhythmStrip);
-    ctx.font = `500 2.6px system-ui, sans-serif`;
-    ctx.fillStyle = ink;
-    ctx.globalAlpha = 0.65;
-    ctx.fillText(`${o.speed} mm/s · ${o.gain} mm/mV · simulated`, this.wMm - 44, 3);
-    ctx.globalAlpha = 1;
+    this.scaleTag.textContent = `${o.speed} mm/s · ${o.gain} mm/mV · simulated`;
   }
 
   private tx(st: Strip, t: number): number {

@@ -185,7 +185,7 @@ export const CONDUCTION_DX: Dx[] = [
     definition: 'QRS ≥ 120 ms, broad notched or slurred R in I, aVL, V5–V6, absent q waves in I, V5–V6, R-peak time > 60 ms in V5–V6, rS or QS in V1 (often V1–V3); ST–T usually opposite to the QRS (appropriate discordance).',
     epidemiology: 'Usually indicates underlying heart disease (hypertension, cardiomyopathy, coronary disease, aortic stenosis, degenerative); associated with LV dyssynchrony and worse outcomes in heart failure; a key indication for cardiac resynchronisation therapy (CRT) when LVEF is reduced.',
     mechanism: 'The left bundle does not conduct: the septum is activated from the RIGHT side, and the entire LV is activated slowly through working myocardium from the septum toward the lateral wall.',
-    ecg: ['QRS ≥ 120 ms (often 140–160)', 'Broad, notched ("M") R in I, aVL, V5–V6 with no septal q', 'Deep QS or rS in V1–V3', 'Discordant ST–T: STE in V1–V3, STD/TWI in I, aVL, V5–V6', 'Poor R-wave progression; left axis possible'],
+    ecg: ['QRS ≥ 120 ms (often 140–160)', 'Broad, notched ("M") R in I, aVL, V5–V6 with no septal q', 'Deep QS or rS in V1–V3', 'Discordant ST–T: STE in V1–V3, STD/TWI in I, aVL, V5–V6', 'Prolonged R-wave peak time > 60 ms in V5–V6', 'Poor R-wave progression; left axis possible'],
     normal: 'Normally the left bundle activates the septum first from left to right → small septal q in I/V6 and small r in V1.',
     why: [
       { level: 'conduction', text: 'Blocked pathway: left bundle. The septum is now activated right→left (from the right bundle).' },
@@ -212,7 +212,7 @@ export const CONDUCTION_DX: Dx[] = [
     definition: 'Frontal axis −45° to −90°, qR in aVL (R-peak time ≥ 45 ms), rS in II, III, aVF, QRS < 120 ms.',
     epidemiology: 'The most common fascicular block (the anterior fascicle is long, thin, single blood supply from LAD septal perforators).',
     mechanism: 'The anterior fascicle does not conduct, so the LV is activated first through the posterior fascicle (inferior/posterior wall) and then, late, the anterosuperior wall.',
-    ecg: ['Left axis deviation −45° to −90°', 'qR in I and aVL; rS in II, III, aVF', 'QRS normal or slightly prolonged (< 120 ms)', 'May reduce R-wave amplitude in inferior leads (pseudo-inferior MI) or increase aVL voltage (confounds LVH criteria)'],
+    ecg: ['Left axis deviation −45° to −90°', 'qR in I and aVL; rS in II, III, aVF', 'Prolonged R-wave peak time in aVL (≥ 45 ms)', 'QRS normal or slightly prolonged (< 120 ms)', 'May reduce R-wave amplitude in inferior leads (pseudo-inferior MI) or increase aVL voltage (confounds LVH criteria)'],
     why: [
       { level: 'conduction', text: 'Blocked pathway: left anterior fascicle. Activation starts via the posterior fascicle.' },
       { level: 'vector', text: 'Initial forces point inferiorly/rightward (small r in II/III/aVF, small q in I/aVL).' },
@@ -234,7 +234,7 @@ export const CONDUCTION_DX: Dx[] = [
     preset: 'lpfb',
     definition: 'Frontal axis +90° to +180°, rS in I and aVL, qR in III and aVF, QRS < 120 ms — after excluding other causes of right axis deviation (RVH, lateral MI, vertical heart, PE, lead reversal).',
     mechanism: 'The broad, dual-supplied posterior fascicle rarely blocks alone. With it blocked, the LV is activated first via the anterior fascicle (superior) and then, late, the inferoposterior wall.',
-    ecg: ['Right axis deviation (≥ +90°, typically ~ +120°)', 'rS in I, aVL; qR in II, III, aVF', 'QRS < 120 ms'],
+    ecg: ['Right axis deviation (≥ +90°, typically ~ +120°)', 'rS in I, aVL; qR in II, III, aVF', 'QRS < 120 ms', 'A diagnosis of exclusion: first exclude other causes of right axis deviation (RVH, lateral MI, acute PE, a vertical heart in slim young adults)'],
     why: [
       { level: 'conduction', text: 'Blocked pathway: left posterior fascicle. Activation starts via the anterior fascicle.' },
       { level: 'vector', text: 'Initial forces superior-leftward (small r in I, q in III), then late dominant inferior-rightward forces.' },

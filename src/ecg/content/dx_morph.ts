@@ -41,7 +41,7 @@ export const MORPH_DX: Dx[] = [
     definition: 'ECG evidence of increased RV mass: right axis deviation, dominant R in V1 (R/S > 1), deep S in V5–V6, RA enlargement, RV strain (ST–T changes V1–V3).',
     epidemiology: 'Pulmonary hypertension (all causes), pulmonary stenosis, congenital heart disease, mitral stenosis, chronic lung disease.',
     mechanism: 'Normally the LV outweighs the RV and RV forces are cancelled. When the RV thickens enough to rival the LV, the net forces swing rightward and anteriorly.',
-    ecg: ['Right axis deviation (> +90°)', 'R ≥ S in V1 (qR or tall R), deep S in V5–V6', 'P pulmonale (RA enlargement)', 'ST depression/T inversion V1–V3 (RV strain)', 'Clockwise rotation may coexist'],
+    ecg: ['Right axis deviation (≥ +110° in adults)', 'Dominant R in V1 (R/S > 1 or R ≥ 7 mm; qR pattern), deep S in V5–V6 (R/S < 1)', 'QRS < 120 ms (otherwise consider RBBB)', 'P pulmonale (RA enlargement)', 'ST depression/T inversion V1–V3 (RV strain)', 'Clockwise rotation may coexist'],
     why: [
       { level: 'vector', text: 'Extra RV mass adds a large rightward/anterior force that now dominates the LV force.' },
       { level: 'lead', text: 'V1 (anterior-right) sees the dominant force coming toward it → tall R; I and V6 see it moving away → S waves.' },

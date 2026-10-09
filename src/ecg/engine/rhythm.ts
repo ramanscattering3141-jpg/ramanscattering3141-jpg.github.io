@@ -303,6 +303,8 @@ const SUSTAINED_VT = ['VT', 'polymorphic VT', 'torsades de pointes', 'bidirectio
 export function simulate(p: Physio, opts: SimOptions): SimResult {
   const R: RhythmParams = p.rhythm;
   const rng: Rng = mulberry32(R.seed * 7919 + 13);
+  // Separate stream for the depth of concealed penetration in AF, so other rhythms keep their sequence.
+  const rngConceal: Rng = mulberry32(R.seed * 104729 + 71);
   const warm = opts.warmup ?? 4000;
   const T0 = -warm;
   const T1 = opts.duration + 400;
@@ -469,8 +471,12 @@ export function simulate(p: Physio, opts: SimOptions): SimResult {
     if (recovery < erp) {
       // Concealed conduction: a late-arriving blocked impulse partly penetrates and re-sets refractoriness.
       if (R.concealed && dir === 'ante' && recovery > erp * 0.55) {
-        if (dual) P.lastEntry = Math.max(P.lastEntry, t - erp * 0.45);
-        else P.lastExit = Math.max(P.lastExit, t - erp * 0.45);
+        // In AF, wavefronts arrive from varying directions with varying strength, so how deeply each
+        // blocked one penetrates (and how much refractoriness it re-sets) varies — the main reason
+        // the ventricular response is irregularly irregular.
+        const depth = R.atrialMechanism === 'fibrillation' ? 0.25 + 0.45 * rngConceal() : 0.45;
+        if (dual) P.lastEntry = Math.max(P.lastEntry, t - erp * depth);
+        else P.lastExit = Math.max(P.lastExit, t - erp * depth);
       }
       log(t, node, 'block', dir === 'ante' ? 'antegrade block (refractory)' : 'retrograde block (refractory)');
       if (dir === 'ante' && aIdx >= 0 && (which === 'fp' || !dual)) ladder({ row: 'AV', t0, t1: t + 30, dir, path: pathName, blocked: true });
@@ -950,7 +956,7 @@ export function simulate(p: Physio, opts: SimOptions): SimResult {
     }
   }
   if (R.atrialMechanism === 'fibrillation') {
-    for (let t = T0 + 50; t < Math.min(T1, atrialContinuousUntil); t += Math.max(95, R.afMeanCL + 45 * gauss(rng))) {
+    for (let t = T0 + 50; t < Math.min(T1, atrialContinuousUntil); t += Math.max(95, R.afMeanCL + 60 * gauss(rng))) {
       const tt = t;
       q.push(tt, () => atriaArrive(tt, { k: 'fib' }));
     }

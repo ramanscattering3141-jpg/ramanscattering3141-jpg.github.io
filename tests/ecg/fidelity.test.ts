@@ -94,14 +94,14 @@ describe('lead system and measurement formulas', () => {
     const r = C(id);
     const m = r.m;
     if (m.axis === null) return;
-    const dom = midBeat(r, (b) => b.ev.mechanism === m.dominant && b.ev.aberrant === 'none') ?? midBeat(r, (b) => b.ev.mechanism === m.dominant)!;
+    const dom = r.sig.beats.find((b) => b.ev.t === m.repBeatT)!;
     const d = Math.abs((((signalAxis(r, dom) - m.axis) % 360) + 540) % 360 - 180);
     expect(d).toBeLessThan(15);
   });
   it.each(ID.filter((id) => !['vf', 'vflutter', 'asystole'].includes(id)))('%s: reported QRS duration matches the signal (2.5 % threshold) within 12 ms', (id) => {
     const r = C(id);
     const m = r.m;
-    const dom = midBeat(r, (b) => b.ev.mechanism === m.dominant && b.ev.aberrant === 'none') ?? midBeat(r, (b) => b.ev.mechanism === m.dominant)!;
+    const dom = r.sig.beats.find((b) => b.ev.t === m.repBeatT)!;
     expect(m.qrs).toBe(Math.round(dom.morph.qrsDur));
     expect(Math.abs(qrsDurFromSignal(r, dom) - m.qrs!)).toBeLessThanOrEqual(12);
   });

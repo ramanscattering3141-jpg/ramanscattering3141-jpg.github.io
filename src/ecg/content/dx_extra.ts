@@ -136,7 +136,7 @@ export const EXTRA_DX: Dx[] = [
     definition: 'Acute proximal LAD occlusion presenting with 1–3 mm UPSLOPING ST depression at the J point in V1–V6 that continues into tall, positive, symmetric T waves, usually with 1–2 mm ST elevation in aVR — instead of precordial ST elevation.',
     epidemiology: 'Described in about 2% of anterior MIs in the original series (de Winter et al., NEJM 2008).',
     mechanism: 'Occlusion of the proximal LAD without the typical transmural ST vector (proposed explanations include anatomical variants of the Purkinje fibres and absent activation of sarcolemmal KATP channels). The hyperacute T waves reflect the ischaemic anterior wall; the J-point depression reflects a subendocardial-predominant injury vector.',
-    ecg: ['Upsloping J-point depression 1–3 mm in V1–V6', 'Tall, broad, symmetric (hyperacute) T waves in the precordial leads', 'Slight ST elevation (1–2 mm) in aVR', 'QRS usually normal or slightly widened'],
+    ecg: ['Upsloping J-point depression 1–3 mm in V1–V6', 'Tall, broad, symmetric (hyperacute) T waves in the precordial leads', 'Slight ST elevation (about 0.5–1 mm) in aVR', 'QRS usually normal or slightly widened'],
     why: [
       { level: 'cell', text: 'Acute anterior ischaemia → abnormal repolarisation of the anterior wall (tall hyperacute T).' },
       { level: 'vector', text: 'Instead of pointing toward the anterior epicardium, the early ST vector points slightly away from it (toward the cavity).' },
