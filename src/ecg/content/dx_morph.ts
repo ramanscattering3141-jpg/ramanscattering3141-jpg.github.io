@@ -206,7 +206,7 @@ export const MORPH_DX: Dx[] = [
       { level: 'clinical', text: 'High risk of re-occlusion (anterior MI) — urgent angiography; stress testing is dangerous.' },
     ],
     differential: [{ dx: 'lvh', how: 'Strain in lateral leads with high voltage.' }, { dx: 'pe', how: 'RV strain TWI V1–V4 with tachycardia, hypoxia.' }, { dx: 'Takotsubo / CNS event', how: 'Giant T inversion with long QT.' }],
-    refs: ['acs2025', 'ecgStd6'],
+    refs: ['wellens1982', 'acs2025', 'ecgStd6'],
   },
   {
     id: 'oldMI',

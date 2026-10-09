@@ -1497,3 +1497,138 @@ table.t th {
     grid-template-columns: 7em 1fr;
   }
 }
+
+/* ---- Reference pages (A–Z, eponyms, at-a-glance) ---- */
+.az-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+.az-filter {
+  flex: 1 1 260px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+}
+.az-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+.chip {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.chip.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.az-letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.az-letters a {
+  display: inline-block;
+  min-width: 26px;
+  text-align: center;
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  text-decoration: none;
+  font-weight: 600;
+}
+.az-group h2 {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+}
+.az-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  columns: 2 340px;
+  column-gap: 28px;
+}
+.az-ul li {
+  break-inside: avoid;
+  margin: 0 0 9px;
+}
+.az-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.az-cat {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.pill.az-finding {
+  background: color-mix(in srgb, var(--good) 15%, transparent);
+}
+.pill.az-sign {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+}
+.pill.az-term {
+  background: var(--accent-soft);
+}
+.epo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: 12px;
+}
+.epo-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.epo h3,
+.epo h2 {
+  margin: 0;
+}
+.epo h4 {
+  margin: 8px 0 2px;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.glance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 6px 18px;
+}
+.glance-col h3 {
+  font-size: 0.86rem;
+  margin: 4px 0 2px;
+  color: var(--muted);
+}
+.glance-col ul {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 0.88rem;
+}
+.glance-jump {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--muted);
+}
+select {
+  max-width: 100%;
+}
+.grid-2 > div {
+  min-width: 0;
+}

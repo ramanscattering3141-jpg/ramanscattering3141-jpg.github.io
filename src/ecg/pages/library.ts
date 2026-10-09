@@ -1,5 +1,6 @@
 import { h, p, ul } from '../ui/dom';
-import { bullets, dxLink, dxTile, header, openInSimulator, presetPhysio, refList, section, whyBox } from '../ui/common';
+import { bullets, dxLink, dxTile, header, jump, openInSimulator, presetPhysio, refList, section, slug, whyBox } from '../ui/common';
+import { eponymsForDx } from '../content/eponyms';
 import { EcgPanel } from '../ui/panel';
 import { button, segmented, toggle } from '../ui/controls';
 import { isReviewed, setReviewed } from '../ui/progress';
@@ -68,6 +69,38 @@ export function managementBlock(m: Management): HTMLElement {
   return h('div', { class: 'table-scroll' }, h('table', { class: 't' }, h('tbody', null, ...rows.map(([k, v]) => h('tr', null, h('th', { style: 'width:190px' }, k), h('td', null, typeof v === 'string' ? p(v) : v))))));
 }
 
+/** LITFL-style summary at the top of each diagnosis page. */
+function atAGlance(d: Dx): HTMLElement {
+  const signs = eponymsForDx(d.id);
+  const col = (title: string, body: HTMLElement | null): HTMLElement | null => (body ? h('div', { class: 'glance-col' }, h('h3', null, title), body) : null);
+  const diffs = d.differential.slice(0, 5);
+  const jumps: [string, string][] = [
+    ...(d.preset ? [['Interactive ECG', 'sec-interactive-ecg'] as [string, string]] : []),
+    ['Why', 'sec-why'],
+    ['Mechanism', `sec-${slug('Electrophysiological mechanism')}`],
+    ['ECG findings', `sec-${slug('ECG findings')}`],
+    ['Differential', `sec-${slug('Differential diagnosis')}`],
+    ...(d.presentation || d.causes || d.complications ? [['Clinical', `sec-${slug('Clinical')}`] as [string, string]] : []),
+    ...(d.management ? [['Management', `sec-${slug('Management — mechanism-linked')}`] as [string, string]] : d.acute || d.longTerm || d.cautions ? [['Management', `sec-${slug('Management')}`] as [string, string]] : []),
+    ...(d.pearls ? [['Pearls', `sec-${slug('Pearls')}`] as [string, string]] : []),
+    ['References', 'sec-references'],
+  ];
+  return h(
+    'section',
+    { class: 'card glance', 'aria-label': 'At a glance' },
+    h('h2', null, 'At a glance'),
+    h(
+      'div',
+      { class: 'glance-grid' },
+      col('Key ECG features', ul(d.ecg.slice(0, 5))),
+      col('Common causes', d.causes?.length ? ul(d.causes.slice(0, 6)) : null),
+      col('Don’t confuse with', diffs.length ? h('ul', null, ...diffs.map((x) => h('li', null, dxLink(x.dx)))) : null),
+      col('Named signs', signs.length ? h('ul', null, ...signs.map((e) => h('li', null, h('a', { href: `#/eponyms/${e.id}` }, e.name)))) : null),
+    ),
+    h('nav', { class: 'glance-jump', 'aria-label': 'On this page' }, h('span', null, 'On this page: '), ...jumps.map(([l, id]) => jump(l, id))),
+  );
+}
+
 export function renderDx(root: HTMLElement, parts: string[]): (() => void) | void {
   const d = resolveDx(parts[0] ?? '');
   if (!d) {
@@ -77,6 +110,7 @@ export function renderDx(root: HTMLElement, parts: string[]): (() => void) | voi
   root.append(header(CATEGORY_LABEL[d.category as Category], d.name, d.definition));
   const reviewed = toggle('Mark as reviewed (saved in this browser)', isReviewed(d.id), (v) => setReviewed(d.id, v));
   root.append(h('div', null, h('span', { class: `pill ${d.tier === 1 ? 'core' : ''}` }, d.tier === 1 ? 'core curriculum' : d.tier === 2 ? 'important' : 'advanced'), ...(d.aliases ?? []).slice(0, 6).map((a) => h('span', { class: 'pill' }, a))), h('div', { class: 'btn-row' }, reviewed, h('a', { href: '#/path' }, 'Learning path & progress →')));
+  root.append(atAGlance(d));
 
   let panel: EcgPanel | null = null;
   if (d.preset) {
@@ -111,11 +145,13 @@ export function renderDx(root: HTMLElement, parts: string[]): (() => void) | voi
       }),
       button('Open in simulator →', () => openInSimulator(phys), 'btn-primary'),
     );
-    root.append(h('section', { class: 'card' }, h('h2', null, 'Interactive ECG (generated from physiology)'), controls, note, panel.el));
+    root.append(h('section', { class: 'card', id: 'sec-interactive-ecg' }, h('h2', null, 'Interactive ECG (generated from physiology)'), controls, note, panel.el));
     show();
   }
 
-  root.append(whyBox(d.name, d.why, d.normal));
+  const wb = whyBox(d.name, d.why, d.normal);
+  wb.id = 'sec-why';
+  root.append(wb);
   root.append(section('Electrophysiological mechanism', p(d.mechanism)));
   root.append(section('ECG findings', ul(d.ecg)));
   if (d.epidemiology) root.append(section('Epidemiology', p(d.epidemiology)));
@@ -130,7 +166,9 @@ export function renderDx(root: HTMLElement, parts: string[]): (() => void) | voi
   else if (d.acute || d.longTerm || d.cautions) root.append(section('Management', d.acute ? h('h3', null, 'Acute') : null, bullets(d.acute), d.longTerm ? h('h3', null, 'Long-term') : null, bullets(d.longTerm), d.cautions ? h('h3', null, 'Cautions') : null, bullets(d.cautions)));
   if (d.pearls) root.append(section('Pearls', ul(d.pearls)));
   root.append(section('Practice', h('div', { class: 'btn-row' }, h('a', { class: 'btn', href: `#/cases?dx=${d.id}` }, 'Generate a case with this diagnosis'), h('a', { class: 'btn', href: '#/challenge' }, 'Challenge mode'), h('a', { class: 'btn', href: '#/sandbox/compare' }, 'Compare with a look-alike'))));
-  root.append(refList(Array.from(new Set([...d.refs, ...(d.management?.refs ?? [])]))));
+  const rl = refList(Array.from(new Set([...d.refs, ...(d.management?.refs ?? [])])));
+  rl.id = 'sec-references';
+  root.append(rl);
   const related = ALL_DX.filter((x) => x.category === d.category && x.id !== d.id).slice(0, 6);
   if (related.length) root.append(h('h2', null, 'Related'), h('div', { class: 'grid' }, ...related.map(dxTile)));
   return () => panel?.destroy();

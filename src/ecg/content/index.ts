@@ -8,6 +8,7 @@ import { METABOLIC_DX } from './dx_metabolic';
 import { EXTRA_DX } from './dx_extra';
 import { FINDINGS } from './findings';
 import { GLOSSARY } from './glossary';
+import { EPONYMS } from './eponyms';
 import { PRESETS } from '../engine/presets';
 
 export const ALL_DX: Dx[] = [...RHYTHM_DX, ...REENTRY_DX, ...VENTRICULAR_DX, ...CONDUCTION_DX, ...MORPH_DX, ...METABOLIC_DX, ...EXTRA_DX];
@@ -90,6 +91,10 @@ const PAGES: { id: string; title: string; href: string; keys: string }[] = [
   { id: 'tools-posterior', title: 'Posterior (V7–V9) and right-sided (V4R) leads', href: '#/ischemia', keys: 'posterior leads v7 v8 v9 right sided v4r posterior mi' },
   { id: 'heart3d', title: '3-D heart & slow-motion ECG', href: '#/heart3d', keys: '3d heart three dimensional rotate rotatable anatomy slow motion step millisecond wavefront conduction animation heart vector vector loop projection' },
   { id: 'glossary', title: 'Glossary', href: '#/glossary', keys: 'glossary definitions terms vocabulary' },
+  { id: 'az', title: 'ECG library A–Z', href: '#/az', keys: 'a-z index library alphabetical list all diagnoses findings eponyms' },
+  { id: 'eponyms', title: 'Named signs, criteria & eponyms', href: '#/eponyms', keys: 'eponym eponyms named sign signs criteria pattern phenomenon wellens de winter sgarbossa brugada osborn epsilon delta ashman bix spodick cabrera josephson coumel chatterjee aslanger south african flag' },
+  { id: 'normal', title: 'Normal values & normal variants', href: '#/normal', keys: 'normal values normal ranges reference intervals pr qrs qt qtc axis p wave t wave u wave voltage normal variant athlete juvenile early repolarisation cheat sheet' },
+  { id: 'omi', title: 'STEMI equivalents, occlusion-MI patterns and mimics', href: '#/omi', keys: 'stemi equivalent equivalents omi occlusion mi mimic mimics posterior de winter hyperacute wellens aslanger south african flag avr pericarditis early repolarisation lvh lbbb brugada aneurysm takotsubo' },
   { id: 'path', title: 'Learning path & progress', href: '#/path', keys: 'learning path curriculum progress reviewed study plan' },
 ];
 
@@ -196,6 +201,15 @@ export function search(query: string): SearchHit[] {
     else if (t.includes(q) || (q.length > 3 && q.includes(t))) score += 18;
     if ((g.aka ?? []).some((a) => norm(a) === q)) score += 30;
     if (score > 0) hits.push({ kind: 'term', id: `term-${g.id}`, title: `Glossary: ${g.term}`, subtitle: g.def.slice(0, 140), href: `#/glossary/${g.id}`, score });
+  }
+  for (const e of EPONYMS) {
+    let score = 0;
+    const t = norm(e.name);
+    if (t === q) score += 40;
+    else if (t.includes(q) || (q.length > 3 && q.includes(t))) score += 22;
+    if ((e.aka ?? []).some((a) => norm(a).includes(q))) score += 20;
+    for (const w of words) if (t.includes(w)) score += 4;
+    if (score > 4) hits.push({ kind: 'term', id: `epo-${e.id}`, title: `Sign: ${e.name}`, subtitle: e.def.slice(0, 140), href: `#/eponyms/${e.id}`, score });
   }
   return hits.sort((a, b) => b.score - a.score).slice(0, 30);
 }
