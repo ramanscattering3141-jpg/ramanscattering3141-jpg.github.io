@@ -70,6 +70,13 @@ export class HemoView {
       { class: 'hemo' },
       h('div', { class: 'hemo-top' }, this.phaseBox, this.valveBox),
       this.tiles,
+      h(
+        'div',
+        { class: 'hemo-legend', 'aria-label': 'Colour band at the top of the diagram: phases of the cardiac cycle' },
+        h('span', { class: 'hemo-legend-t' }, 'Cycle phase (top band):'),
+        ...(['atrialSystole', 'isoContraction', 'rapidEjection', 'reducedEjection', 'isoRelaxation', 'rapidFilling', 'diastasis'] as CyclePhase[]).map((ph) => h('span', { class: 'hemo-leg' }, h('i', { style: `background:${PHASE_COLOR[ph]}` }), PHASE_LABEL[ph].replace(/ \(.*\)$/, ''))),
+        h('span', { class: 'hemo-leg' }, 'Valve events: MC/MO mitral closes/opens, AC/AO aortic closes/opens'),
+      ),
       h('div', { class: 'hemo-row' }, h('div', { class: 'hemo-wig-wrap' }, this.wig), h('div', { class: 'hemo-pv-wrap' }, this.pv, h('div', { class: 'hemo-cap' }, 'LV pressure–volume loop (current beat; dashed line = end-systolic pressure–volume relation)'))),
       h('div', { class: 'btn-row hemo-ctl' }, this.listenBtn, h('label', { class: 'h3d-tog' }, rightCb, ' Show right-heart pressures (RV, PA, RA)'), h('span', { class: 'hemo-cap' }, 'Click the diagram to jump to that moment.')),
       this.notesBox,
@@ -356,6 +363,11 @@ export class HemoView {
     this.labelJvp(ctx, X, box.jvp, jlo, jhi, i0, i1);
     // Valve events (left heart; right heart too when shown)
     const VL: Record<string, string> = { 'mitral-close': 'MC', 'aortic-open': 'AO', 'aortic-close': 'AC', 'mitral-open': 'MO', 'tricuspid-close': 'TC', 'pulmonary-open': 'PO', 'pulmonary-close': 'PC', 'tricuspid-open': 'TO' };
+    // Labels sit in a lane at the bottom of the volume panel; neighbours closer than a label's
+    // width are staggered onto a second row, and labels never run past the plot's right edge.
+    ctx.font = '600 10.5px system-ui, sans-serif';
+    const placed: { x0: number; x1: number; row: number }[] = [];
+    const xMax = X(t1) - 2;
     for (const ev of hm.valveEvents) {
       if (ev.t < t0 || ev.t > t1) continue;
       const right = ev.valve === 'tricuspid' || ev.valve === 'pulmonary';
@@ -370,9 +382,22 @@ export class HemoView {
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
-      ctx.fillStyle = right ? '#00897b' : muted;
-      ctx.fillText(VL[`${ev.valve}-${ev.kind}`], xx + 2, box.vol[1] - 3 - (right ? 11 : 0));
+      const lab = VL[`${ev.valve}-${ev.kind}`];
+      const wl = ctx.measureText(lab).width + 6;
+      let x0 = xx + 3;
+      if (x0 + wl > xMax) x0 = xx - 3 - wl;
+      let row = right ? 1 : 0;
+      while (placed.some((q) => q.row === row && x0 < q.x1 + 2 && x0 + wl > q.x0 - 2)) row++;
+      placed.push({ x0, x1: x0 + wl, row });
+      const yb = box.vol[1] - 4 - row * 13;
+      ctx.fillStyle = css('--panel') || '#ffffff';
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(x0, yb - 10, wl, 12);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = right ? '#00897b' : css('--ink') || '#16202b';
+      ctx.fillText(lab, x0 + 3, yb);
     }
+    ctx.font = '11px system-ui, sans-serif';
     // Cursor
     const cx = X(this.t);
     ctx.strokeStyle = css('--accent-2') || '#a15c00';

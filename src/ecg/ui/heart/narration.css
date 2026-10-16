@@ -469,3 +469,28 @@
     flex-wrap: wrap;
   }
 }
+
+/* haemodynamics legend (ui/hemoView.ts) */
+.hemo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 6px 0;
+}
+.hemo-legend-t {
+  font-weight: 600;
+}
+.hemo-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hemo-leg i {
+  width: 14px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
