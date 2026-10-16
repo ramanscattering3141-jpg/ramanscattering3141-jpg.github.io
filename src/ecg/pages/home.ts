@@ -15,7 +15,7 @@ export function renderHome(root: HTMLElement): () => void {
   const tiles: [string, string, string, string][] = [
     ['A', 'ECG Fundamentals', '#/fundamentals', 'Membrane and action potentials, vectors, the 12 leads, a rotatable activation vector, systematic interpretation.'],
     ['B', 'ECG Physiology', '#/physiology', 'Why each wave exists; activation sequence beat-by-beat; "WHY?" chains for every major finding.'],
-    ['3D', '3-D heart & slow-motion ECG', '#/heart3d', 'Rotate the heart, slow time to 0.01×, and watch the wavefront, conduction system and heart vector write each part of the ECG.'],
+    ['3D', 'Heart simulator', '#/heart3d', 'A beating 3-D heart run by the simulation: slow time to 1/100, step a millisecond at a time, and watch the impulse travel the conduction system as each wave of the ECG is written.'],
     ['C', 'ECG Simulator', '#/simulator', 'Every physiological variable on sliders, live 12-lead, ladder diagram and conduction animation.'],
     ['D', 'Rhythm Library', '#/rhythms', 'Sinus, ectopic, atrial, junctional, AVNRT, AVRT, WPW, ventricular and arrest rhythms — each with mechanism, ECG and management.'],
     ['E', 'Conduction Disorders', '#/conduction', 'AV block with selectable level and escape; bundle-branch and fascicular block step-through; pacemakers.'],

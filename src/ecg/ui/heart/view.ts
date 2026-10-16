@@ -1491,9 +1491,28 @@ export class Heart3D {
       const moving = this.controls.update();
       this.renderer.render(this.scene, this.camera);
       this.labelRenderer.render(this.scene, this.camera);
+      this.declutter();
       this.drawGizmo();
       if (moving) this.requestRender();
     });
+  }
+
+  /** Hide lower-priority labels that collide with higher-priority ones on screen. */
+  private declutter(): void {
+    const rank: Record<string, number> = { chamber: 0, run: 1, culprit: 1, sys: 2, vessel: 3 };
+    const items = this.labels
+      .filter((l) => l.obj.visible)
+      .map((l) => ({ el: l.obj.element, r: rank[l.kind] ?? 2 }))
+      .sort((a, b) => a.r - b.r);
+    const placed: DOMRect[] = [];
+    for (const it of items) {
+      it.el.style.visibility = '';
+      const b = it.el.getBoundingClientRect();
+      if (!b.width) continue;
+      const hit = placed.some((p) => b.left < p.right + 2 && b.right > p.left - 2 && b.top < p.bottom + 1 && b.bottom > p.top - 1);
+      if (hit) it.el.style.visibility = 'hidden';
+      else placed.push(b);
+    }
   }
 
   private drawGizmo(): void {

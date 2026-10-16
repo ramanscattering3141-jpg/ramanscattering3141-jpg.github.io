@@ -365,3 +365,12 @@
     height: 54px;
   }
 }
+
+@media (max-width: 640px) {
+  .hv-canvas {
+    height: min(540px, 118vw) !important;
+  }
+  .hv-row {
+    gap: 6px 10px;
+  }
+}

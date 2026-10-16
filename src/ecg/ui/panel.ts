@@ -155,7 +155,7 @@ export class EcgPanel {
       return b;
     });
     const step = (ms: number, label: string, title: string): HTMLButtonElement => {
-      const b = h('button', { type: 'button', class: 'hs-btn', title, 'aria-label': title }, label);
+      const b = h('button', { type: 'button', class: 'hs-btn', title, 'aria-label': title }, label.replace(' ms', ''), label.endsWith(' ms') ? h('span', { class: 'lg' }, 'ms') : null);
       b.addEventListener('click', () => {
         this.stop();
         this.setTime(this.t + ms);
@@ -164,7 +164,7 @@ export class EcgPanel {
     };
     const beatJump = (dir: 1 | -1): HTMLButtonElement => {
       const title = dir > 0 ? 'Next beat' : 'Previous beat';
-      const b = h('button', { type: 'button', class: 'hs-btn', title, 'aria-label': title }, dir > 0 ? 'Next beat ⏭' : '⏮ Previous beat');
+      const b = h('button', { type: 'button', class: 'hs-btn', title, 'aria-label': title }, ...(dir > 0 ? [h('span', { class: 'lg' }, 'Next beat'), ' ⏭'] : ['⏮ ', h('span', { class: 'lg' }, 'Previous beat')]));
       b.addEventListener('click', () => {
         this.stop();
         const run = this.run;

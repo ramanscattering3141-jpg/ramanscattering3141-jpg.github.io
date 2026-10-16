@@ -81,9 +81,11 @@
 }
 .hs-speeds {
   display: inline-flex;
+  flex-wrap: wrap;
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
+  max-width: 100%;
 }
 .hs-speeds button {
   font: inherit;
@@ -439,4 +441,31 @@
   background: var(--panel);
   color: var(--ink);
   max-width: 100%;
+}
+
+.hs-pick-group > * {
+  min-width: 0;
+}
+.hs-all {
+  width: 100%;
+}
+.hs-btn .lg {
+  margin-left: 4px;
+}
+@media (max-width: 560px) {
+  .hs-btn .lg {
+    display: none;
+  }
+  .hs-btn {
+    padding: 6px 9px;
+  }
+  .hs-speeds button {
+    padding: 6px 7px;
+  }
+  .hs-play-row {
+    gap: 8px;
+  }
+  .hs-group {
+    flex-wrap: wrap;
+  }
 }

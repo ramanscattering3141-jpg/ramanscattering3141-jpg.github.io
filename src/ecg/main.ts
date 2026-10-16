@@ -43,7 +43,7 @@ const NAV: { letter: string; label: string; href: string; match: string }[] = [
   { letter: 'N', label: 'Physiology Sandbox', href: '#/sandbox', match: 'sandbox' },
 ];
 const EXTRA: { label: string; href: string; match: string }[] = [
-  { label: '3-D heart, mechanics & slow-motion ECG', href: '#/heart3d', match: 'heart3d' },
+  { label: 'Heart simulator (3-D, slow motion)', href: '#/heart3d', match: 'heart3d' },
   { label: 'ECG library A–Z', href: '#/az', match: 'az' },
   { label: 'Named signs & eponyms', href: '#/eponyms', match: 'eponyms' },
   { label: 'Normal values & variants', href: '#/normal', match: 'normal' },
