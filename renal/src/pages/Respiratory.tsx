@@ -12,7 +12,7 @@ export default function Respiratory({ query }: { query: URLSearchParams }) {
     <div>
       <PageHead
         path="/respiratory"
-        lede="Carbon dioxide is the strongest stimulus to breathing there is, so a high PCO₂ almost always means ventilation failed rather than that CO₂ production rose. Acutely there is almost no defence — bicarbonate cannot buffer carbonic acid. Given days the kidney does the work, and does it so well that protecting the pH becomes its own problem."
+        lede="Carbon dioxide is the main chemical drive to breathe, so a high PCO₂ almost always means ventilation failed rather than that CO₂ production rose. Acutely there is almost no defence — bicarbonate cannot buffer carbonic acid. Given days the kidney does the work, and does it so well that protecting the pH becomes its own problem."
       />
       <Tabs
         tabs={[
@@ -335,8 +335,8 @@ function Oxygen() {
               Haldane effect, oxygenated haemoglobin carrying less CO₂.
             </p>
             <p class="control-hint">
-              The practical conclusion is not to withhold oxygen from a hypoxaemic patient. It is to titrate it: aim for a PO₂ of 60–65 mmHg and a saturation above 90 per cent, and watch the PCO₂.
-              Maintaining the PO₂ above 55 mmHg improves both survival and quality of life in chronic lung disease.
+              The practical conclusion is not to withhold oxygen from a hypoxaemic patient. It is to titrate it: aim for a PO₂ of 60–65 mmHg (current guidance: SpO₂ 88–92 per cent in patients at risk of CO₂ retention), and watch the PCO₂.
+              Over the long term, oxygen for severe resting hypoxaemia (PO₂ 55 mmHg or below) prolongs survival in chronic obstructive lung disease.
             </p>
             <Sources cite={{ rose: [20], evidence: 'experimental' }} />
           </Panel>

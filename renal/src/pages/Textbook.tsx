@@ -53,11 +53,20 @@ function Contents() {
         </Panel>
       ))}
       <p class="faint" style={{ fontSize: '0.8rem' }}>
-        {CHAPTERS.length} of {ROSE_CHAPTERS.length} chapters have an interactive rebuild.
+        Chapters 1–{CHAPTERS.length} each have an interactive rebuild; the problems of chapter 29 are the clinical cases and challenges, and the equations of chapter 30 are the equation explorer.
       </p>
     </div>
   );
 }
+
+// The last two chapters are realised as tools rather than as chapter pages.
+const MISSING_NOTE: Record<number, string> = {
+  29: 'The book’s worked problems are rebuilt as clinical cases you can open in the simulator, and as predict-then-observe challenges.',
+  30: 'The book’s summary of equations is the equation explorer: every formula live, with its assumptions, its traps and worked patients.',
+};
+const MISSING_ROUTES: Record<number, string[]> = {
+  29: ['/cases', '/challenges', '/lessons'],
+};
 
 function Missing({ n }: { n: number }) {
   const meta = ROSE_CHAPTERS.find((c) => c.n === n);
@@ -65,8 +74,8 @@ function Missing({ n }: { n: number }) {
     <div class="page-head">
       <div class="eyebrow">Chapter {n}</div>
       <h1>{meta?.title ?? 'Unknown chapter'}</h1>
-      <p class="lede">This chapter does not have an interactive rebuild. Its simulators are listed below.</p>
-      <Related paths={routesForChapter(n).map((r) => r.path)} />
+      <p class="lede">{MISSING_NOTE[n] ?? 'This chapter is covered by the simulators below rather than by a chapter page of its own.'}</p>
+      <Related paths={MISSING_ROUTES[n] ?? routesForChapter(n).map((r) => r.path)} />
       <a href={href('/textbook')}>← All chapters</a>
     </div>
   );

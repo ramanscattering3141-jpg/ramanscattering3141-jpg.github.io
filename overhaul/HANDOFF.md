@@ -29,6 +29,6 @@ reached, everything must already be on GitHub so work can resume easily.
 | ECG content | **Done** — 22 corrections; see `reports/ecg-content.md`. |
 | ECG pages/UI | Not started (agent `ecg-ui`). |
 | Renal content/model | **Done** — 35 corrections; see `reports/renal-model.md`. |
-| Renal pages/UI | In progress (agent `renal-ui`): partial fixes committed as WIP. |
+| Renal pages/UI | **Done** — keyboard access, readable diagrams on phones, labels off lines, theme colours, British titles, `tools/renal-smoke.mjs` (310 visits pass); see `reports/renal-ui.md`. Oxygen-target modern update (BTS 2017) added by the lead. |
 | Endocrine | UI/diagram audit in progress (agent `endo-ui`); content audit (`endo-content`) next. Priorities from the user's earlier sessions: no text overlapping arrows/lines; per-diagram animation pause; more diagrams, less text; collapsible pathways; vet content. |
 | Final | Full test suites, builds, smoke crawls, README updates, then ask the user before merging to the deploy branch (`claude/flight-simulator-architecture-ck2cgq` here, `main` for endo). |

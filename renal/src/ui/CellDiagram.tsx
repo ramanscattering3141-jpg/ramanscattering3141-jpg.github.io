@@ -2,6 +2,8 @@
 // right (blood), paracellular routes through the tight junction below. Each carrier's opacity and
 // arrow weight follow its activity, so switching one off is visible at a glance.
 
+import { wrapText } from './kit';
+
 export interface CellCarrier {
   label: string;
   /** what it moves, shown beside it */
@@ -58,9 +60,12 @@ export function CellDiagram(props: {
         <text x={x} y={y + 4} text-anchor="middle" style={{ fontSize: c.label.length > 6 ? 8.5 : c.label.length > 4 ? 10 : 11.5, fontWeight: 700, fill: 'var(--ink)' }}>
           {c.label}
         </text>
-        <text x={side === 'a' ? 4 : 596} y={y - 9} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 11 }}>
-          {c.moves}
-        </text>
+        {/* what it moves, wrapped so it stays between the margin and the carrier instead of running over it */}
+        {wrapText(c.moves, 22).map((line, k, all) => (
+          <text key={k} x={side === 'a' ? 4 : 596} y={y - 9 - (all.length - 1 - k) * 13} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 11 }}>
+            {line}
+          </text>
+        ))}
         {c.blocked && (
           <text x={side === 'a' ? 4 : 596} y={y + 18} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 10.5, fill: 'var(--c-violet)' }}>
             ✕ {c.blocked}

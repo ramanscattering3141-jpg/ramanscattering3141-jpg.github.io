@@ -163,7 +163,7 @@ function CourseTab() {
       />
       <Expand summary="What the model shows here">
         <p class="muted" style={{ fontSize: '0.88rem' }}>
-          The three buttons are steady states the engine can hold — a pre-renal picture, established injury, and partial recovery — not a single continuous run, because the model does not regenerate tubules over time. They let you read the urine indices and the systemic complications that define each phase; the recovery polyuria itself is described rather than simulated.
+          The three buttons are steady states the model can hold — a pre-renal picture, established injury, and partial recovery — not a single continuous run, because the model does not regenerate tubules over time. They let you read the urine indices and the systemic complications that define each phase; the recovery polyuria itself is described rather than simulated.
         </p>
       </Expand>
     </>

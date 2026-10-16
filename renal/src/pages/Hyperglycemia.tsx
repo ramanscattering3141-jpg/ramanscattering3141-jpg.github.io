@@ -230,7 +230,7 @@ function CrisisTab() {
       </div>
       <Expand summary="What the model leaves out">
         <p class="muted" style={{ fontSize: '0.88rem' }}>
-          The glucose kinetics are a simple balance (hepatic output doubling in insulin deficiency, a fixed insulin-independent uptake by brain and red cells, insulin-dependent uptake blunted by the resistance of the diabetic state, and renal excretion from the engine). Ketogenesis is switched on below a quarter of normal insulin effect. The anion gap in this model runs somewhat above the fall in bicarbonate in ketoacidosis; in patients with good renal function, ketoacid anions lost in the urine usually keep the two closer to 1 : 1, or below it (Rose ch. 25). The model's glomerular filtration rate is also better defended in volume depletion than a real patient's, so the rise in urea and creatinine is understated.
+          The glucose kinetics are a simple balance (hepatic output doubling in insulin deficiency, a fixed insulin-independent uptake by brain and red cells, insulin-dependent uptake blunted by the resistance of the diabetic state, and renal excretion from the kidney model). Ketogenesis is switched on below a quarter of normal insulin effect. The anion gap in this model runs somewhat above the fall in bicarbonate in ketoacidosis; in patients with good renal function, ketoacid anions lost in the urine usually keep the two closer to 1 : 1, or below it (Rose ch. 25). The model's glomerular filtration rate is also better defended in volume depletion than a real patient's, so the rise in urea and creatinine is understated.
         </p>
       </Expand>
     </>

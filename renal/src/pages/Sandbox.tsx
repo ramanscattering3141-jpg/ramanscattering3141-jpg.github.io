@@ -127,7 +127,7 @@ export default function Sandbox({ query }: { query: URLSearchParams }) {
     <div>
       <PageHead
         path="/sandbox"
-        lede="The whole model, open. Set any combination of intake, losses, kidney, hormones and drugs, and read the steady state the body settles into. Nothing here is a fixed lesson — it is the same engine every other page drives, with all the dials exposed at once."
+        lede="The whole model, open. Set any combination of intake, losses, kidney, hormones and drugs, and read the steady state the body settles into. Nothing here is a fixed lesson — it is the same model every other page drives, with all the dials exposed at once."
       />
       {loadedFrom && (
         <p class="note">

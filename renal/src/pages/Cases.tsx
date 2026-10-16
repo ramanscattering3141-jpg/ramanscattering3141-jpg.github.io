@@ -149,7 +149,7 @@ export default function Cases({ query }: { query: URLSearchParams }) {
     <div>
       <PageHead
         path="/cases"
-        lede="Real presentations, run on the model. Each case gives you the story and the numbers the engine settles on, asks you to reason it out, and then opens the mechanism in the simulator that made those numbers. The chemistry is not memorised — it is derived, the way it is in the patient."
+        lede="Real presentations, run on the model. Each case gives you the story and the numbers the model settles on, asks you to reason it out, and then opens the mechanism in the simulator that made those numbers. The chemistry is not memorised — it is derived, the way it is in the patient."
       />
       <div class="grid grid-2">
         {CASES.map((c) => (

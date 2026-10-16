@@ -76,7 +76,7 @@ export default function TransportLab({ query }: { query: URLSearchParams }) {
               selected={seg}
               onSelect={(id) => SEGMENTS.includes(id as SegmentId) && setSeg(id as SegmentId)}
               marks={Object.fromEntries(SEGMENTS.map((id) => [id, Math.abs(flux(id, 'Na') - fluxN(id, 'Na')) > 5 ? (flux(id, 'Na') > fluxN(id, 'Na') ? 'up' : 'down') : undefined]).filter(([, v]) => v))}
-              height={320}
+              height={360}
             />
             <p class="control-hint">Amber: segment reabsorbs more Na⁺ than normal (it is compensating). Blue: less.</p>
             <table>

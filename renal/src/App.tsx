@@ -121,13 +121,13 @@ export function App() {
             }}
             role="search"
           >
-            <input type="search" placeholder="Search physiology…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Search" />
+            <input type="search" placeholder="Search the laboratory…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Search the laboratory" />
           </form>
           <div class="mode-switch" role="group" aria-label="Detail level">
-            <button class={mode === 'conceptual' ? 'active' : ''} onClick={() => setMode('conceptual')} title="Qualitative explanations and the main variables">
+            <button class={mode === 'conceptual' ? 'active' : ''} onClick={() => setMode('conceptual')} aria-pressed={mode === 'conceptual'} title="Qualitative explanations and the main variables">
               Conceptual
             </button>
-            <button class={mode === 'quantitative' ? 'active' : ''} onClick={() => setMode('quantitative')} title="Expose Starling forces, fractional reabsorption, transporter activities and the full parameter set">
+            <button class={mode === 'quantitative' ? 'active' : ''} onClick={() => setMode('quantitative')} aria-pressed={mode === 'quantitative'} title="Expose Starling forces, fractional reabsorption, transporter activities and the full parameter set">
               Quantitative
             </button>
           </div>

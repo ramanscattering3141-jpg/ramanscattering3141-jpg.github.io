@@ -526,7 +526,7 @@ function TreatTab() {
       />
       <Expand summary="About these curves">
         <p class="muted" style={{ fontSize: '0.88rem' }}>
-          This tab is a pharmacodynamic sketch, not the renal engine: each therapy's curve is shaped to the onset, size and duration Rose gives in chapter 28. Effects are treated as additive, which roughly matches the combination of salbutamol with insulin; real responses vary widely between patients. Current practice favours insulin with glucose as the most reliable shift, and the newer binders (patiromer, sodium zirconium cyclosilicate) over sodium polystyrene sulfonate for ongoing removal.
+          This tab is a pharmacodynamic sketch, not the whole-kidney model: each therapy's curve is shaped to the onset, size and duration Rose gives in chapter 28. Effects are treated as additive, which roughly matches the combination of salbutamol with insulin; real responses vary widely between patients. Current practice favours insulin with glucose as the most reliable shift, and the newer binders (patiromer, sodium zirconium cyclosilicate) over sodium polystyrene sulfonate for ongoing removal.
         </p>
         <Sources cite={{ rose: [28], evidence: 'clinical', refs: ['allon1989', 'clase2020', 'packham2015', 'weir2015'] }} />
       </Expand>

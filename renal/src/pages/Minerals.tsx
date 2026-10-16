@@ -37,7 +37,7 @@ function HormonesTab() {
       <div class="grid grid-sidebar">
         <div>
           <Panel title="Correct the calcium first" note="About 45% of plasma calcium is ionised; the rest is bound to albumin or complexed. Hypoalbuminaemia lowers the total without touching the ionised, active fraction.">
-            <Slider label="Measured total calcium" value={measured} min={1.6} max={3.2} step={0.01} unit="mmol/L" onInput={setMeasured} normal={2.35} format={(v) => `${v.toFixed(2)} (${(v * MGDL_CA).toFixed(1)} mg/dL)`} />
+            <Slider label="Measured total calcium" value={measured} min={1.6} max={3.2} step={0.01} onInput={setMeasured} normal={2.35} format={(v) => `${v.toFixed(2)} mmol/L (${(v * MGDL_CA).toFixed(1)} mg/dL)`} />
             <Slider label="Serum albumin" value={albumin} min={15} max={50} step={1} unit="g/L" onInput={setAlb} normal={40} />
             <div class="readout-grid">
               <Readout label="Corrected calcium" value={corrected} digits={2} unit="mmol/L" tone={toneFor(corrected, 2.2, 2.6)} refRange={`${(corrected * MGDL_CA).toFixed(1)} mg/dL`} />

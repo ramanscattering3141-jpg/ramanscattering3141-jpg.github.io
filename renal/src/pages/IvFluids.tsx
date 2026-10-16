@@ -354,7 +354,7 @@ function CompartmentView(props: { now: Snapshot; start: Snapshot; fate: Fate; vo
   const bag = props.volume;
   return (
     <div class="svg-scroll xwide">
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Where the infused fluid is: plasma, interstitium, cells and urine">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" class="ivf-svg" role="img" aria-label="Where the infused fluid is: plasma, interstitium, cells and urine">
       <defs>
         <marker id="iv-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-dim)" />

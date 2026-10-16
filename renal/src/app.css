@@ -597,8 +597,8 @@ tbody tr.active th[scope='row'] { color: var(--accent); }
 .dmap-svg .seg { outline: none; }
 .dmap-svg .seg:focus-visible .hit { stroke: color-mix(in srgb, var(--accent) 25%, transparent); }
 .dmap-svg .lbl text { font: 500 12.5px var(--sans, system-ui); fill: var(--ink); transition: opacity .2s; }
-.dmap-svg .zone { font: 600 12px system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; fill: var(--ink-faint); }
-.dmap-svg .osm { font: 500 12px var(--mono); fill: var(--ink-faint); }
+.dmap-svg .zone { font: 600 13px system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; fill: var(--ink-faint); }
+.dmap-svg .osm { font: 500 13px var(--mono); fill: var(--ink-faint); }
 .dmap-svg .call { opacity: 0; transition: opacity .2s; pointer-events: none; }
 .dmap-svg .call.on { opacity: 1; }
 .dmap-svg .call rect { fill: var(--panel); stroke-width: 1.5; }
@@ -606,8 +606,8 @@ tbody tr.active th[scope='row'] { color: var(--accent); }
 .dmap-svg .dl { cursor: pointer; transition: opacity .2s; outline: none; }
 .dmap-svg .dl .hitr { fill: transparent; }
 .dmap-svg .dl:focus-visible .hitr { fill: color-mix(in srgb, var(--accent) 15%, transparent); }
-.dmap-svg .dn { font: 600 13px system-ui, sans-serif; }
-.dmap-svg .dx { font: 400 11.5px system-ui, sans-serif; fill: var(--ink-dim); }
+.dmap-svg .dn { font: 600 14px system-ui, sans-serif; }
+.dmap-svg .dx { font: 400 12.5px system-ui, sans-serif; fill: var(--ink-dim); }
 .dmap-tb path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .dmap-tb path.bar { stroke-width: 3.5; }
 .dmap-svg .dl.on .dmap-tb path { stroke-width: 3; }
@@ -689,3 +689,7 @@ svg [tabindex]:focus-visible { outline-offset: 1px; }
   button, .btn { min-height: 32px; }
   .nav-item { padding-top: 8px; padding-bottom: 8px; }
 }
+/* the transporter map scrolls sideways rather than shrinking its labels below ~9 px */
+.drugmap-svg { min-width: 900px; display: block; }
+@media (max-width: 700px) { .drugmap-svg { min-width: 1120px; } }
+.ivf-svg .svg-label { font-size: 13px; }

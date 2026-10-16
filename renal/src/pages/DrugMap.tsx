@@ -127,7 +127,7 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
           </div>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ minWidth: 900 }} role="img" aria-label="Transporters along the nephron and the drugs that act on them">
+          <svg viewBox={`0 0 ${W} ${H}`} width="100%" class="drugmap-svg" role="img" aria-label="Transporters along the nephron and the drugs that act on them">
             <defs>
               <marker id="dm-act" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto">
                 <path d="M0,0 L10,5 L0,10 z" fill="var(--c-green)" />
@@ -143,21 +143,6 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
                   <rect x={x + 2} y={APICAL} width={COL_W - 4} height={BASO - APICAL} rx={16} fill="var(--well)" stroke="var(--line)" stroke-width="1.5" />
                   <line x1={x + 6} x2={x + COL_W - 6} y1={APICAL} y2={APICAL} stroke="var(--c-dim)" stroke-width="3" />
                   <line x1={x + 6} x2={x + COL_W - 6} y1={BASO} y2={BASO} stroke="var(--c-dim)" stroke-width="3" />
-                  <text x={x + 8} y={LUMEN_TOP + 14} class="svg-label svg-halo" style={{ fontSize: 12, fill: 'var(--ink-faint)' }}>
-                    lumen (urine side){c.voltage ? ' · ' : ''}
-                    {c.voltage && <tspan style={{ fontWeight: 700, fill: c.voltage.includes('+') ? 'var(--c-amber)' : 'var(--c-blue)' }}>{c.voltage}</tspan>}
-                  </text>
-                  <text x={x + 8} y={BLOOD_BOTTOM - 6} class="svg-label" style={{ fontSize: 12, fill: 'var(--ink-faint)' }}>
-                    blood side
-                  </text>
-                  <text x={x + COL_W / 2} y={APICAL + 58} text-anchor="middle" class="svg-label" style={{ fontSize: 17, fontWeight: 700, fill: 'var(--ink)' }}>
-                    {c.name}
-                  </text>
-                  {wrapText(c.load, 34).map((l, k) => (
-                    <text key={k} x={x + COL_W / 2} y={APICAL + 80 + k * 16} text-anchor="middle" class="svg-label svg-halo" style={{ fontSize: 13, fill: 'var(--ink-dim)' }}>
-                      {l}
-                    </text>
-                  ))}
                 </g>
               );
             })}
@@ -189,6 +174,29 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
                 );
               });
             })}
+            {/* cell names and loads, above the drug lines and haloed so a line passing behind never runs through the words */}
+            {CELLS.map((c, i) => {
+              const x = colX(i);
+              return (
+                <g key={`t-${c.id}`}>
+                  <text x={x + 8} y={LUMEN_TOP + 14} class="svg-label svg-halo" style={{ fontSize: 12, fill: 'var(--ink-faint)' }}>
+                    lumen (urine side){c.voltage ? ' · ' : ''}
+                    {c.voltage && <tspan style={{ fontWeight: 700, fill: c.voltage.includes('+') ? 'var(--c-amber)' : 'var(--c-blue)' }}>{c.voltage}</tspan>}
+                  </text>
+                  <text x={x + 8} y={BLOOD_BOTTOM - 6} class="svg-label svg-halo" style={{ fontSize: 12, fill: 'var(--ink-faint)' }}>
+                    blood side
+                  </text>
+                  <text x={x + COL_W / 2} y={APICAL + 58} text-anchor="middle" class="svg-label svg-halo" style={{ fontSize: 17, fontWeight: 700, fill: 'var(--ink)', strokeWidth: 6 }}>
+                    {c.name}
+                  </text>
+                  {wrapText(c.load, 34).map((l, k) => (
+                    <text key={k} x={x + COL_W / 2} y={APICAL + 80 + k * 16} text-anchor="middle" class="svg-label svg-halo" style={{ fontSize: 13, fill: 'var(--ink-dim)' }}>
+                      {l}
+                    </text>
+                  ))}
+                </g>
+              );
+            })}
             {/* transporters */}
             {TRANSPORTERS.map((t) => {
               const a = anchorOf(t);
@@ -200,7 +208,7 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
               if (t.side === 'para') {
                 return (
                   <g key={t.id} {...click}>
-                    <line x1={a.x} x2={a.x} y1={LUMEN_TOP + 20} y2={BLOOD_BOTTOM - 20} stroke={act ? ring : fill} stroke-width={sel || act ? 5 : 3} stroke-dasharray="6 4" />
+                    <line x1={a.x} x2={a.x} y1={APICAL - 8} y2={BASO + 8} stroke={act ? ring : fill} stroke-width={sel || act ? 5 : 3} stroke-dasharray="6 4" />
                     <text x={a.x - 8} y={(APICAL + BASO) / 2 + 70} text-anchor="middle" transform={`rotate(-90 ${a.x - 8} ${(APICAL + BASO) / 2 + 70})`} class="svg-label svg-halo" style={{ fontSize: 12, fontWeight: 600, fill: 'var(--ink)' }}>
                       {t.short}: {t.fluxes.map((f) => f.ion).join(' ')} ↓
                     </text>
@@ -225,7 +233,8 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
               // not come from, so no line runs through the text.
               const incoming = PILLS.filter((p) => p.drug.targets.some((x) => x.t === t.id)).map((p) => p.x + p.w / 2 - a.x);
               const labelW = Math.max(...t.fluxes.map((f) => f.ion.length * 8 + 16), 0);
-              const roomRight = colX(cellIndex(t.cell)) + COL_W - 26 - a.x; // keep clear of the paracellular line
+              // (a label may run a little into the gap before the next cell, which is clear at this height)
+              const roomRight = colX(cellIndex(t.cell)) + COL_W + GAP + 20 - a.x;
               let fromRight = incoming.length ? incoming.reduce((u, v) => u + v, 0) / incoming.length > 4 : null;
               if (fromRight === false && roomRight < labelW + 5) fromRight = true;
               const fAnchor = fromRight === null ? 'middle' : fromRight ? 'end' : 'start';
