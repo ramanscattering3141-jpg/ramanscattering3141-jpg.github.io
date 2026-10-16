@@ -104,7 +104,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'More sensitive than Cornell or Sokolow–Lyon at similar specificity in the derivation study; like all voltage criteria it cannot replace imaging.',
     dx: 'lvh',
     preset: 'lvh',
-    refs: ['ecgStd5', 'litflEcg'],
+    refs: ['peguero2017', 'litflEcg'],
   },
   {
     id: 'reverse-tick',
@@ -126,7 +126,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'Adds repolarisation, atrial and conduction evidence to voltage, raising specificity; still insensitive compared with echocardiography.',
     dx: 'lvh',
     preset: 'lvh',
-    refs: ['ecgStd5', 'litflEcg'],
+    refs: ['romhilt1968', 'ecgStd5'],
   },
   {
     id: 'shark-fin',
@@ -147,7 +147,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'Refractoriness of the His–Purkinje system (especially the right bundle) lengthens after a long cycle, so an early impulse finds that bundle still refractory. It is a benign mimic of ventricular ectopy.',
     dx: 'pac',
     preset: 'pacAberrant',
-    refs: ['ecgStd3'],
+    refs: ['ecgStd3', 'litflEcg'],
   },
   {
     id: 'aslanger',
@@ -157,7 +157,7 @@ const EPONYM_LIST: Eponym[] = [
     ecg: ['ST elevation in lead III but not in the other inferior leads', 'ST depression in V4–V6 (with a positive or terminally positive T wave) but not in V2', 'ST segment in V1 higher than in V2'],
     significance: 'An occlusion-MI pattern that does not meet conventional STEMI criteria. It is a recognised "STEMI equivalent" in the occlusion-MI literature; it is not part of the guideline STEMI definition.',
     dx: 'stemi',
-    refs: ['acs2025'],
+    refs: ['aslanger2020'],
   },
   {
     id: 'avr-ste',
@@ -165,12 +165,12 @@ const EPONYM_LIST: Eponym[] = [
     aka: ['aVR sign', 'subendocardial ischaemia pattern'],
     kind: 'pattern',
     def: 'ST elevation in aVR (often also V1) with ST depression in many other leads.',
-    ecg: ['STE in aVR ≥ 1 mm', 'ST depression ≥ 1 mm in ≥ 6–8 leads, usually maximal in V4–V6 and I/II', 'No reciprocal pattern of a single territory'],
+    ecg: ['STE in aVR ≥ 1 mm', 'ST depression ≥ 1 mm in ≥ 8 leads (2023 ESC ACS guideline), usually maximal in V4–V6 and I/II', 'No reciprocal pattern of a single territory'],
     significance: 'Indicates diffuse subendocardial ischaemia: severe left-main or multivessel disease, or supply–demand mismatch (tachyarrhythmia, anaemia, hypotension). The ST vector points toward the cavity — i.e. toward aVR.',
     dx: 'nste',
     preset: 'subendo',
     tool: '#/ischemia',
-    refs: ['acs2025', 'ecgStd6'],
+    refs: ['escAcs2023', 'ecgStd6'],
   },
   {
     id: 'bazett',
@@ -192,7 +192,7 @@ const EPONYM_LIST: Eponym[] = [
     dx: 'flutter',
     preset: 'flutter21',
     tool: '#/sandbox/adenosine',
-    refs: ['svt2015'],
+    refs: ['svt2015', 'litflEcg'],
   },
   {
     id: 'brugada-algorithm',
@@ -235,7 +235,7 @@ const EPONYM_LIST: Eponym[] = [
     ecg: ['LBBB', 'Notch ≥ 40 ms on the upstroke of the S wave in V3 and/or V4'],
     significance: 'Highly specific but insensitive marker of prior myocardial infarction in LBBB; a related finding is Chapman sign (notching of the R upstroke in I, aVL or V6).',
     dx: 'lbbb',
-    refs: ['ecgStd3'],
+    refs: ['ecgStd3', 'litflEcg'],
   },
   {
     id: 'capture-fusion',
@@ -257,7 +257,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'Repolarisation "remembers" the altered activation sequence (electrical remodelling). It can mimic ischaemic T-wave inversion.',
     dx: 'paced',
     preset: 'vvi',
-    refs: ['ecgStd5'],
+    refs: ['chatterjee1969', 'litflEcg'],
   },
   {
     id: 'coumel',
@@ -323,7 +323,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'Late activation of fibro-fatty RV myocardium in arrhythmogenic right ventricular cardiomyopathy. It is a major criterion in the 2010 Task Force criteria; later proposals (the 2020 Padua criteria) downgrade it to a minor criterion because it is often over-read.',
     dx: 'arvc',
     preset: 'arvc',
-    refs: ['arvcTfc2010'],
+    refs: ['arvcTfc2010', 'padua2020'],
   },
   {
     id: 'fridericia',
@@ -356,7 +356,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'Favours VT over SVT with aberrancy (activation spreading through myocardium rather than the bundle branches).',
     dx: 'monoVT',
     tool: '#/tools/wct',
-    refs: ['va2017'],
+    refs: ['litflEcg'],
   },
   {
     id: 'lewis-lead',
@@ -432,7 +432,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'Usually first diagonal (or obtuse marginal) occlusion; easily missed because the elevation in aVL and I is small.',
     dx: 'stemi',
     preset: 'stemiLateral',
-    refs: ['acs2025'],
+    refs: ['littmann2016', 'litflEcg'],
   },
   {
     id: 'spodick',
@@ -443,7 +443,7 @@ const EPONYM_LIST: Eponym[] = [
     significance: 'Reflects atrial and ventricular injury currents of epicardial inflammation; helps distinguish pericarditis from STEMI.',
     dx: 'pericarditis',
     preset: 'pericarditis',
-    refs: ['escPeri2015'],
+    refs: ['chaubey2014', 'litflEcg'],
   },
   {
     id: 'torsades',

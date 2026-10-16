@@ -29,7 +29,7 @@ export const L1: [string, string][] = [
   ['flutter21', 'Atrial flutter'],
   ['flutter41', 'Atrial flutter'],
   ['avb1', 'First-degree AV block'],
-  ['mobitz1', 'Second-degree AV block, Mobitz I'],
+  ['mobitz1', 'Second-degree AV block, Mobitz I (Wenckebach)'],
   ['mobitz2', 'Second-degree AV block, Mobitz II'],
   ['chbJunctional', 'Complete heart block'],
   ['chbVentricular', 'Complete heart block'],
@@ -88,7 +88,7 @@ export const L3: QItem[] = [
 
 export const L4: QItem[] = [
   { preset: 'avnrt', dx: 'avnrt', q: 'Which circuit generates this tachycardia?', correct: 'Re-entry within the AV node: antegrade slow pathway, retrograde fast pathway', wrong: ['Atrium → AV node → ventricle → accessory pathway → atrium', 'Macro-re-entry around the tricuspid annulus', 'A single automatic focus in the low right atrium'], explain: 'Retrograde P hidden at the end of the QRS (atria and ventricles activated in parallel from the node) indicates typical slow–fast AVNRT.' },
-  { preset: 'orthoAvrt', dx: 'orthoAvrt', q: 'Which circuit generates this tachycardia?', correct: 'Atrium → AV node → His–Purkinje → ventricle → accessory pathway → atrium', wrong: ['Atrium → accessory pathway → ventricle → AV node → atrium', 'Slow pathway down, fast pathway up', 'Scar-related ventricular re-entry'], explain: 'Narrow QRS + retrograde P separated from the QRS (RP ≥ 70 ms) + pre-excitation in sinus rhythm = orthodromic AVRT.' },
+  { preset: 'orthoAvrt', dx: 'orthoAvrt', q: 'Which circuit generates this tachycardia?', correct: 'Atrium → AV node → His–Purkinje → ventricle → accessory pathway → atrium', wrong: ['Atrium → accessory pathway → ventricle → AV node → atrium', 'Slow pathway down, fast pathway up', 'Scar-related ventricular re-entry'], explain: 'Narrow QRS + retrograde P separated from the QRS (RP ≥ 70 ms) = orthodromic AVRT; sinus rhythm shows pre-excitation only if the pathway also conducts antegradely (a manifest pathway).' },
   { preset: 'antiAvrt', dx: 'orthoAvrt', q: 'What is the circuit of this wide-complex tachycardia?', correct: 'Antegrade over the accessory pathway, retrograde through the His bundle and AV node', wrong: ['Antegrade AV node, retrograde accessory pathway', 'Bundle-branch re-entry', 'Triggered activity from the RV outflow tract'], explain: 'Maximal pre-excitation from the pathway insertion makes the QRS wide: antidromic AVRT.' },
   { preset: 'flutter21', dx: 'flutter', q: 'What mechanism produces the atrial activity?', correct: 'Macro-re-entry around the tricuspid annulus using the cavotricuspid isthmus', wrong: ['Multiple wandering wavelets', 'Enhanced automaticity of a pulmonary-vein focus', 'Dual AV-nodal pathways'], explain: 'Continuous sawtooth waves at ~300/min, negative inferiorly = typical CTI-dependent flutter.' },
   { preset: 'af', dx: 'af', q: 'Why is the ventricular response irregularly irregular?', correct: 'Random atrial wavefronts reach the AV node; refractoriness and concealed conduction filter them unpredictably', wrong: ['Intermittent infranodal block', 'Alternating conduction via two accessory pathways', 'Sinus arrhythmia'], explain: 'Blocked impulses that partially penetrate the node reset its recovery (concealed conduction).' },

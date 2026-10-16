@@ -250,7 +250,7 @@ export const VENTRICULAR_DX: Dx[] = [
       { level: 'treatment', text: 'Shocks do nothing (there is no chaotic rhythm to reset). Treatment = CPR + epinephrine + fixing the specific cause.' },
     ],
     differential: [{ dx: 'vf', how: 'Shockable.' }, { dx: 'asystole', how: 'No electrical activity.' }],
-    acute: ['CPR; epinephrine 1 mg IV/IO as soon as feasible and every 3–5 min.', 'Actively search for and treat reversible causes (Hs and Ts; point-of-care ultrasound may help).', 'Suspected hyperkalaemic arrest: IV calcium, sodium bicarbonate and insulin–glucose may be considered in addition to standard ACLS (2025 AHA Part 10, Class 2b — limited evidence).'],
+    acute: ['CPR; epinephrine 1 mg IV/IO as soon as feasible and every 3–5 min.', 'Actively search for and treat reversible causes (Hs and Ts; point-of-care ultrasound may help).', 'Suspected hyperkalaemic arrest: IV calcium, sodium bicarbonate and insulin with glucose can be given in addition to standard ACLS; the evidence for each is limited (2025 AHA Part 10).'],
     refs: ['acls2025', 'special2025'],
   },
   {

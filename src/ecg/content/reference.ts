@@ -13,7 +13,7 @@ export const NORMAL_VALUES: NormalRow[] = [
   {
     item: 'Heart rate',
     normal: '60–100/min at rest (some authorities use 50–90/min).',
-    abnormal: '< 60/min bradycardia; > 100/min tachycardia. Rate alone is not a diagnosis — find the pacemaker.',
+    abnormal: '< 60/min bradycardia (the 2018 ACC/AHA/HRS bradycardia guideline uses < 50/min); > 100/min tachycardia. Rate alone is not a diagnosis — find the pacemaker.',
     links: [
       { label: 'Sinus bradycardia', href: '#/dx/sinusBrady' },
       { label: 'Sinus tachycardia', href: '#/dx/sinusTach' },
@@ -40,7 +40,7 @@ export const NORMAL_VALUES: NormalRow[] = [
   {
     item: 'QRS duration',
     normal: '≤ 110 ms in adults (usually 70–100 ms).',
-    abnormal: '110–119 ms: incomplete bundle-branch block or nonspecific delay; ≥ 120 ms: complete bundle-branch block, ventricular origin, pacing, pre-excitation, hyperkalaemia or sodium-channel blockade.',
+    abnormal: '> 110 ms but < 120 ms: incomplete bundle-branch block or nonspecific intraventricular conduction delay; ≥ 120 ms: complete bundle-branch block, ventricular origin, pacing, pre-excitation, hyperkalaemia or sodium-channel blockade.',
     links: [
       { label: 'Why is the QRS wide?', href: '#/why/wide-qrs' },
       { label: 'Bundle-branch lab', href: '#/conduction/bbb' },
@@ -124,7 +124,7 @@ export const NORMAL_VARIANTS: Variant[] = [
   { name: 'Sinus arrhythmia', text: 'Heart rate rises with inspiration and falls with expiration (vagal modulation); P waves are identical. Most marked in the young.', href: '#/dx/sinusArrhythmia' },
   { name: 'Early repolarisation pattern', text: 'J-point elevation with a terminal QRS notch or slur, concave ST elevation and tall T waves, typically in young men and athletes; stable over time and without reciprocal change (apart from aVR).', href: '#/dx/earlyRepol' },
   { name: 'Persistent juvenile T-wave pattern', text: 'T inversion in V1–V3 is normal in children; it may persist into early adulthood. T inversion in V1 is normal at any age.', href: '#/dx/athlete' },
-  { name: 'The athlete’s ECG', text: 'Training-related findings that need no further work-up: sinus bradycardia, sinus arrhythmia, first-degree AV block, Mobitz I in sleep, junctional or ectopic atrial rhythm, incomplete RBBB, isolated QRS voltage criteria for LVH, early repolarisation, and (in Black athletes) T inversion in V1–V4 preceded by J-point elevation with convex ST elevation.', href: '#/dx/athlete' },
+  { name: 'The athlete’s ECG', text: 'Training-related findings that need no further work-up: sinus bradycardia, sinus arrhythmia, first-degree AV block, Mobitz I (Wenckebach), junctional or ectopic atrial rhythm, incomplete RBBB, isolated QRS voltage criteria for LVH, early repolarisation, and (in Black athletes) T inversion in V1–V4 preceded by J-point elevation with convex ST elevation.', href: '#/dx/athlete' },
   { name: 'rSr′ in V1 with a normal QRS duration', text: 'A small terminal r′ in V1 with QRS < 110 ms is common in healthy people (incomplete RBBB pattern or lead placement too high).', href: '#/dx/rbbb' },
   { name: 'Isolated Q or T inversion in lead III', text: 'Q waves and T inversion confined to lead III often change with respiration and position; significant only when also present in II and aVF.', href: '#/dx/oldMI' },
 ];
@@ -141,7 +141,7 @@ export interface OmiRow {
 export const STEMI_EQUIVALENTS: OmiRow[] = [
   { name: 'Posterior MI', criteria: 'Horizontal ST depression in V1–V3 (often maximal in V2–V3) with upright T waves; later a tall, broad R in V1–V2. Confirm with posterior leads: ST elevation ≥ 0.5 mm in V7–V9 (≥ 1 mm in men < 40 y).', why: 'V1–V3 view the posterior wall in mirror image; the injury current points posteriorly, away from them.', dx: 'stemiPosterior', preset: 'stemiPosterior' },
   { name: 'LBBB or ventricular pacing with Sgarbossa / Smith criteria', criteria: 'Concordant ST elevation ≥ 1 mm, concordant ST depression ≥ 1 mm in V1–V3, or discordant ST elevation ≥ 25% of the preceding S-wave depth (Smith).', why: 'The secondary repolarisation changes of LBBB and pacing are normally discordant and proportional to the QRS; disproportion or concordance indicates superimposed injury.', dx: 'lbbb', tool: '#/tools/sgarbossa' },
-  { name: 'Widespread ST depression with ST elevation in aVR (± V1)', criteria: 'ST depression ≥ 1 mm in many leads (classically ≥ 8) with ST elevation in aVR and/or V1.', why: 'Diffuse subendocardial ischaemia: left-main or multivessel disease, or severe supply–demand mismatch. Not a single occluded territory.', dx: 'nste', preset: 'subendo' },
+  { name: 'Widespread ST depression with ST elevation in aVR (± V1)', criteria: 'ST depression ≥ 1 mm in ≥ 8 leads with ST elevation in aVR and/or V1 (2023 ESC ACS guideline).', why: 'Diffuse subendocardial ischaemia: left-main or multivessel disease, or severe supply–demand mismatch. Not a single occluded territory.', dx: 'nste', preset: 'subendo' },
   { name: 'de Winter T waves', criteria: 'Upsloping ST depression at the J point in V1–V6 with tall, symmetrical T waves; often slight ST elevation in aVR.', why: 'Proximal LAD occlusion without precordial ST elevation.', dx: 'deWinter', preset: 'deWinter' },
   { name: 'Hyperacute T waves', criteria: 'Broad, tall, symmetrical T waves disproportionate to the QRS in one coronary territory, often with subtle reciprocal change.', why: 'The earliest stage of occlusion, before ST elevation develops; repeat the ECG every few minutes.', dx: 'stemi', preset: 'hyperacute' },
   { name: 'Right-ventricular infarction', criteria: 'With inferior STEMI: ST elevation in V1 and in right-sided leads (V3R–V4R ≥ 0.5 mm; ≥ 1 mm in men < 30 y), ST elevation III > II.', why: 'Proximal RCA occlusion; preload-dependent hypotension — avoid nitrates, give fluids.', dx: 'stemi', preset: 'stemiInferior' },

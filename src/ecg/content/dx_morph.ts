@@ -237,7 +237,7 @@ export const MORPH_DX: Dx[] = [
     tags: ['st-elevation', 'pr-depression', 'chest-pain', 'tachycardia', 'colchicine'],
     preset: 'pericarditis',
     altPresets: ['pericarditis3'],
-    definition: 'Inflammation of the pericardium. Classic (2015 ESC) diagnosis: ≥ 2 of pericarditic chest pain (sharp, pleuritic, better sitting forward), pericardial rub, new widespread ST elevation or PR depression, new or worsening pericardial effusion. The 2025 ESC guideline grades the diagnosis (definite/possible) from the clinical presentation plus additional criteria that now also include raised CRP and pericardial inflammation on CMR.',
+    definition: 'Inflammation of the pericardium. Classic (2015 ESC) diagnosis: ≥ 2 of pericarditic chest pain (sharp, pleuritic, better sitting forward), pericardial rub, new widespread ST elevation or PR depression, new or worsening pericardial effusion. The 2025 ESC guideline bases the diagnosis on a consistent clinical presentation (typical chest pain) plus supporting findings, which now include raised CRP and pericardial oedema or late gadolinium enhancement on CMR as well as a rub, ECG changes and effusion.',
     epidemiology: 'Commonly idiopathic/viral in high-income countries; also post-cardiac injury, autoimmune, uraemic, neoplastic, tuberculous. Typical ECG changes are seen in only up to ~60% of cases.',
     mechanism: 'The ECG changes come from inflammation of the SUPERFICIAL (epicardial) myocardium beneath the inflamed pericardium — diffuse, not confined to one coronary territory. Atrial epicardial injury produces PR-segment deviation.',
     ecg: ['Stage 1: diffuse concave ST elevation (I, II, aVL, aVF, V2–V6) with PR depression; ST depression and PR elevation in aVR (± V1)', 'No reciprocal ST depression other than aVR/V1; no Q waves', 'Stage 2: ST normalises, T flattens; Stage 3: diffuse T inversion; Stage 4: normalisation', 'Sinus tachycardia common; low voltage/alternans if large effusion'],
@@ -308,7 +308,7 @@ export const MORPH_DX: Dx[] = [
     altPresets: ['pulmHtn'],
     definition: 'ECG changes associated with hyperinflated lungs and/or chronic RV pressure overload.',
     mechanism: 'Hyperinflation increases the distance/insulation between heart and electrodes and pulls the heart into a vertical, clockwise-rotated position. Chronic pulmonary hypertension produces RVH and RA enlargement.',
-    ecg: ['Low QRS voltage (especially limb leads)', 'Right axis deviation; vertical heart', 'Poor R-wave progression / late transition (clockwise rotation)', 'P pulmonale (tall P in II, III, aVF); rightward P axis', 'MAT and AF are common; RVH pattern in advanced pulmonary hypertension'],
+    ecg: ['Low QRS voltage (especially limb leads)', 'Right axis deviation; vertical heart', 'Poor R-wave progression / late transition (clockwise rotation)', 'Vertical, rightward P axis (often > +60°), so the P waves are most visible in II, III and aVF; true P pulmonale (P ≥ 2.5 mm) appears when chronic pulmonary hypertension enlarges the right atrium (see the pulmonary-hypertension preset)', 'MAT and AF are common; RVH pattern in advanced pulmonary hypertension'],
     why: [
       { level: 'lead', text: 'Air is a poor conductor → lower surface voltages.' },
       { level: 'vector', text: 'A low diaphragm makes the heart vertical → QRS and P axes swing rightward/inferior.' },

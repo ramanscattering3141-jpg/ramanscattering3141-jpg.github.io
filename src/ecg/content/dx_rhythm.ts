@@ -77,7 +77,7 @@ export const RHYTHM_DX: Dx[] = [
     definition: 'Sinus rhythm > 100/min.',
     epidemiology: 'The most common tachycardia; almost always secondary (fever, pain, hypovolaemia, anaemia, hypoxia, sepsis, PE, thyrotoxicosis, stimulants, withdrawal, heart failure).',
     mechanism: 'Sympathetic stimulation (↑cAMP → ↑If and ICa,L) and vagal withdrawal steepen phase-4 depolarisation of sinus-node cells.',
-    ecg: ['Sinus P waves (upright II, III, aVF)', 'Rate usually 100–150/min in adults at rest (can exceed 180 with exercise)', 'Gradual onset and offset ("warm-up/cool-down")', 'P may merge with the preceding T wave at high rates'],
+    ecg: ['Sinus P waves (upright in I, II and aVF)', 'Rate usually 100–150/min in adults at rest (can exceed 180 with exercise)', 'Gradual onset and offset ("warm-up/cool-down")', 'P may merge with the preceding T wave at high rates'],
     why: [
       { level: 'cell', text: 'Catecholamines increase If and L-type Ca²⁺ current → faster phase 4 in sinus-node cells.' },
       { level: 'conduction', text: 'The same catecholamines speed AV-nodal conduction, so the PR stays normal or shortens.' },
@@ -104,7 +104,7 @@ export const RHYTHM_DX: Dx[] = [
     tags: ['irregular', 'narrow-qrs', 'sinus-node', 'normal'],
     preset: 'sinusArrhythmia',
     definition: 'Sinus rhythm with phasic variation of the P–P interval (> 120 ms or > 10%), typically respiratory.',
-    mechanism: 'Inspiration lowers vagal efferent activity (baroreflex/Bainbridge) → sinus speeds up; expiration restores vagal tone → slows. It reflects healthy autonomic modulation and is most prominent in the young.',
+    mechanism: 'Inspiration inhibits cardiac vagal outflow (central respiratory gating, with lung-stretch and baroreceptor inputs) → sinus speeds up; expiration restores vagal tone → slows. It reflects healthy autonomic modulation and is most prominent in the young.',
     ecg: ['Identical sinus P waves', 'Constant PR', 'Gradual cyclic shortening and lengthening of P–P'],
     why: [
       { level: 'cell', text: 'Breath-by-breath changes in acetylcholine release alter the phase-4 slope of sinus-node cells.' },
