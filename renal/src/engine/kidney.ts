@@ -61,7 +61,12 @@ export function arteriolarTone(p: Params, h: Hormones, perfusion: number, mdSign
   const angioEfferent = resp(0.4, h.at1, 0.55, 2.2);
   const efferentPg = 1 - 0.18 * clamp(h.pg - 0.2, -0.2, 0.6);
   const efferentSns = resp(0.12, h.sns, 0.9, 1.5);
-  const Re = GLOM_REF.Re * clamp(angioEfferent * efferentPg * efferentSns * p.efferentTone, 0.2, 8);
+  // A loop diuretic releases vasodilator prostaglandins within minutes of a dose; they relax the
+  // efferent as well as the afferent arteriole, so renal plasma flow rises while GFR stays close
+  // to normal and the filtration fraction falls - despite the renin rise and the loss of
+  // tubuloglomerular feedback (Rose ch. 15). Abolished by an NSAID.
+  const loopPg = 1 - 0.45 * clamp(d.furosemide, 0, 1) * (1 - clamp(d.nsaid, 0, 1));
+  const Re = GLOM_REF.Re * clamp(angioEfferent * efferentPg * efferentSns * loopPg * p.efferentTone, 0.2, 8);
   return { Ra, Re };
 }
 

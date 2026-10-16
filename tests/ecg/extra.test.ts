@@ -122,8 +122,9 @@ describe('heart position, cable reversal and artefact', () => {
     expect(maxAbsDiff(L.aVR!, N.aVL!)).toBeLessThan(1e-4);
     expect(maxAbsDiff(L.aVF!, N.aVF!)).toBeLessThan(1e-4);
     for (const l of ['V1', 'V3', 'V6'] as LeadId[]) expect(maxAbsDiff(L[l]!, N[l]!), l).toBeLessThan(1e-4);
-    // The heart itself is unchanged, so model measurements are unchanged.
-    expect(r.m.axis).toBe(n.m.axis);
+    // The heart itself is unchanged; the recorded axis is its mirror image about +90°.
+    expect(r.m.trueAxis).toBe(n.m.axis);
+    expect(r.m.axis).toBe(180 - n.m.axis!);
   });
   it('LA/LL reversal: I ↔ II, III inverted, aVR unchanged', () => {
     const r = run('laLlReversal');

@@ -220,7 +220,7 @@ export function buildP(p: Physio, site: AtrialSite): PMorph {
   // Pericarditis: atrial epicardial injury current depresses the PR segment (elevates it in aVR).
   if (p.pericarditis >= 1 && p.pericarditis < 2.5) {
     const k = p.pericarditis < 2 ? 1 : 0.4;
-    comps.push({ t0: pDur * 0.8, dur: 150, dir: norm(vec(-0.45, -0.85, -0.1)), amp: 0.045 * k, shape: 'plateau', tag: 'PR depression' });
+    comps.push({ t0: pDur * 0.8, dur: 150, dir: norm(vec(-0.45, -0.85, -0.1)), amp: 0.085 * k, shape: 'plateau', tag: 'PR depression' });
   }
   // Atrial repolarisation (Ta) — small wave opposite to P, mostly hidden in PR/QRS.
   comps.push({ t0: pDur, dur: 220, dir: scale(norm(add(s.ra, s.la)), -1), amp: 0.012 * ampK * ra, shape: 'bump', tag: 'Ta' });
@@ -440,6 +440,14 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // Voltage (habitus, effusion) and electrical alternans.
   const alt = p.alternans > 0 ? 1 + (ctx.index % 2 === 0 ? 0.3 : -0.3) * p.alternans : 1;
   act = act.map((x) => ({ ...x, amp: x.amp * vf * alt }));
+  // Even the slowest conduction (sine-wave hyperkalaemia, Na-channel toxicity) gives a QRS of
+  // at most ~300 ms, and activation must finish within the cycle.
+  const maxQrs = Math.min(300, Math.max(160, 0.9 * ctx.rr));
+  const rawEnd = qrsEnd(act);
+  if (rawEnd > maxQrs) {
+    const k = maxQrs / rawEnd;
+    act = act.map((x) => ({ ...x, t0: x.t0 * k, dur: x.dur * k }));
+  }
   const qrsDur = qrsEnd(act);
   const area = areaVector(act);
   const refArea = areaVector(ref.map((x) => ({ ...x, amp: x.amp * vf })));
@@ -449,6 +457,8 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // Takotsubo (subacute phase): repolarisation of the stunned apex is markedly prolonged.
   const tako = isch.stage === 'takotsubo' ? isch.extent : 0;
   let qt = qtAtRR(qtc, ctx.rr) + Math.max(0, qrsDur - 95) * 0.9 + 75 * tako;
+  // Restitution: repolarisation cannot outlast the cycle (fast VT, torsades, very fast SVT).
+  qt = Math.min(qt, Math.max(qrsDur + 110, 0.92 * ctx.rr));
   const hk = hyperKT(p.K);
   const lk = hypoK(p.K);
   let tDur = 175 * (1 + 0.3 * p.drugs.qtDrug + 0.25 * p.hypothermia + 0.3 * tako) * (1 - 0.28 * hk) * clamp(Math.pow(ctx.rr / 1000, 0.3), 0.75, 1.15);
@@ -546,7 +556,7 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
         // Proximal LAD occlusion without the usual transmural ST vector: J-point depression
         // toward the precordium that slopes up into tall, symmetric (hyperacute) T waves, with
         // a small ST vector toward the cavity (STE in aVR).
-        ST = add(ST, add(scale(n, -0.15 * e), scale(D.cavity, 0.08 * e)));
+        ST = add(ST, add(scale(n, -0.22 * e), scale(D.cavity, 0.08 * e)));
         T = add(T, scale(n, 0.62 * e));
         tShape = 'bump';
         stShape = 'decay';

@@ -44,7 +44,7 @@ export function ventricularWidthFactor(p: Physio): number {
   f *= 1 + 0.12 * p.myocarditis;
   f *= 1 + 0.06 * Math.max(0, p.lvMass - 1);
   if (p.Mg > 2) f *= 1 + (p.Mg - 2) * 0.12; // marked hypermagnesaemia slows conduction
-  return clamp(f, 0.6, 3.2);
+  return clamp(f, 0.6, 3.4);
 }
 
 /** Atrial conduction multiplier (P-wave duration). */
