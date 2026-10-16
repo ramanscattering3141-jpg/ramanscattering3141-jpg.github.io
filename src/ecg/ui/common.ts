@@ -37,7 +37,7 @@ export function refList(ids: string[]): HTMLElement {
         'li',
         null,
         h('strong', null, s.title),
-        h('div', { class: 'ref-meta' }, `${s.authors}. ${s.venue}. `, s.doi ? h('a', { href: `https://doi.org/${s.doi}`, target: '_blank', rel: 'noopener' }, `doi:${s.doi}`) : null, s.pmid ? ` · PMID ${s.pmid}` : '', ` · verified ${s.verified}`),
+        h('div', { class: 'ref-meta' }, `${s.authors}. ${s.venue}. `, s.doi ? h('a', { href: `https://doi.org/${s.doi}`, target: '_blank', rel: 'noopener' }, `doi:${s.doi}`) : s.url ? h('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.url.replace(/^https?:\/\//, '')) : null, s.pmid ? ` · PMID ${s.pmid}` : '', ` · verified ${s.verified}`),
         s.note ? h('div', { class: 'ref-meta' }, s.note) : null,
       ),
     );
@@ -61,8 +61,20 @@ export function dxTile(d: Dx): HTMLAnchorElement {
   );
 }
 
+export function slug(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 export function section(title: string, ...children: (Node | string | null)[]): HTMLElement {
-  return h('section', { class: 'card' }, h('h2', null, title), ...children);
+  return h('section', { class: 'card', id: `sec-${slug(title)}` }, h('h2', null, title), ...children);
+}
+
+/** In-page "jump to" link that scrolls without changing the hash route. */
+export function jump(label: string, id: string): HTMLAnchorElement {
+  return h('a', { href: '#', class: 'jump', onclick: (e: Event) => (e.preventDefault(), document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }, label);
 }
 
 export function bullets(items: string[] | undefined): HTMLElement | null {

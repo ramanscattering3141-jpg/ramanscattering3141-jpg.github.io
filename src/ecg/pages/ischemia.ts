@@ -71,7 +71,7 @@ function wallDiagram(t: Territory, stage: IschemiaStage): SVGSVGElement {
 }
 
 export function renderIschemia(root: HTMLElement): () => void {
-  root.append(header('G · Ischaemia & Infarction', 'Myocardial injury simulator', 'Select a culprit artery / territory and a stage. The model creates an injury current directed toward (transmural) or away from (subendocardial) the injured surface, removes forces from infarcted myocardium, and projects everything onto the 12 leads.'));
+  root.append(header('G · Ischaemia & Infarction', 'Myocardial injury simulator', 'Select a culprit artery / territory and a stage. The model creates an injury current directed toward the injured epicardium (transmural) or toward the ventricular cavity (subendocardial), removes forces from infarcted myocardium, and projects everything onto the 12 leads.'));
   let terr: Territory = 'proxLAD';
   let stage: IschemiaStage = 'stemi';
   let extent = 0.9;
@@ -98,7 +98,7 @@ export function renderIschemia(root: HTMLElement): () => void {
     right.setRun(run);
     diagram.replaceChildren(wallDiagram(terr, stage));
     table.replaceChildren(
-      h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Lead'), ...ALL.map((l) => h('th', null, l)))), h('tbody', null, h('tr', null, h('td', null, 'ST (mm) at J+60'), ...ALL.map((l) => h('td', { style: st[l] >= (EXTRA.includes(l) && l !== 'V4R' ? 0.5 : 1) ? 'color:var(--danger);font-weight:700' : st[l] <= -0.5 ? 'color:var(--accent);font-weight:700' : '' }, st[l].toFixed(1)))))),
+      h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Lead'), ...ALL.map((l) => h('th', null, l)))), h('tbody', null, h('tr', null, h('td', null, 'ST (mm) at J+60'), ...ALL.map((l) => h('td', { style: st[l] >= (EXTRA.includes(l) && l !== 'V4R' ? 0.5 : l === 'V2' || l === 'V3' ? 2 : 1) ? 'color:var(--danger);font-weight:700' : st[l] <= -0.5 ? 'color:var(--accent);font-weight:700' : '' }, st[l].toFixed(1)))))),
     );
     const T = TERRITORY[terr];
     const stageText: Record<IschemiaStage, string> = {
@@ -109,14 +109,14 @@ export function renderIschemia(root: HTMLElement): () => void {
       old: 'Old infarct: scar generates no forces → pathological Q waves; ST usually back to baseline.',
       subendocardial: 'Subendocardial ischaemia: the injury vector points toward the cavity → diffuse ST depression, ST elevation in aVR (± V1). ST depression does not localise the artery.',
       wellens: 'Reperfused LAD: deep symmetric T inversion in V2–V3 with preserved R waves.',
-      deWinter: 'de Winter pattern: the ST vector points slightly AWAY from the anterior wall (J-point depression) while the T waves become hyperacute — an occlusion without ST elevation.',
+      deWinter: 'de Winter pattern: the ST vector points slightly AWAY from the anterior wall (J-point depression) while the T waves become hyperacute — an LAD occlusion without precordial ST elevation (often slight STE in aVR).',
       aneurysm: 'LV aneurysm: established Q/QS waves with ST elevation that persists for weeks over dyskinetic scar; T waves are small relative to the QRS.',
       takotsubo: 'Takotsubo (subacute): apex-centred repolarisation delay → deep widespread T inversion and QT prolongation, not confined to one coronary territory (the territory selector has little effect).',
     };
     const posterior = (['V7', 'V8', 'V9'] as LeadId[]).map((l) => `${l} ${st[l].toFixed(1)}`).join(', ');
     explain.replaceChildren(
       p(`**${T.label}** (${T.artery}; classic leads ${T.leads}). ${stageText[stage]}`),
-      p(`Model result — ST elevation: ${elevated.join(', ') || 'none'}; ST depression: ${depressed.join(', ') || 'none'}; V4R ${st.V4R.toFixed(1)} mm; posterior ${posterior} mm (≥ 0.5 mm in V7–V9 is significant).`, 'ref-meta'),
+      p(`Model result (UDMI thresholds for a man ≥ 40 y: STE ≥ 2 mm in V2–V3, ≥ 1 mm elsewhere) — ST elevation: ${elevated.join(', ') || 'none'}; ST depression: ${depressed.join(', ') || 'none'}; V4R ${st.V4R.toFixed(1)} mm; posterior ${posterior} mm (≥ 0.5 mm in V7–V9 is significant).`, 'ref-meta'),
     );
   }, 60);
   root.append(
@@ -161,7 +161,7 @@ export function renderIschemia(root: HTMLElement): () => void {
     ),
   );
   root.append(h('h2', null, 'Ischaemia library'), h('div', { class: 'grid' }, ...dxByCategory(['ischemia']).map(dxTile)));
-  root.append(refList(['udmi2018', 'ecgStd6', 'acs2025', 'sgarbossa1996', 'smith2012']));
+  root.append(refList(['udmi2018', 'ecgStd6', 'acs2025', 'sgarbossa1996', 'smith2012', 'dewinter2008', 'takotsubo2018']));
   rerun();
   return () => {
     view.destroy();

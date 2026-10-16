@@ -28,11 +28,11 @@ export function renderSearch(root: HTMLElement, _parts: string[], q: URLSearchPa
     if (!list.length) continue;
     root.append(h('h2', null, title), h('div', { class: 'grid' }, ...list.map((x) => h('a', { class: 'tile', href: x.href }, h('h3', null, x.title), h('p', null, x.subtitle)))));
   }
-  if (/adenosine/i.test(query)) root.append(h('div', { class: 'callout warn' }, p('Situations where adenosine should not be relied upon: irregular or polymorphic wide-complex tachycardia (including pre-excited AF), VT due to scar (no effect), and AF/flutter/atrial tachycardia (reveals the atrial rhythm rather than treating it). See the [adenosine demonstrator](#/sandbox/adenosine) and [ACLS reference](#/acls).')));
+  if (/adenosine/i.test(query)) root.append(h('div', { class: 'callout warn' }, p('Situations where adenosine should not be relied upon: irregular or polymorphic wide-complex tachycardia (including pre-excited AF), VT due to scar (no effect), and AF/flutter/most atrial tachycardias (usually reveals the atrial rhythm rather than treating it). See the [adenosine demonstrator](#/sandbox/adenosine) and [ACLS reference](#/acls).')));
 }
 
 export function renderSources(root: HTMLElement): void {
-  root.append(header('Evidence', 'Sources & evidence policy', 'Every clinically consequential module cites one or more records below. Each record was checked against PubMed (PMID, DOI, journal, volume, pages) on the verification date shown. Where a newer guideline exists it is used as the primary source (e.g. 2025 AHA ACLS, 2023 ACC/AHA/ACCP/HRS AF, 2025 ESC myocarditis & pericarditis, 2026 AHA/ACC PE).'));
+  root.append(header('Evidence', 'Sources & evidence policy', 'Every clinically consequential module cites one or more records below. Each journal record was checked against PubMed (PMID, DOI, journal, volume, pages) on the verification date shown; the LITFL ECG library (a free open-access teaching resource) is listed as a secondary source used to cross-check the wording of named signs and criteria. Where a newer guideline exists it is used as the primary source (e.g. 2025 AHA ACLS, 2023 ACC/AHA/ACCP/HRS AF, 2025 ESC myocarditis & pericarditis, 2026 AHA/ACC PE).'));
   const kinds: [string, string][] = [
     ['guideline', 'Guidelines'],
     ['consensus', 'Consensus documents'],

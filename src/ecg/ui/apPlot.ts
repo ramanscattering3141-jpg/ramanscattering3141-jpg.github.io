@@ -76,30 +76,35 @@ export function ventricularAP(pp: ApParams, epi: boolean): ApCurve {
 }
 
 export function sinoatrialAP(pp: ApParams): ApCurve {
-  const mdp = -62 - 4 * Math.min(0, pp.sympathetic) * -1;
-  const slope = 0.09 * (1 + 0.8 * pp.sympathetic);
+  // Two cycles of a sinus-node cell at a rate set by autonomic tone (72/min at rest). Vagal tone
+  // hyperpolarises the maximum diastolic potential (IK,ACh) and flattens phase 4; sympathetic tone
+  // steepens phase 4 (If, ICa,T) so threshold is reached sooner.
+  const symp = Math.max(-1, Math.min(1, pp.sympathetic));
+  const mdp = -62 + 4 * Math.min(0, symp);
   const thr = -40;
+  const peak = 12;
+  const cl = 60000 / (72 * (1 + 0.45 * symp));
+  const up = 45; // slow Ca²⁺-dependent upstroke (phase 0)
+  const rep = 150; // phase 3
+  const d4 = Math.max(120, cl - up - rep);
   const t: number[] = [];
   const v: number[] = [];
-  let y = mdp;
-  let phase = 4;
-  let tp = 0;
-  for (let x = 0; x <= 520; x++) {
-    if (phase === 4) {
-      y += slope;
-      if (y >= thr) {
-        phase = 0;
-        tp = x;
-      }
-    } else if (phase === 0) {
-      y = thr + (10 - thr) * Math.min(1, (x - tp) / 15);
-      if (x - tp >= 15) {
-        phase = 3;
-        tp = x;
-      }
+  const span = 1800;
+  const cyc = d4 + up + rep;
+  for (let x = 0; x <= span; x += 2) {
+    // start the trace part-way through phase 4 so the first upstroke is near the left edge
+    const ph = (x + d4 * 0.6) % cyc;
+    let y: number;
+    if (ph < d4) {
+      const u = ph / d4;
+      // early If-driven rise, then the late T-type Ca²⁺ acceleration toward threshold
+      y = mdp + (thr - mdp) * (0.55 * u + 0.45 * Math.pow(u, 3));
+    } else if (ph < d4 + up) {
+      const u = (ph - d4) / up;
+      y = thr + (peak - thr) * (u * u * (3 - 2 * u));
     } else {
-      y = 10 - (10 - mdp) * Math.min(1, (x - tp) / 110);
-      if (x - tp >= 110) phase = 4;
+      const u = (ph - d4 - up) / rep;
+      y = peak - (peak - mdp) * (0.5 - 0.5 * Math.cos(Math.PI * Math.pow(u, 0.85)));
     }
     t.push(x);
     v.push(y);
@@ -117,7 +122,8 @@ export function drawAP(canvas: HTMLCanvasElement, curves: { c: ApCurve; label: s
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
   const pad = 36;
-  const X = (t: number): number => pad + (t / 520) * (W - pad - 10);
+  const span = Math.max(520, ...curves.map(({ c }) => c.t[c.t.length - 1]));
+  const X = (t: number): number => pad + (t / span) * (W - pad - 10);
   const Y = (mv: number): number => 12 + ((40 - mv) / 140) * (H - 30);
   const ink = css('--ink') || '#222';
   const muted = css('--muted') || '#777';
@@ -133,16 +139,33 @@ export function drawAP(canvas: HTMLCanvasElement, curves: { c: ApCurve; label: s
     ctx.fillText(`${mv}`, 4, Y(mv) + 4);
   }
   ctx.fillText('mV', 4, 10);
-  ctx.fillText('time (ms) →', W - 80, H - 4);
+  const step = span > 1000 ? 200 : 100;
+  for (let tt = step; tt < span; tt += step) ctx.fillText(String(tt), X(tt) - 8, H - 4);
+  ctx.textAlign = 'right';
+  ctx.fillText('ms', W - 8, H - 4);
+  ctx.textAlign = 'left';
   curves.forEach(({ c, label, color }, k) => {
     ctx.strokeStyle = color;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     c.t.forEach((t, i) => (i ? ctx.lineTo(X(t), Y(c.v[i])) : ctx.moveTo(X(t), Y(c.v[i]))));
     ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.fillText(label, X(c.t[c.t.length - 1]) - 150, Y(c.rmp) - 6 - k * 13);
   });
+  // Legend in the top-right corner, on a backing so it never sits on top of a trace.
+  ctx.font = '600 11px system-ui';
+  curves.forEach(({ label, color }, k) => {
+    const tw = ctx.measureText(label).width;
+    const lx = W - 14 - tw;
+    const ly = (showPhases ? 40 : 18) + k * 15;
+    ctx.fillStyle = css('--panel') || '#fff';
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(lx - 22, ly - 10, tw + 26, 14);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = color;
+    ctx.fillRect(lx - 18, ly - 4, 12, 3);
+    ctx.fillText(label, lx, ly);
+  });
+  ctx.font = '11px system-ui';
   if (showPhases && curves[0]) {
     const ph = curves[0].c.phase;
     ctx.fillStyle = ink;

@@ -180,10 +180,10 @@ export function explainAt(run: EcgRun, t: number, lead: LeadId = 'II'): Moment {
       if (!phase || phase.id === 'TP' || phase.id === 'U') phase = { id: 'F', label: PHASE_LABEL.F, t0: t - 100, t1: t + 100 };
       if (c.kind === 'flutter') {
         conduction.push(`Atria: macro-re-entry around the tricuspid annulus (cycle ${Math.round(c.cl ?? 200)} ms).`);
-        why.push('Flutter waves: the circuit is always active somewhere, so there is no isoelectric baseline between waves (sawtooth). Typical counter-clockwise flutter travels UP the septum → negative waves in II, III, aVF.');
+        why.push(p.rhythm.flutterReverse ? 'Flutter waves: the circuit is always active somewhere, so there is no isoelectric baseline between waves. Clockwise (reverse typical) flutter travels DOWN the septum → positive flutter waves in II, III, aVF.' : 'Flutter waves: the circuit is always active somewhere, so there is no isoelectric baseline between waves (sawtooth). Typical counter-clockwise flutter travels UP the septum → negative waves in II, III, aVF.');
       } else {
         conduction.push('Atria: multiple wandering wavelets (fibrillation) — no organised P wave.');
-        why.push('Fibrillation: hundreds of small wavefronts cancel each other → low, irregular f waves; the AV node filters them irregularly (concealed conduction) → irregularly irregular QRS.');
+        why.push('Fibrillation: multiple small, disorganised wavefronts partly cancel each other → low, irregular f waves; the AV node filters them irregularly (concealed conduction) → irregularly irregular QRS.');
       }
     } else {
       phase = { id: 'VF', label: PHASE_LABEL.VF, t0: t - 100, t1: t + 100 };
@@ -203,7 +203,7 @@ export function explainAt(run: EcgRun, t: number, lead: LeadId = 'II'): Moment {
     if (sg.row === 'AP') conduction.push(sg.blocked ? 'Accessory pathway: impulse blocked.' : `Accessory pathway: ${sg.dir === 'ante' ? 'antegrade (atrium → ventricle)' : 'retrograde (ventricle → atrium)'} conduction.`);
     else if (infra) continue;
     else if (sg.blocked) conduction.push(`AV node${pathName(sg.path)}: impulse BLOCKED — it dies in the node, so no QRS follows this P.`);
-    else if (sg.dir === 'ante') conduction.push(`AV node${pathName(sg.path)}: antegrade conduction (slow, Ca²⁺-dependent) — this delay is the PR segment.`);
+    else if (sg.dir === 'ante') conduction.push(`AV node${pathName(sg.path)}: antegrade conduction (slow, Ca²⁺-dependent) — this delay forms most of the PR segment.`);
     else conduction.push(`AV node${pathName(sg.path)}: retrograde conduction back to the atria.`);
   }
   for (const lg of sim.log) {
@@ -214,7 +214,7 @@ export function explainAt(run: EcgRun, t: number, lead: LeadId = 'II'): Moment {
     else if (lg.node === 'V' && lg.note) conduction.push(`Ventricles: ${lg.note}.`);
     else if (lg.node === 'A' && lg.note) conduction.push(`Atria: ${lg.note}.`);
   }
-  for (const s of sim.spikes) if (t >= s.t && t < s.t + 30) conduction.push(s.chamber === 'shock' ? '⚡ Shock: the whole myocardium is depolarised at once.' : `⚡ Pacing stimulus (${s.chamber === 'A' ? 'atrium' : 'ventricle'})${s.captured ? '' : ' — NO capture'}.`);
+  for (const s of sim.spikes) if (t >= s.t && t < s.t + 30) conduction.push(s.chamber === 'shock' ? '⚡ Shock: a critical mass of myocardium is depolarised at once.' : `⚡ Pacing stimulus (${s.chamber === 'A' ? 'atrium' : 'ventricle'})${s.captured ? '' : ' — NO capture'}.`);
 
   // ---- PR segment, blocked P, diastole
   if (!phase) {
@@ -261,9 +261,12 @@ function pathName(path: string): string {
 }
 
 function atrialWhy(a: AtrialEvent): string {
+  if (a.kind === 'retro' && a.site === 'retroLeftLateral') return 'Retrograde P via a left lateral pathway: the left atrium is activated first (eccentric activation) → the P vector points rightward and somewhat superiorly (negative in I and aVL).';
+  if (a.kind === 'retro' && a.site === 'retroRightFree') return 'Retrograde P via a right free-wall pathway: the right atrium is activated first (eccentric activation) → the P vector points leftward and somewhat superiorly.';
   if (a.kind === 'retro') return 'Retrograde P: the atria are activated from the AV junction or an accessory pathway, bottom-to-top → the P vector points superiorly (negative in II, III, aVF).';
   if (a.kind === 'paced') return 'Paced P: the atrial lead depolarises the atrium from its tip.';
-  if (a.site === 'sinus' || a.site === 'highRA' || a.site === 'crista') return 'Sinus P: activation starts high in the right atrium and spreads down and to the left (RA first, then LA via Bachmann’s bundle) → vector leftward-inferior → upright P in I and II.';
+  if (a.site === 'highRA' || a.site === 'crista') return 'High right-atrial focus (e.g. crista terminalis): it starts close to the sinus node, so activation spreads down and to the left much as in sinus rhythm → a P wave similar to the sinus P (upright in I and II).';
+  if (a.site === 'sinus') return 'Sinus P: activation starts high in the right atrium and spreads down and to the left (RA first, then LA via Bachmann’s bundle) → vector leftward-inferior → upright P in I and II.';
   if (a.site === 'lowRA' || a.site === 'lowLA') return 'Low atrial focus: activation spreads upward → inverted P in II, III, aVF.';
   if (a.site === 'leftAtrial') return 'Left atrial focus: activation spreads rightward → negative P in I/aVL, positive (dome) P in V1.';
   return '';
@@ -277,7 +280,7 @@ function ventricularWhy(run: EcgRun, beat: BeatInfo, ph: PhaseId): string[] {
   if (ph === 'QRS') {
     if (ev.route === 'his') {
       if (ev.junctional) out.push('Junctional beat: the impulse starts in the AV junction but still uses the His–Purkinje system → normal-width QRS; the atria are activated retrogradely or not at all.');
-      if (ev.aberrant === 'rbbb') out.push('Aberrant conduction (Ashman): the premature impulse found the right bundle still refractory after a long preceding cycle → functional RBBB for this beat only.');
+      if (ev.aberrant === 'rbbb') out.push('Aberrant conduction: the early impulse found the right bundle still refractory (its refractory period lengthens after a long preceding cycle — the Ashman phenomenon) → functional RBBB for this beat.');
       const BB: Record<string, string> = {
         normal: 'His → bundle branches → Purkinje network activate the endocardium almost simultaneously → fast, narrow QRS. The septum goes first (left→right: small q in I/V6, small r in V1), then the thick LV free wall dominates (tall R in V5–V6).',
         rbbb: 'Right bundle blocked: the septum and LV activate normally (first part of the QRS unchanged), then the RV is activated late, cell-to-cell from the left → a terminal rightward/anterior force: R′ in V1, broad S in I and V6.',
@@ -307,10 +310,11 @@ function ventricularWhy(run: EcgRun, beat: BeatInfo, ph: PhaseId): string[] {
     if (p.drugs.naBlocker > 0.3) out.push('Na⁺-channel blockade slows conduction, especially the terminal rightward forces → wide QRS, R in aVR.');
   } else if (ph === 'ST') {
     const isch = p.ischemia;
-    if (isch.stage === 'stemi' || isch.stage === 'hyperacute' || isch.stage === 'evolving' || isch.stage === 'aneurysm') out.push(`ST segment: healthy cells sit at the plateau, but the injured ${TERRITORY[isch.territory].label.toLowerCase()} myocardium has a lower plateau/shortened action potential. The injury current points TOWARD the injured epicardium → ST elevation in leads facing it (${TERRITORY[isch.territory].leads}), reciprocal depression opposite.`);
+    if (isch.stage === 'aneurysm') out.push(`ST segment: persistent ST elevation (${TERRITORY[isch.territory].leads.split(';')[0]}) over the dyskinetic, scarred ${TERRITORY[isch.territory].label.toLowerCase()} wall with Q waves, weeks after the infarct — not acute injury.`);
+    else if (isch.stage === 'stemi' || isch.stage === 'hyperacute' || isch.stage === 'evolving') out.push(`ST segment: healthy cells sit at the plateau, but the injured ${TERRITORY[isch.territory].label.toLowerCase()} myocardium has a lower plateau/shortened action potential. The injury current points TOWARD the injured epicardium → ST elevation in leads facing it (${TERRITORY[isch.territory].leads}), reciprocal depression opposite.`);
     else if (isch.stage === 'subendocardial' || isch.stage === 'deWinter') out.push('ST segment: the injury is subendocardial, so the injury current points toward the cavity → ST depression in most leads, elevation in aVR.');
     else if (p.pericarditis >= 1 && p.pericarditis < 2) out.push('ST segment: diffuse epicardial inflammation → an ST vector toward the apex → concave ST elevation in most leads, depression in aVR.');
-    else if (p.brugada) out.push('ST segment: loss of the RVOT epicardial action-potential dome creates a transmural voltage gradient seen only by V1–V2 → coved/saddleback ST elevation.');
+    else if (p.brugada) out.push('ST segment: loss of the RVOT epicardial action-potential dome creates a transmural voltage gradient seen by the right precordial leads (V1–V2) overlying the RVOT → coved/saddleback ST elevation.');
     else if (p.drugs.digoxin > 0) out.push('ST segment: digoxin shortens the plateau and changes its slope → sagging ("reverse tick") ST depression.');
     else if (ev.route !== 'his' || p.bundle !== 'normal') out.push('ST segment: after abnormal activation, repolarisation also follows an abnormal sequence → secondary ST deviation OPPOSITE to the main QRS deflection.');
     else out.push('ST segment: every ventricular cell is at its plateau (phase 2, Ca²⁺ in ≈ K⁺ out) at nearly the same voltage → no gradient → isoelectric.');
@@ -319,9 +323,11 @@ function ventricularWhy(run: EcgRun, beat: BeatInfo, ph: PhaseId): string[] {
     else if (p.K < 3.3) out.push('T wave: low K⁺ reduces repolarising currents → flat T, and late repolarisation appears as a U wave.');
     else if (ev.route !== 'his' || p.bundle !== 'normal') out.push('T wave (secondary): repolarisation follows the abnormal activation order, so the T vector points opposite to the abnormal part of the QRS → discordant T.');
     else if (p.ischemia.stage === 'wellens' || p.ischemia.stage === 'evolving' || p.ischemia.stage === 'takotsubo') out.push('T wave (primary): the ischaemic/stunned region repolarises LATE, so the repolarisation vector points away from it → deep inverted T waves over that region.');
-    else out.push('T wave: the epicardium has a shorter action potential and repolarises FIRST, although it depolarised last. So the repolarisation vector points in the same direction as depolarisation → upright T in leads with an upright QRS.');
-    if (p.qtcBase > 470 || p.drugs.qtDrug > 0.3) out.push('Long QT: reduced repolarising K⁺ current (or drug IKr block) prolongs phase 3 → the T wave ends late; early afterdepolarisations can trigger torsades.');
-  } else if (ph === 'TP' || ph === 'U') {
+    else out.push('T wave: the epicardium has a shorter action potential and repolarises FIRST, although it depolarised last. Repolarisation therefore travels epicardium → endocardium (opposite to depolarisation); being the opposite charge change, its vector points the same way as the QRS vector → upright T in leads with an upright QRS.');
+    if (p.qtcBase > 470 || p.drugs.qtDrug > 0.3) out.push('Long QT: less net repolarising current (reduced K⁺ current, e.g. drug IKr block, or more late inward Na⁺/Ca²⁺ current) prolongs the action potential → the T wave ends late; early afterdepolarisations can trigger torsades.');
+  } else if (ph === 'U') {
+    out.push('After the T wave: a small U wave may appear here (best seen in V2–V3, prominent with hypokalaemia and bradycardia). Its origin is debated — late repolarisation of Purkinje fibres or mid-myocardial cells, or stretch-induced afterpotentials. Ventricular cells are returning to their resting potential (phase 4).');
+  } else if (ph === 'TP') {
     out.push('Electrical diastole: ventricular cells are at their resting potential (phase 4); pacemaker cells in the sinus node slowly depolarise toward threshold.');
   }
   return out;

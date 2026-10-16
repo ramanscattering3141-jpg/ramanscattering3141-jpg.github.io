@@ -102,7 +102,7 @@ export function renderAvrtLab(root: HTMLElement): () => void {
     panel.stop();
     panel.show(phys);
     const txt: Record<string, string> = {
-      sinus: phys.rhythm.ap.antegrade ? `Pre-excitation from a ${AP_SITE[loc.v].label} pathway. Short PR (the pathway skips the nodal delay), delta wave (slow muscle-to-muscle activation near the insertion), wide fused QRS. Delta polarity points away from the insertion site — compare leads I, aVL, II, III, aVF and V1 as you move it.` : 'Concealed pathway: it cannot conduct antegradely, so the sinus ECG is NORMAL — yet it can still form the retrograde limb of orthodromic AVRT.',
+      sinus: phys.rhythm.ap.antegrade ? `Pre-excitation from a ${AP_SITE[loc.v].label} pathway. Short PR (the pathway skips the nodal delay), delta wave (slow muscle-to-muscle activation near the insertion), wide fused QRS. The delta-wave vector points away from the insertion site — compare leads I, aVL, II, III, aVF and V1 as you move it.` : 'Concealed pathway: it cannot conduct antegradely, so the sinus ECG is NORMAL — yet it can still form the retrograde limb of orthodromic AVRT.',
       ortho: explainRun(panel, 'avrt'),
       anti: explainRun(panel, 'avrt'),
       af: 'Pre-excited AF: fibrillatory impulses reach the ventricles over the pathway, limited only by its refractory period. QRS width varies with the degree of fusion. Try the AV-nodal blocker: the rate does not fall and more beats become fully pre-excited.',

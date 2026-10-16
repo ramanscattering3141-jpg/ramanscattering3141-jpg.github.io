@@ -142,7 +142,7 @@ export function buildControls(state: { p: Physio }, onChange: () => void, opts: 
       sel('Ischaemic territory', 'ischemia.territory', Object.entries(TERRITORY).map(([k, v]) => [k, `${v.label} — ${v.artery}`]) as [string, string][]),
       sel('Ischaemia stage', 'ischemia.stage', [['none', 'none'], ['hyperacute', 'hyperacute T'], ['stemi', 'acute transmural injury (STEMI)'], ['evolving', 'evolving (Q + T inversion)'], ['old', 'old infarct (Q waves)'], ['subendocardial', 'subendocardial ischaemia'], ['wellens', 'Wellens (reperfused LAD)'], ['deWinter', 'de Winter (J-point STD + tall T)'], ['aneurysm', 'LV aneurysm (Q + persistent STE)'], ['takotsubo', 'Takotsubo (deep TWI, long QT)']]),
       num('Extent', 'ischemia.extent', 0.1, 1, 0.05),
-      num('Pericarditis stage', 'pericarditis', 0, 4, 1, '', '1 = STE + PR depression, 2 = flattening, 3 = T inversion'),
+      num('Pericarditis stage', 'pericarditis', 0, 4, 1, '', '1 = STE + PR depression, 2 = ST normalises / T flattens, 3 = T inversion, 4 = normalisation'),
       num('Myocarditis', 'myocarditis', 0, 1, 0.05),
       num('Acute RV strain (PE)', 'rvStrain', 0, 1, 0.05),
       num('Low voltage (effusion)', 'lowVoltage', 0, 1, 0.05),

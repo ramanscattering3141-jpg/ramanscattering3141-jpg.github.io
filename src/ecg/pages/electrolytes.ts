@@ -8,7 +8,7 @@ import { managementBlock } from './library';
 import type { Physio } from '../engine/params';
 
 function kText(K: number): string {
-  if (K < 2.8) return 'Severe hypokalaemia: reduced IK1/IKr → slow late repolarisation → flat T, ST depression, large U waves fusing with T (long QU); ectopy and torsades risk.';
+  if (K < 2.5) return 'Severe hypokalaemia: reduced IK1/IKr → slow late repolarisation → flat T, ST depression, large U waves fusing with T (long QU); ectopy and torsades risk.';
   if (K < 3.5) return 'Hypokalaemia: repolarisation slows → T flattens, U wave grows.';
   if (K <= 5.2) return 'Normal K⁺: resting potential ≈ −90 mV; almost all fast Na⁺ channels available.';
   if (K <= 6.5) return 'Mild–moderate hyperkalaemia: higher IKr conductance → faster, synchronous phase 3 → tall, narrow, peaked T; QT may shorten.';

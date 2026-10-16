@@ -37,7 +37,7 @@ export const DDX: DdxProblem[] = [
       { id: 'focalAT', preset: 'focalAT', features: { p: 'Non-sinus P′ with isoelectric baseline', rp: 'Long RP', onset: 'Abrupt or warm-up', rate: '100–250', vagal: 'AV block with continuing P′ (some foci terminate)' } },
       { id: 'accelJunctional', preset: 'junctionalTach', features: { p: 'Retrograde P or AV dissociation', rp: 'Variable', onset: 'Gradual (warm-up)', rate: '100–140', vagal: 'Usually no termination' } },
     ],
-    pearls: ['Run a rhythm strip during vagal manoeuvres/adenosine: termination → AV-node-dependent (AVNRT/AVRT); unmasked atrial activity → flutter/AT; transient slowing → sinus.', 'A heart rate fixed at ~150/min is 2:1 flutter until proven otherwise.', 'Termination ending with a P wave suggests AVNRT/AVRT (block in the AV node); ending with a QRS makes AT less likely to have been terminated by AV block.'],
+    pearls: ['Run a rhythm strip during vagal manoeuvres/adenosine: termination → AV-node-dependent (AVNRT/AVRT); unmasked atrial activity → flutter/AT; transient slowing → sinus.', 'A heart rate fixed at ~150/min is 2:1 flutter until proven otherwise.', 'Termination ending with a P wave (the last atrial impulse blocked in the AV node) favours AVNRT/AVRT — AT rarely stops at the same moment as AV block; termination ending with a QRS is less specific (focal AT, atypical AVNRT, or AVRT/AVNRT with retrograde block).'],
     refs: ['svt2015', 'acls2025'],
   },
   {
@@ -83,7 +83,7 @@ export const DDX: DdxProblem[] = [
   {
     id: 'irregular-wide',
     title: 'Irregular wide-complex tachycardia',
-    intro: 'Irregular + wide = AF with bundle-branch block/aberrancy, pre-excited AF, or polymorphic VT/torsades. The management of each is different — and AV-nodal blockers are dangerous in two of them.',
+    intro: 'Irregular + wide = AF with bundle-branch block/aberrancy, pre-excited AF, or polymorphic VT/torsades. The management of each is different — and AV-nodal blockers, used for rate control in AF with aberrancy, are dangerous in pre-excited AF.',
     features: [
       { key: 'morph', label: 'QRS morphology' },
       { key: 'rate', label: 'Rate' },

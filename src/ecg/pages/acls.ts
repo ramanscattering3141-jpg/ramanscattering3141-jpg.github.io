@@ -40,7 +40,7 @@ export function renderAcls(root: HTMLElement): () => void {
     }
   }
   root.append(
-    h('section', { class: 'card' }, h('h2', null, 'Key 2025 points'), ul(['Adenosine for wide-complex tachycardia only if REGULAR and MONOMORPHIC.', 'Initial synchronised cardioversion energy for AF/atrial flutter: 200 J (biphasic) with incremental increases.', 'Vector change or double sequential external defibrillation may be considered for refractory VF (Class 2b).', 'Bradycardia: atropine 1 mg every 3–5 min (max 3 mg); then pacing and/or dopamine 5–20 mcg/kg/min or epinephrine 2–10 mcg/min; consider transvenous pacing.'])),
+    h('section', { class: 'card' }, h('h2', null, 'Key 2025 points'), ul(['Adenosine for wide-complex tachycardia only if REGULAR and MONOMORPHIC (Class 2b); never verapamil/diltiazem for wide-complex tachycardia.', 'Synchronised cardioversion of AF: initial biphasic energy ≥ 200 J is reasonable (Class 2a); atrial flutter: 200 J may be reasonable (Class 2b); increase if unsuccessful. The new Electrical Cardioversion algorithm lists 100 J for narrow-complex tachycardia and monomorphic VT.', 'VF/pVT persisting after ≥ 3 shocks: the usefulness of vector change or double sequential external defibrillation has not been established (Class 2b).', 'Bradycardia: atropine 1 mg every 3–5 min (max 3 mg); then pacing and/or dopamine 5–20 mcg/kg/min or epinephrine 2–10 mcg/min; consider transvenous pacing.'])),
     refList(['acls2025', 'aclsExec2025', 'special2025', 'postArrest2025']),
   );
   return () => views.forEach((v) => v.destroy());

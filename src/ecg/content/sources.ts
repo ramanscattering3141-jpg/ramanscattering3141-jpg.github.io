@@ -1,5 +1,6 @@
-// Source registry. Every record below was checked against its PubMed entry (PMID, DOI,
-// journal, volume and pages) on the date in `verified`. No citation in this app is
+// Source registry. Every journal record below was checked against its PubMed entry (PMID, DOI,
+// journal, volume and pages) on the date in `verified`; the one web resource (the LITFL ECG
+// library, used to cross-check named signs) is marked as such. No citation in this app is
 // invented; clinical statements reference these IDs. When a newer guideline exists it is
 // listed and flagged in `supersedes` / `note`.
 
@@ -17,7 +18,7 @@ export interface Source {
   note?: string;
 }
 
-const V = '2026-09-28';
+const V = '2026-10-09';
 
 export const SOURCES: Record<string, Source> = {
   // ---------------- Guidelines ----------------
@@ -182,6 +183,7 @@ export const SOURCES: Record<string, Source> = {
     pmid: '37721023',
     verified: V,
     kind: 'guideline',
+    note: 'The same poisonings (β-blockers, calcium-channel blockers, digoxin, sodium-channel blockers, etc.) are now also covered by the 2025 AHA Guidelines Part 10 (see special2025); check the 2025 document first.',
   },
   acs2025: {
     id: 'acs2025',
@@ -191,6 +193,17 @@ export const SOURCES: Record<string, Source> = {
     venue: 'Circulation 2025;151(13):e771–e862',
     doi: '10.1161/CIR.0000000000001309',
     pmid: '40014670',
+    verified: V,
+    kind: 'guideline',
+  },
+  escAcs2023: {
+    id: 'escAcs2023',
+    authors: 'Byrne RA, Rossello X, Coughlan JJ, et al. (ESC)',
+    title: '2023 ESC Guidelines for the management of acute coronary syndromes',
+    year: 2023,
+    venue: 'Eur Heart J 2023;44(38):3720–3826',
+    doi: '10.1093/eurheartj/ehad191',
+    pmid: '37622654',
     verified: V,
     kind: 'guideline',
   },
@@ -204,7 +217,7 @@ export const SOURCES: Record<string, Source> = {
     pmid: '30571511',
     verified: V,
     kind: 'consensus',
-    note: 'ECG criteria for ST elevation/depression thresholds and pathological Q waves.',
+    note: 'ECG criteria for ST elevation/depression thresholds and pathological Q waves. Superseded by the Fifth Universal Definition of Myocardial Infarction (2026; Mills NL, Newby LK, Zaman S, et al.; Circulation, doi:10.1161/CIR.0000000000001477, PMID 42661421; also published in Eur Heart J and J Am Coll Cardiol), which replaces the type 1–5 classification with primary, secondary and procedure-related MI. Check ECG criteria against the 2026 document.',
   },
   escPeri2015: {
     id: 'escPeri2015',
@@ -256,7 +269,7 @@ export const SOURCES: Record<string, Source> = {
   ipa2013: {
     id: 'ipa2013',
     authors: 'Priori SG, Wilde AA, Horie M, et al. (HRS/EHRA/APHRS)',
-    title: 'Expert consensus statement on the diagnosis and management of patients with inherited primary arrhythmia syndromes',
+    title: 'HRS/EHRA/APHRS expert consensus statement on the diagnosis and management of patients with inherited primary arrhythmia syndromes',
     year: 2013,
     venue: 'Heart Rhythm 2013;10(12):1932–1963',
     doi: '10.1016/j.hrthm.2013.05.014',
@@ -275,6 +288,7 @@ export const SOURCES: Record<string, Source> = {
     pmid: '27423412',
     verified: V,
     kind: 'consensus',
+    note: 'Updated by an APHRS-organised international expert consensus (Nademanee K, Wilde AA, Ackerman MJ, et al. Contemporary Perspectives on J-Wave Syndromes: An Expert Consensus Statement. J Arrhythm 2026;42(1):e70284; doi:10.1002/joa3.70284; PMID 41738055).',
   },
   erp2015: {
     id: 'erp2015',
@@ -323,7 +337,7 @@ export const SOURCES: Record<string, Source> = {
   },
   ecgStd1: {
     id: 'ecgStd1',
-    authors: 'Kligfield P, Gettes LS, Bailey JJ, et al. (AHA/ACC/HRS)',
+    authors: 'Kligfield P, Gettes LS, Bailey JJ, et al. (AHA/ACCF/HRS)',
     title: 'Recommendations for the standardization and interpretation of the electrocardiogram: Part I: The electrocardiogram and its technology',
     year: 2007,
     venue: 'Circulation 2007;115(10):1306–1324',
@@ -334,8 +348,8 @@ export const SOURCES: Record<string, Source> = {
   },
   ecgStd3: {
     id: 'ecgStd3',
-    authors: 'Surawicz B, Childers R, Deal BJ, Gettes LS (AHA/ACCF/HRS)',
-    title: 'Recommendations for the standardization and interpretation of the electrocardiogram: Part III: Intraventricular conduction disturbances',
+    authors: 'Surawicz B, Childers R, Deal BJ, Gettes LS, et al. (AHA/ACCF/HRS)',
+    title: 'AHA/ACCF/HRS recommendations for the standardization and interpretation of the electrocardiogram: Part III: Intraventricular conduction disturbances',
     year: 2009,
     venue: 'Circulation 2009;119(10):e235–e240',
     doi: '10.1161/CIRCULATIONAHA.108.191095',
@@ -345,8 +359,8 @@ export const SOURCES: Record<string, Source> = {
   },
   ecgStd4: {
     id: 'ecgStd4',
-    authors: 'Rautaharju PM, Surawicz B, Gettes LS (AHA/ACCF/HRS)',
-    title: 'Recommendations for the standardization and interpretation of the electrocardiogram: Part IV: The ST segment, T and U waves, and the QT interval',
+    authors: 'Rautaharju PM, Surawicz B, Gettes LS, et al. (AHA/ACCF/HRS)',
+    title: 'AHA/ACCF/HRS recommendations for the standardization and interpretation of the electrocardiogram: Part IV: The ST segment, T and U waves, and the QT interval',
     year: 2009,
     venue: 'Circulation 2009;119(10):e241–e250',
     doi: '10.1161/CIRCULATIONAHA.108.191096',
@@ -357,7 +371,7 @@ export const SOURCES: Record<string, Source> = {
   ecgStd5: {
     id: 'ecgStd5',
     authors: 'Hancock EW, Deal BJ, Mirvis DM, et al. (AHA/ACCF/HRS)',
-    title: 'Recommendations for the standardization and interpretation of the electrocardiogram: Part V: Electrocardiogram changes associated with cardiac chamber hypertrophy',
+    title: 'AHA/ACCF/HRS recommendations for the standardization and interpretation of the electrocardiogram: Part V: Electrocardiogram changes associated with cardiac chamber hypertrophy',
     year: 2009,
     venue: 'Circulation 2009;119(10):e251–e261',
     doi: '10.1161/CIRCULATIONAHA.108.191097',
@@ -368,7 +382,7 @@ export const SOURCES: Record<string, Source> = {
   ecgStd6: {
     id: 'ecgStd6',
     authors: 'Wagner GS, Macfarlane P, Wellens H, et al. (AHA/ACCF/HRS)',
-    title: 'Recommendations for the standardization and interpretation of the electrocardiogram: Part VI: Acute ischemia/infarction',
+    title: 'AHA/ACCF/HRS recommendations for the standardization and interpretation of the electrocardiogram: Part VI: Acute ischemia/infarction',
     year: 2009,
     venue: 'Circulation 2009;119(10):e262–e270',
     doi: '10.1161/CIRCULATIONAHA.108.191098',
@@ -611,7 +625,7 @@ export const SOURCES: Record<string, Source> = {
     pmid: '20172911',
     verified: V,
     kind: 'consensus',
-    note: 'Source of the ECG major/minor criteria (T inversion V1–V3, epsilon wave, terminal activation duration ≥ 55 ms).',
+    note: 'Source of the ECG major/minor criteria (T inversion V1–V3, epsilon wave, terminal activation duration ≥ 55 ms). A European Task Force has since proposed updated criteria that also cover left-sided arrhythmogenic cardiomyopathy (Corrado D, et al. Int J Cardiol 2024;395:131447; doi:10.1016/j.ijcard.2023.131447; PMID 37844667).',
   },
   athlete2017: {
     id: 'athlete2017',
@@ -647,6 +661,18 @@ export const SOURCES: Record<string, Source> = {
     verified: V,
     kind: 'primary',
   },
+  wellens1982: {
+    id: 'wellens1982',
+    authors: 'de Zwaan C, Bär FW, Wellens HJ',
+    title: 'Characteristic electrocardiographic pattern indicating a critical stenosis high in left anterior descending coronary artery in patients admitted because of impending myocardial infarction',
+    year: 1982,
+    venue: 'Am Heart J 1982;103(4 Pt 2):730–736',
+    doi: '10.1016/0002-8703(82)90480-x',
+    pmid: '6121481',
+    verified: V,
+    kind: 'primary',
+    note: 'The original description of the "Wellens" T-wave pattern (18% of 145 patients admitted with unstable angina).',
+  },
   leadReversal2007: {
     id: 'leadReversal2007',
     authors: 'Batchvarov VN, Malik M, Camm AJ',
@@ -669,6 +695,17 @@ export const SOURCES: Record<string, Source> = {
     verified: V,
     kind: 'primary',
     note: 'Original derivation of the CHA₂DS₂-VASc score.',
+  },
+  litflEcg: {
+    id: 'litflEcg',
+    authors: 'Burns E, Buttner R (Life in the Fast Lane)',
+    title: 'LITFL ECG Library: basics, diagnoses, eponyms and the Top 100 ECG cases',
+    year: 2026,
+    venue: 'Life in the Fast Lane (litfl.com), free open-access medical education; continuously updated',
+    url: 'https://litfl.com/ecg-library/',
+    verified: V,
+    kind: 'review',
+    note: 'Secondary educational resource used to cross-check the wording of named signs, criteria and patterns (each entry cites its primary literature). Not peer reviewed; guideline statements in this app cite the guidelines themselves.',
   },
   artifact1999: {
     id: 'artifact1999',

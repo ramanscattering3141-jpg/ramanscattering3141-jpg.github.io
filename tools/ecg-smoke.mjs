@@ -9,7 +9,7 @@ const ROUTES = [
   'simulator', 'simulator?preset=dextrocardia', 'rhythms', 'rhythms/avnrt-lab', 'rhythms/avrt-lab', 'rhythms/flutter-lab', 'conduction', 'conduction/av', 'conduction/bbb',
   'structural', 'ischemia', 'electrolytes', 'electrolytes/drugs', 'inherited', 'management', 'acls', 'cases', 'challenge',
   'sandbox', 'sandbox/one', 'sandbox/build', 'sandbox/adenosine', 'sandbox/compare', 'sandbox/axis', 'sandbox/p', 'sandbox/qrs', 'sandbox/st', 'sandbox/hierarchy',
-  'ddx', 'search?q=wide%20QRS', 'search?q=epsilon', 'sources', 'tools', 'tools/qtc', 'tools/chads', 'tools/sgarbossa', 'tools/wct', 'tools/leads', 'glossary', 'glossary/reentry', 'path', 'heart3d', 'heart3d?preset=lbbb',
+  'ddx', 'search?q=wide%20QRS', 'search?q=epsilon', 'sources', 'tools', 'tools/qtc', 'tools/chads', 'tools/sgarbossa', 'tools/wct', 'tools/leads', 'glossary', 'glossary/reentry', 'path', 'heart3d', 'heart3d?preset=lbbb', 'heart3d?preset=chbVentricular', 'heart3d?preset=vf', 'az', 'eponyms', 'eponyms/wellens', 'eponyms/sgarbossa', 'normal', 'omi',
   'dx/avnrt', 'dx/stemi', 'dx/hcm', 'dx/arvc', 'dx/athlete', 'dx/takotsubo', 'dx/deWinter', 'dx/lvAneurysm', 'dx/cpvt', 'dx/dextrocardia', 'dx/leadReversal', 'dx/artifact',
 ];
 

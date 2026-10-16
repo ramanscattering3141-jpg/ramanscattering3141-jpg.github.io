@@ -10,7 +10,7 @@ const ORDER = ['sinusBrady', 'chb', 'mobitz2', 'af', 'flutter', 'avnrt', 'orthoA
 export function renderManagement(root: HTMLElement): () => void {
   root.append(
     header('J · Arrhythmia Management', 'Management, linked to mechanism', 'Every entry follows the same eight steps: recognition → mechanism → stable vs unstable → immediate → definitive → contraindications → why each treatment works → why others do not. Open an entry to see its ECG.'),
-    h('div', { class: 'callout warn' }, p('Summaries of the cited guidelines (ACC/AHA/HRS 2015 SVT, 2023 ACC/AHA/ACCP/HRS AF, 2017 AHA/ACC/HRS & 2022 ESC ventricular arrhythmia, 2018 ACC/AHA/HRS bradycardia, 2025 AHA ACLS, 2025 ACC/AHA ACS). Verify doses and recommendations in the current official documents before clinical use.')),
+    h('div', { class: 'callout warn' }, p('Summaries of the cited guidelines (e.g. 2015 ACC/AHA/HRS & 2019 ESC SVT, 2023 ACC/AHA/ACCP/HRS & 2024 ESC AF, 2017 AHA/ACC/HRS & 2022 ESC ventricular arrhythmia, 2018 ACC/AHA/HRS bradycardia, 2025 AHA ACLS & special circumstances, 2025 ACC/AHA/ACEP/NAEMSP/SCAI ACS). US and European recommendations sometimes differ. Verify doses and recommendations in the current official documents before clinical use.')),
   );
   const views: EcgView[] = [];
   for (const id of ORDER) {
