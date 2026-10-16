@@ -8,10 +8,10 @@ import { explainAt, type Moment } from '../engine/explain';
 import { TWELVE } from '../engine/leads';
 import { EcgView, type EcgViewOptions } from './ecgView';
 import { HeartView } from './heart';
-import { ExplainerView } from './explainer';
+import { NarrationView } from './heart/narration';
 import { h } from './dom';
-import { button, segmented } from './controls';
-import type { Heart3D } from './heart3d';
+import { segmented } from './controls';
+import type { Heart3D } from './heart/view';
 import { HemoView } from './hemoView';
 import { simulateHemo, type HemoResult } from '../engine/hemo';
 
@@ -30,14 +30,14 @@ export interface PanelOptions extends Partial<EcgViewOptions> {
   onRun?: (run: EcgRun) => void;
 }
 
-const SPEEDS: [string, string][] = [
-  ['1', '1× (real time)'],
-  ['0.5', '0.5×'],
-  ['0.25', '0.25×'],
-  ['0.1', '0.1×'],
-  ['0.05', '0.05×'],
-  ['0.02', '0.02×'],
-  ['0.01', '0.01× (1 ms per 0.1 s)'],
+const SPEEDS: [number, string, string][] = [
+  [1, '1×', 'Real time'],
+  [0.5, '½', 'Half speed'],
+  [0.25, '¼', 'Quarter speed'],
+  [0.1, '1/10', 'One tenth of real time'],
+  [0.05, '1/20', 'One twentieth of real time'],
+  [0.02, '1/50', 'One fiftieth of real time'],
+  [0.01, '1/100', 'One hundredth of real time: 1 ms every 0.1 s'],
 ];
 
 export class EcgPanel {
@@ -57,8 +57,9 @@ export class EcgPanel {
   private playBtn: HTMLButtonElement | null = null;
   private scrub: HTMLInputElement | null = null;
   private timeOut: HTMLOutputElement | null = null;
+  private stepBtns: HTMLButtonElement[] = [];
   private heartSlot: HTMLDivElement | null = null;
-  private explainer: ExplainerView | null = null;
+  private explainer: NarrationView | null = null;
   private mode: '3d' | '2d' = '2d';
   private hemoDetails: HTMLDetailsElement | null = null;
   private hemoView: HemoView | null = null;
@@ -88,13 +89,13 @@ export class EcgPanel {
     let playback: HTMLElement | null = null;
     if (opts.heart) {
       this.heartSlot = h('div', { class: 'heart-slot' });
-      this.explainer = new ExplainerView();
+      this.explainer = new NarrationView();
       const want3d = opts.heart3d !== false;
       tools.append(
         segmented<'3d' | '2d'>(
           [
             ['3d', '3-D heart'],
-            ['2d', '2-D schematic'],
+            ['2d', '2-D diagram'],
           ],
           want3d ? '3d' : '2d',
           (v) => void this.setMode(v),
@@ -110,7 +111,7 @@ export class EcgPanel {
       });
       tools.append(h('div', { class: 'ctl' }, h('span', { class: 'ctl-lab' }, 'Explain lead'), leadSel));
       playback = this.buildPlayback();
-      top = h('div', { class: `heart-row ${opts.large ? 'large' : ''}` }, this.heartSlot, this.explainer.el);
+      top = h('div', { class: `hs-row ${opts.large ? 'large' : ''}` }, this.heartSlot, this.explainer.el);
       this.heart = new HeartView();
       this.view.onSeek = (t) => {
         this.stop();
@@ -127,7 +128,7 @@ export class EcgPanel {
       });
       if (opts.hemo === 'open') this.hemoDetails.open = true;
     }
-    const body = h('div', { class: 'panel-body' }, top, playback, this.hemoDetails, h('div', { class: 'panel-ecg' }, this.view.el));
+    const body = h('div', { class: 'panel-body' }, top, playback, h('div', { class: 'panel-ecg' }, this.view.el), this.hemoDetails);
     this.el = h('div', { class: `ecg-panel ${opts.compact ? 'compact' : ''}` }, tools, body, opts.measurements === false ? null : this.meas);
     if (opts.heart) {
       this.el.tabIndex = -1;
@@ -140,45 +141,64 @@ export class EcgPanel {
   }
 
   private buildPlayback(): HTMLElement {
-    this.playBtn = button('▶ Play', () => this.toggle(), 'btn-primary');
-    const speed = h('select', { 'aria-label': 'Playback speed' }, ...SPEEDS.map(([v, t]) => h('option', { value: v, selected: Number(v) === this.speed }, t)));
-    speed.addEventListener('change', () => (this.speed = Number(speed.value)));
+    this.playBtn = h('button', { type: 'button', class: 'hs-btn primary', 'aria-label': 'Play' }, '▶ Play');
+    this.playBtn.addEventListener('click', () => this.toggle());
+    const speedBtns = SPEEDS.map(([v, label, title]) => {
+      const b = h('button', { type: 'button', title, 'aria-label': `Speed: ${title}`, 'aria-pressed': String(v === this.speed), class: v === this.speed ? 'on' : '' }, label);
+      b.addEventListener('click', () => {
+        this.speed = v;
+        speedBtns.forEach((x) => {
+          x.classList.toggle('on', x === b);
+          x.setAttribute('aria-pressed', String(x === b));
+        });
+      });
+      return b;
+    });
     const step = (ms: number, label: string, title: string): HTMLButtonElement => {
-      const b = button(label, () => {
+      const b = h('button', { type: 'button', class: 'hs-btn', title, 'aria-label': title }, label);
+      b.addEventListener('click', () => {
         this.stop();
         this.setTime(this.t + ms);
       });
-      b.title = title;
-      b.setAttribute('aria-label', title);
       return b;
     };
     const beatJump = (dir: 1 | -1): HTMLButtonElement => {
-      const b = button(dir > 0 ? 'Next beat ⏭' : '⏮ Prev beat', () => {
+      const title = dir > 0 ? 'Next beat' : 'Previous beat';
+      const b = h('button', { type: 'button', class: 'hs-btn', title, 'aria-label': title }, dir > 0 ? 'Next beat ⏭' : '⏮ Previous beat');
+      b.addEventListener('click', () => {
         this.stop();
         const run = this.run;
         if (!run) return;
-        // Jump to 60 ms before the next/previous QRS so the P wave and PR are included.
+        // Jump to just before the next/previous QRS so its P wave and PR interval are included.
         const starts = run.sig.beats.map((x) => x.ev.t).filter((x) => x >= 0);
-        const cur = this.t + 61;
+        const cur = this.t + 261;
         const target = dir > 0 ? starts.find((x) => x > cur + 1) : [...starts].reverse().find((x) => x < cur - 1);
         if (target !== undefined) this.setTime(Math.max(0, target - 260));
       });
       return b;
     };
-    this.scrub = h('input', { type: 'range', min: 0, max: 10000, step: 1, value: 0, 'aria-label': 'Time in strip (ms)', class: 'scrub' });
+    this.scrub = h('input', { type: 'range', min: 0, max: 10000, step: 1, value: 0, 'aria-label': 'Time in the strip (ms)', class: 'hs-scrub' });
     this.scrub.addEventListener('input', () => {
       this.stop();
       this.setTime(Number(this.scrub!.value));
     });
-    this.timeOut = h('output', { class: 'pb-time' }, '0 ms');
+    this.timeOut = h('output', { class: 'hs-time' }, '0 ms');
     const loop = h('input', { type: 'checkbox' });
     loop.addEventListener('change', () => (this.loopBeat = loop.checked));
+    this.stepBtns = [step(-10, '−10 ms', 'Step back 10 ms'), step(-1, '−1', 'Step back 1 ms'), step(1, '+1', 'Step forward 1 ms'), step(10, '+10 ms', 'Step forward 10 ms')];
     return h(
       'div',
-      { class: 'playback' },
-      h('div', { class: 'pb-row' }, this.playBtn, h('label', { class: 'pb-speed' }, 'Speed ', speed), beatJump(-1), step(-10, '−10 ms', 'Step back 10 ms'), step(-1, '−1 ms', 'Step back 1 ms'), step(1, '+1 ms', 'Step forward 1 ms'), step(10, '+10 ms', 'Step forward 10 ms'), beatJump(1), h('label', { class: 'pb-loop' }, loop, ' Loop this beat')),
-      h('div', { class: 'pb-row' }, this.scrub, this.timeOut),
-      h('div', { class: 'pb-hint' }, 'Tip: click anywhere on the ECG to jump there. Keyboard: Space play/pause, ← → step 1 ms (Shift: 10 ms).'),
+      { class: 'hs-play' },
+      h(
+        'div',
+        { class: 'hs-play-row' },
+        this.playBtn,
+        h('div', { class: 'hs-group' }, h('span', { class: 'hs-label' }, 'Speed'), h('div', { class: 'hs-speeds', role: 'group', 'aria-label': 'Playback speed' }, ...speedBtns)),
+        h('div', { class: 'hs-group' }, beatJump(-1), ...this.stepBtns, beatJump(1)),
+        h('label', { class: 'hs-loop' }, loop, 'Repeat this beat'),
+      ),
+      h('div', { class: 'hs-scrub-wrap' }, this.scrub, this.timeOut),
+      h('div', { class: 'hs-hint' }, 'Click anywhere on the ECG to jump there. Keyboard: Space plays or pauses, ← → step 1 ms (with Shift, 10 ms).'),
     );
   }
 
@@ -186,10 +206,10 @@ export class EcgPanel {
     if (!this.heartSlot) return;
     if (m === '3d') {
       try {
-        const mod = await import('./heart3d');
+        const mod = await import('./heart/view');
         if (this.destroyed || !mod.Heart3D.supported()) throw new Error('no webgl');
         if (!this.heart3d) {
-          this.heart3d = new mod.Heart3D({ height: this.opts.large ? 520 : 380 });
+          this.heart3d = new mod.Heart3D({ height: this.opts.large ? 600 : 420, compact: !this.opts.large });
           this.heart3d.setLead(this.lead);
         }
         this.heartSlot.replaceChildren(this.heart3d.root);
@@ -269,7 +289,7 @@ export class EcgPanel {
     let m: Moment | null = null;
     if (this.explainer) {
       m = explainAt(run, this.t, this.lead);
-      this.explainer.render(m);
+      this.explainer.render(m, run);
     }
     this.view.setCursorAndSegment(this.t, m ? { t0: m.phase.t0, t1: m.phase.t1, label: m.phase.id === 'blockedP' ? 'blocked P' : m.phase.id } : null);
     if (this.mode === '3d') this.heart3d?.setTime(this.t);
@@ -303,7 +323,10 @@ export class EcgPanel {
   play(): void {
     if (!this.run) return;
     this.playing = true;
-    if (this.playBtn) this.playBtn.textContent = '❚❚ Pause';
+    if (this.playBtn) {
+      this.playBtn.textContent = '❚❚ Pause';
+      this.playBtn.setAttribute('aria-label', 'Pause');
+    }
     this.last = performance.now();
     const loopStart = this.t;
     const beatEnd = (): number => {
@@ -327,7 +350,10 @@ export class EcgPanel {
   stop(): void {
     this.playing = false;
     cancelAnimationFrame(this.raf);
-    if (this.playBtn) this.playBtn.textContent = '▶ Play';
+    if (this.playBtn) {
+      this.playBtn.textContent = '▶ Play';
+      this.playBtn.setAttribute('aria-label', 'Play');
+    }
   }
 
   /** Keyboard control while the panel has focus. */

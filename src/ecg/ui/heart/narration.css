@@ -1,0 +1,442 @@
+/* Heart + narration row, playback bar and the "what is happening now" panel (EcgPanel with a heart). */
+.hs-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.hs-row.large {
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+}
+@media (max-width: 1000px) {
+  .hs-row,
+  .hs-row.large {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.hs-row > * {
+  min-width: 0;
+}
+
+/* playback */
+.hs-play {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  display: grid;
+  gap: 8px;
+}
+.hs-play-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+.hs-btn {
+  font: inherit;
+  font-size: 0.86rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  min-height: 36px;
+}
+.hs-btn:hover {
+  border-color: var(--accent);
+}
+.hs-btn:focus-visible,
+.hs-speeds button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.hs-btn.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 700;
+  min-width: 96px;
+}
+:root[data-theme='dark'] .hs-btn.primary {
+  color: #08111c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .hs-btn.primary {
+    color: #08111c;
+  }
+}
+.hs-group {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.hs-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.hs-speeds {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.hs-speeds button {
+  font: inherit;
+  font-size: 0.82rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 6px 9px;
+  cursor: pointer;
+  min-height: 34px;
+}
+.hs-speeds button + button {
+  border-left: 1px solid var(--line);
+}
+.hs-speeds button.on {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+:root[data-theme='dark'] .hs-speeds button.on {
+  color: #08111c;
+}
+.hs-loop {
+  font-size: 0.82rem;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hs-scrub-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.hs-scrub {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.hs-time {
+  font: 600 0.9rem/1 var(--mono, monospace);
+  min-width: 78px;
+  text-align: right;
+}
+.hs-hint {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+/* narration */
+.nv {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.nv-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.nv-chip {
+  flex: none;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 8px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font: 800 1.05rem/1 var(--font, system-ui);
+  color: #1a1206;
+  background: #ffb547;
+}
+.nv-chip.dep {
+  background: #ffb547;
+}
+.nv-chip.pr {
+  background: #ffe08a;
+}
+.nv-chip.plat {
+  background: #ff9e21;
+}
+.nv-chip.rep {
+  background: #6fd6f5;
+  color: #04222c;
+}
+.nv-chip.rest {
+  background: #e3c4c4;
+}
+.nv-chip.chaos,
+.nv-chip.block {
+  background: #fb7185;
+  color: #2a0710;
+}
+.nv-title {
+  font-weight: 750;
+  font-size: 1.12rem;
+  line-height: 1.2;
+}
+.nv-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.nv-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.nv-step {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: var(--muted);
+  position: relative;
+}
+.nv-step .nv-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  justify-self: center;
+  background: var(--panel);
+}
+.nv-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 22px;
+  height: 12px;
+  border-left: 2px solid var(--line);
+}
+.nv-lab {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+  font-size: 0.86rem;
+}
+.nv-lab small {
+  font-size: 0.76rem;
+  opacity: 0.9;
+}
+.nv-ecg {
+  font: 700 0.72rem/1 var(--mono, monospace);
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.nv-step.done {
+  color: var(--ink);
+}
+.nv-step.done .nv-dot {
+  background: color-mix(in srgb, #ffb547 55%, var(--panel));
+  border-color: #e69a20;
+}
+.nv-step.now {
+  color: var(--ink);
+  background: color-mix(in srgb, #ffb547 22%, var(--panel));
+  font-weight: 700;
+}
+.nv-step.now .nv-dot {
+  background: #fff6c8;
+  border-color: #ff9e21;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #ffb547 45%, transparent);
+}
+.nv-step.now .nv-ecg {
+  background: #ffb547;
+  color: #1a1206;
+}
+.nv-step.blocked {
+  color: var(--danger);
+  background: var(--danger-soft);
+  font-weight: 700;
+}
+.nv-step.blocked .nv-dot {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.nv-step.bypassed {
+  opacity: 0.55;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.nv-step.bypassed small {
+  text-decoration: none;
+}
+.nv-step.chaos {
+  color: var(--ink);
+  background: color-mix(in srgb, #fb7185 18%, var(--panel));
+  font-weight: 700;
+}
+.nv-step.chaos .nv-dot {
+  border-color: #fb7185;
+  color: #e11d48;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nv-step.now .nv-dot {
+    animation: nv-pulse 1s ease-in-out infinite;
+  }
+}
+@keyframes nv-pulse {
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, #ffb547 20%, transparent);
+  }
+}
+.nv-body h5 {
+  margin: 4px 0 4px;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.nv-cond {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+.nv-cond li {
+  margin: 3px 0;
+}
+.nv-why {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+.nv-detail summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.nv-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 6px 0;
+}
+.nv-comp {
+  margin: 8px 0;
+  font-size: 0.84rem;
+}
+.nv-bar {
+  height: 6px;
+  background: var(--panel-2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+.nv-bar i {
+  display: block;
+  height: 100%;
+  background: #ff9e21;
+}
+.nv-leads {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.nv-live {
+  font: 0.76rem/1.3 var(--mono, monospace);
+  color: var(--muted);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* rhythm picker on the heart page */
+.hs-picker {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.hs-pick-group {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 700px) {
+  .hs-pick-group {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+.hs-pick-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.hs-pick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hs-pick {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 11px;
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+.hs-pick:hover {
+  border-color: var(--accent);
+}
+.hs-pick.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+:root[data-theme='dark'] .hs-pick.on {
+  color: #08111c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .hs-pick.on {
+    color: #08111c;
+  }
+}
+.hs-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.hs-all {
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  max-width: 100%;
+}

@@ -1,50 +1,112 @@
 import { h, p, ul } from '../ui/dom';
 import { header, openInSimulator, presetPhysio, refList } from '../ui/common';
 import { EcgPanel } from '../ui/panel';
-import { select } from '../ui/controls';
 import { PRESETS } from '../engine/presets';
 import { resolveDx } from '../content/index';
 
-// A curated order: normal first, then the conduction abnormalities where watching the
-// wavefront explains the ECG best.
-const FEATURED = ['nsr', 'rbbb', 'lbbb', 'lafb', 'wpw', 'mobitz1', 'mobitz2', 'chbVentricular', 'pvc', 'monoVT', 'avnrt', 'orthoAvrt', 'flutter21', 'af', 'vvi', 'stemiAnterior', 'stemiInferior', 'oldInferior', 'lvAneurysm', 'takotsubo', 'hcm', 'pe', 'hyperK8', 'dextrocardia', 'torsades', 'vf'];
+// One-click rhythms, grouped by what watching the wavefront explains best.
+const GROUPS: [string, string[]][] = [
+  ['Normal', ['nsr', 'sinusBrady', 'sinusTach']],
+  ['Conduction blocks', ['avb1', 'mobitz1', 'mobitz2', 'chbVentricular', 'rbbb', 'lbbb', 'lafb']],
+  ['Pre-excitation & re-entry', ['wpw', 'avnrt', 'orthoAvrt', 'flutter21', 'af', 'preexAf']],
+  ['Ventricular', ['pvc', 'monoVT', 'torsades', 'vf', 'vvi']],
+  ['Ischaemia & other', ['stemiAnterior', 'stemiInferior', 'oldInferior', 'lvAneurysm', 'takotsubo', 'hyperK8', 'pe', 'hcm', 'dextrocardia']],
+];
+const SHORT: Record<string, string> = {
+  nsr: 'Normal sinus',
+  sinusBrady: 'Sinus bradycardia',
+  sinusTach: 'Sinus tachycardia',
+  avb1: '1st-degree block',
+  mobitz1: 'Mobitz I',
+  mobitz2: 'Mobitz II',
+  chbVentricular: 'Complete block',
+  rbbb: 'RBBB',
+  lbbb: 'LBBB',
+  lafb: 'LAFB',
+  wpw: 'WPW',
+  avnrt: 'AVNRT',
+  orthoAvrt: 'Orthodromic AVRT',
+  flutter21: 'Flutter 2:1',
+  af: 'Atrial fibrillation',
+  preexAf: 'Pre-excited AF',
+  pvc: 'PVC',
+  monoVT: 'Monomorphic VT',
+  torsades: 'Torsades',
+  vf: 'VF',
+  vvi: 'Paced (VVI)',
+  stemiAnterior: 'Anterior STEMI',
+  stemiInferior: 'Inferior + RV STEMI',
+  oldInferior: 'Old inferior MI',
+  lvAneurysm: 'LV aneurysm',
+  takotsubo: 'Takotsubo',
+  hyperK8: 'Hyperkalaemia',
+  pe: 'Pulmonary embolism',
+  hcm: 'HCM',
+  dextrocardia: 'Dextrocardia',
+};
 
 export function renderHeart3d(root: HTMLElement, _parts: string[], q: URLSearchParams): () => void {
   root.append(
     header(
       'B · Physiology',
-      '3-D heart & slow-motion ECG',
-      'A beating heart driven by the same simulation that draws the ECG. Watch the wavefront, the action potentials and the refractory tissue; see each region contract when it is activated, the valves open and close, and the pressures, volumes, heart sounds and JVP that result. Slow time to 1/100 of real time and step millisecond by millisecond.',
+      'Heart simulator',
+      'A beating 3-D heart run by the same simulation that draws the ECG. Slow it down, step a millisecond at a time, and watch where the impulse is while each wave of the ECG is written — and what changes when conduction goes wrong.',
     ),
   );
   let preset = q.get('preset') && PRESETS[q.get('preset')!] ? q.get('preset')! : 'nsr';
-  const panel = new EcgPanel({ heart: true, heart3d: true, large: true, hemo: 'open', duration: 10000, layout: 'strips', leads: ['II', 'V1', 'V6'], showLadder: true, showLabels: true });
+  const panel = new EcgPanel({ heart: true, heart3d: true, large: true, hemo: 'closed', duration: 10000, layout: 'strips', leads: ['II', 'V1', 'V6'], showLadder: true, showLabels: true });
   const note = h('div', { class: 'callout' });
   const dxLinkHost = h('span');
+  const chips: HTMLButtonElement[] = [];
+  const all = h('select', { 'aria-label': 'All rhythms and conditions', class: 'hs-all' }, h('option', { value: '' }, 'All rhythms and conditions…'), ...Object.entries(PRESETS).map(([k, v]) => h('option', { value: k }, v.label)));
   const show = (): void => {
     panel.stop();
     panel.show(presetPhysio(preset, { noise: 0.03 }));
-    note.replaceChildren(p(PRESETS[preset].physiology));
+    note.replaceChildren(h('strong', null, PRESETS[preset].label), ' — ', PRESETS[preset].physiology);
     const d = resolveDx(preset);
-    dxLinkHost.replaceChildren(...(d ? [' · ', h('a', { href: `#/dx/${d.id}` }, `Read: ${d.name} →`)] : []));
+    dxLinkHost.replaceChildren(...(d ? [h('a', { href: `#/dx/${d.id}` }, `Read about ${d.name} →`)] : []));
+    for (const c of chips) {
+      const on = c.dataset.id === preset;
+      c.classList.toggle('on', on);
+      c.setAttribute('aria-pressed', String(on));
+    }
+    all.value = chips.some((c) => c.dataset.id === preset) ? '' : preset;
+    history.replaceState(null, '', `#/heart3d?preset=${preset}`);
   };
-  const opts: [string, string][] = [...FEATURED.filter((k) => PRESETS[k]).map((k) => [k, PRESETS[k].label] as [string, string]), ['—', '──────────'], ...Object.entries(PRESETS).filter(([k]) => !FEATURED.includes(k)).map(([k, v]) => [k, v.label] as [string, string])];
-  const sel = select({
-    label: 'Rhythm / condition',
-    value: preset,
-    options: opts,
-    onChange: (v) => {
-      if (v === '—') return;
-      preset = v;
-      show();
-    },
+  all.addEventListener('change', () => {
+    if (!all.value) return;
+    preset = all.value;
+    show();
   });
+  const groups = GROUPS.map(([title, ids]) =>
+    h(
+      'div',
+      { class: 'hs-pick-group' },
+      h('span', { class: 'hs-pick-title' }, title),
+      h(
+        'div',
+        { class: 'hs-pick-chips' },
+        ...ids
+          .filter((id) => PRESETS[id])
+          .map((id) => {
+            const b = h('button', { type: 'button', class: 'hs-pick', 'data-id': id, title: PRESETS[id].label, 'aria-pressed': 'false' }, SHORT[id] ?? PRESETS[id].label);
+            b.addEventListener('click', () => {
+              preset = id;
+              show();
+            });
+            chips.push(b);
+            return b;
+          }),
+      ),
+    ),
+  );
   root.append(
     h(
       'section',
       { class: 'card' },
-      h('div', { class: 'btn-row' }, sel, h('button', { class: 'btn', type: 'button', onclick: () => panel.run && openInSimulator(panel.run.physio) }, 'Change the physiology in the simulator →'), dxLinkHost),
+      h('div', { class: 'hs-picker' }, ...groups, h('div', { class: 'hs-pick-group' }, h('span', { class: 'hs-pick-title' }, 'More'), all)),
       note,
+      h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'button', onclick: () => panel.run && openInSimulator(panel.run.physio) }, 'Change the physiology in the simulator →'), dxLinkHost),
       panel.el,
     ),
     h(
@@ -52,17 +114,16 @@ export function renderHeart3d(root: HTMLElement, _parts: string[], q: URLSearchP
       { class: 'card' },
       h('h2', null, 'How to use it'),
       ul([
-        '**Drag** to rotate, **scroll/pinch** to zoom; the viewpoint menu has anterior, LAO/RAO, lateral, posterior and horizontal-plane views. The small compass shows the patient’s Left, Superior and Anterior directions.',
-        '**Click the heart muscle** to inspect that spot: its AHA 17-segment name and coronary supply, the leads that face it (and see it in mirror image), when it is activated and repolarised in this beat, its action potential with the ion currents flowing at this instant, and whether it is refractory.',
-        '**Colour menu** — *electrical state* (wavefront, plateau, repolarisation); *membrane potential* in mV; *activation map* (isochrones: where the impulse arrives first and last — compare normal, LBBB, RV pacing and WPW); *refractoriness* (absolutely refractory, relatively refractory = the vulnerable period during the T wave, excitable); *coronary territories*; and *what the selected lead sees* (the wall facing its positive pole, and the wall it sees in the mirror).',
-        '**Contraction**: every region shortens after its own activation, so dyssynchrony is visible (early septal contraction and late lateral wall in LBBB or RV pacing); scar does not contract, an aneurysm bulges outward in systole, ischaemic muscle is hypokinetic, and in VF the ventricles only quiver.',
-        '**Valves** open and close from the pressure model; the **coronary arteries** run in their grooves, and in acute or old infarction the culprit occlusion is marked.',
-        '**Walls: transparent** (default) lets you see inside; **cut away** removes the half of the heart facing you; **solid** shows the outer surface.',
-        'Choose a **slow speed** (0.1× to 0.01×) and press Play, or use the ±1 ms / ±10 ms buttons. Click anywhere on the ECG or the Wiggers diagram to jump to that instant.',
-        'The **arrow** is the instantaneous heart vector; the **yellow loop** is the path its tip has traced during the current wave (the vector loop). The **green/red bar** on the selected lead axis is its projection — exactly the voltage that lead is recording at that moment.',
-        'Open **Mechanics & haemodynamics** below the playback controls for the Wiggers diagram (aortic, LV and LA pressures, LV volume, ECG, heart sounds, JVP with a/c/v waves), the pressure–volume loop, blood pressure, stroke volume and cardiac output, and audible heart sounds. Try complete heart block (cannon a waves, variable S1), AF (no a wave, beat-to-beat variation), LBBB (reversed splitting of S2), RBBB (wide splitting), VT and VF.',
+        '**Play slowly.** Press Play at **1/10** speed (the default) — one heartbeat then takes about 8 seconds. Use 1/50 or 1/100 to follow the wavefront through the QRS, or step with **−1/+1 ms** and **±10 ms**. **Next beat** jumps to just before the following P wave. Click anywhere on the ECG to jump to that instant.',
+        '**Read the colours.** Resting muscle is **rose**; the **wavefront** is a bright white-yellow band; depolarised muscle is **orange** (its plateau is the ST segment); **cyan** marks repolarisation (the T wave), fading back to rose. Scar is grey.',
+        '**Follow the impulse.** The panel beside the heart lists the pathway from the sinus node to the ventricles and lights the step that is active now, with the part of the ECG it writes. Blocked steps turn red; steps a beat does not use (an ectopic or paced beat) are struck through. The cream conduction system glows where the impulse is travelling.',
+        '**Rotate and cut.** Drag to rotate, scroll or pinch to zoom. The **four-chamber cut** removes the front of the heart so you see all four chambers, the septum and the conduction system; the **short-axis cut** slices across the ventricles; **whole heart** shows the outside. The cut stays fixed to the heart as you turn it. **View** puts the camera at standard angles (front, LAO, RAO, left, back, from below).',
+        '**Colour by…** *Membrane potential* shows each cell’s voltage; *activation map* colours where the impulse arrives first (red) and last (blue) with lines every 10 ms — compare normal, LBBB, RV pacing and WPW; *refractoriness* shows the vulnerable period during the T wave; *coronary territories* and *what a lead sees* link the wall to the coronary arteries and the leads.',
+        '**Click the heart muscle** to inspect a spot: its name and AHA segment, its blood supply, the leads that face it, when it was activated and repolarised in this beat, and its action potential with a marker at the current instant.',
+        '**Watch the beat.** Each region shortens after its own activation, so dyssynchrony is visible (early septum, late lateral wall in LBBB or RV pacing). Scar does not contract, an aneurysm bulges outward in systole, and in VF the ventricles only quiver. The valves open and close from the pressure model; open **Mechanics & haemodynamics** below the ECG for the Wiggers diagram, pressure–volume loop, heart sounds and JVP.',
+        'The **arrow** is the instantaneous heart vector — the summed dipole projected onto the leads to draw the ECG; the yellow line is the loop its tip has traced. Turn on **Lead axis** to see the projection the selected lead records at this instant.',
       ]),
-      p('The anatomy is a simplified model of real cardiac topography; the timing, activation sequence, vectors and mechanics are computed from the simulated physiology and match the tracing. Activation times are scaled to each beat’s measured QRS duration; haemodynamic values come from a lumped-parameter circulation model and are illustrative of a resting adult.', 'ref-meta'),
+      p('The anatomy is a simplified model of an adult heart. What is computed is the timing: for every beat, local activation is the shortest path through the wall from that beat’s real entry points (fast along the Purkinje-lined endocardium of a side whose bundle conducts, slower muscle-to-muscle elsewhere, never through scar or across the insulating AV ring), scaled so the sequence lasts exactly as long as that beat’s QRS (or P wave). Repolarisation follows the beat’s own T-wave vector. Haemodynamic values come from a lumped-parameter circulation and are illustrative of a resting adult.', 'ref-meta'),
     ),
     refList(['durrer1970', 'ecgStd1']),
   );
