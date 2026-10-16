@@ -205,7 +205,7 @@ function CkdTab() {
                 { label: 'phosphate', points: pts((e) => e.plasma.Pi), color: 'var(--c-amber)' },
                 { label: 'calcium', points: pts((e) => e.plasma.Ca), color: 'var(--c-teal)' },
               ]}
-              bands={[{ from: 0.8, to: 1.45, label: 'PO₄', color: 'rgba(242,177,52,0.10)' }]}
+              bands={[{ from: 0.8, to: 1.45, label: 'PO₄', color: 'var(--c-amber)' }]}
               marker={cur?.kidney.GFR}
               xFormat={(x) => x.toFixed(0)}
               height={190}

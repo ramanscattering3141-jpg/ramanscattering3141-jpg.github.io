@@ -6,7 +6,8 @@ export function ArterioleSchematic(props: { ra: number; re: number; pgc: number;
   const wa = w(props.ra);
   const we = w(props.re);
   const heat = Math.max(0, Math.min(1, (props.pgc - 30) / 40));
-  const glomFill = `rgb(${Math.round(90 + 150 * heat)}, ${Math.round(110 - 50 * heat)}, ${Math.round(140 - 80 * heat)})`;
+  // Redder as the glomerular pressure rises; mixed with the panel so the value stays legible in either theme.
+  const glomFill = `color-mix(in srgb, var(--c-red) ${Math.round(22 + 48 * heat)}%, var(--panel))`;
   const flowW = Math.max(1.5, Math.min(24, (props.rbf / 1150) * 14));
   const filtW = Math.max(0.5, Math.min(16, (props.gfr / 125) * 7));
   return (

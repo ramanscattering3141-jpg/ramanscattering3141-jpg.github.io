@@ -42,7 +42,7 @@ function CellDiagram({ sglt2, sglt1, inhibitor, flux }: { sglt2: number; sglt1: 
     </g>
   );
   return (
-    <div class="svg-scroll">
+    <div class="svg-scroll wide">
       <svg viewBox="0 0 680 200" class="diagram" role="img" aria-label="Proximal tubule cell: SGLT2 and SGLT1 at the apical membrane, GLUT2 and the Na⁺/K⁺ pump at the basolateral membrane">
         <text x="80" y="16" class="svg-small" text-anchor="middle">LUMEN</text>
         <text x={(AP + BL) / 2} y="16" class="svg-small" text-anchor="middle">PROXIMAL TUBULE CELL</text>

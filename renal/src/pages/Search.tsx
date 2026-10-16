@@ -7,7 +7,7 @@ import { CausalPath, NodeLink } from '../ui/CausalPath';
 import { NODE_KIND_LABEL } from '../content/graph';
 
 const KIND_LABEL: Record<HitKind, string> = { module: 'Simulators & modules', node: 'Concepts & mechanisms', equation: 'Equations', concept: 'Textbook explanations', segment: 'Anatomy' };
-const EXAMPLES = ['why does loop diuretic cause hypokalemia', 'why is urine concentrated', 'why does ACE inhibitor increase creatinine', 'SIADH', 'anion gap', 'Bartter syndrome', 'why does vomiting cause metabolic alkalosis'];
+const EXAMPLES = ['why does loop diuretic cause hypokalaemia', 'why is urine concentrated', 'why does ACE inhibitor increase creatinine', 'SIADH', 'anion gap', 'Bartter syndrome', 'why does vomiting cause metabolic alkalosis'];
 
 export default function Search({ query }: { query: URLSearchParams }) {
   const q0 = query.get('q') ?? '';
@@ -31,7 +31,7 @@ export default function Search({ query }: { query: URLSearchParams }) {
           role="search"
           style={{ display: 'flex', gap: 8, maxWidth: 720 }}
         >
-          <input type="search" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} placeholder="Try: why does loop diuretic cause hypokalemia" aria-label="Search query" autoFocus />
+          <input type="search" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} placeholder="Try: why does loop diuretic cause hypokalaemia" aria-label="Search query" autoFocus />
           <button class="primary" type="submit">
             Search
           </button>

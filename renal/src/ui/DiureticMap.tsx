@@ -239,7 +239,7 @@ export function DiureticMap() {
           </button>
         ))}
       </div>
-      <div class="grid grid-main-side" style={{ '--main-side': 'minmax(0, 1.25fr) minmax(0, 1fr)' }}>
+      <div class="grid grid-main-side" style={{ '--main-side': 'minmax(0, 2fr) minmax(320px, 1fr)' }}>
         <div class="dmap-figure">
           <div class="dmap-scroll">
             <svg viewBox="-150 0 940 640" class={`dmap-svg ${active ? 'active' : ''}`} role="group" aria-label="Nephron with the diuretic classes acting on each segment" onClick={() => choose(null, null)}>

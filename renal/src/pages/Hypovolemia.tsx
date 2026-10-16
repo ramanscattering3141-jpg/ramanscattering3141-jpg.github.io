@@ -112,7 +112,7 @@ function Losses() {
                 <Readout label="pH" value={at.pH} digits={2} tone={at.pH < 7.35 ? 'low' : at.pH > 7.45 ? 'high' : 'normal'} />
                 <Readout label="Creatinine" value={si.creat(at.creat)} digits={0} unit="µmol/L" tone={si.creat(at.creat) > 110 ? 'high' : 'normal'} />
                 <Readout label="Urea" value={si.urea(at.BUN)} digits={1} unit="mmol/L" tone={si.urea(at.BUN) > 8 ? 'high' : 'normal'} />
-                <Readout label="Urea : creatinine" value={si.ureaCreatRatio(at.BUN, at.creat)} digits={0} tone={si.ureaCreatRatio(at.BUN, at.creat) > 90 ? 'high' : 'normal'} refRange="rises in pre-renal azotaemia" />
+                <Readout label="Urea : creatinine" value={si.ureaCreatRatio(at.BUN, at.creat)} digits={0} tone={si.ureaCreatRatio(at.BUN, at.creat) > 80 ? 'high' : 'normal'} refRange="above ~80 (≈ BUN:Cr 20) in pre-renal azotaemia" />
                 <Readout label="Urine Na⁺" value={at.urineNa / Math.max(at.urineVolume, 0.01)} digits={0} unit="mmol/L" tone={at.urineNa / Math.max(at.urineVolume, 0.01) < 25 ? 'low' : 'high'} />
               </div>
             )}

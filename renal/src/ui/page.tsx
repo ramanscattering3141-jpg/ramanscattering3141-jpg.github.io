@@ -4,7 +4,7 @@
 import { type ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { href, navigate } from '../router';
-import { ROUTES, readyRoute, routeByPath } from '../routes';
+import { GROUPS, ROUTES, readyRoute, routeByPath } from '../routes';
 import { roseChapter } from '../content/sources';
 import type { ParamPatch } from '../engine/types';
 
@@ -12,7 +12,7 @@ export function PageHead(props: { path: string; eyebrow?: string; lede?: Compone
   const r = routeByPath.get(props.path);
   return (
     <header class="page-head">
-      <div class="eyebrow">{props.eyebrow ?? r?.group.replace(/^./, (c) => c.toUpperCase())}</div>
+      <div class="eyebrow">{props.eyebrow ?? GROUPS.find((g) => g.id === r?.group)?.label}</div>
       <h1>{r?.title}</h1>
       <p class="lede">{props.lede ?? r?.blurb}</p>
       {r?.chapters?.length ? (

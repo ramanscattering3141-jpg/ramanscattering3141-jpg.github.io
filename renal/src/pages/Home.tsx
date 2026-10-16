@@ -123,10 +123,10 @@ export default function Home() {
 
       <h2 style={{ marginTop: 24 }}>All modules</h2>
       <div class="grid grid-3">
-        {GROUPS.filter((g) => g.id !== 'start').map((g) => (
-          <Panel key={g.id} title={g.label}>
+        {GROUPS.map((g) => (
+          <Panel key={g.id} title={g.id === 'start' ? 'Learn and practise' : g.label}>
             <ul style={{ margin: 0, paddingLeft: '1em', fontSize: '0.88rem' }}>
-              {ROUTES.filter((r) => r.group === g.id).map((r) => (
+              {ROUTES.filter((r) => r.group === g.id && r.path !== '/').map((r) => (
                 <li key={r.path}>
                   {isReady(r) ? (
                     <a href={href(r.path)}>{r.title}</a>

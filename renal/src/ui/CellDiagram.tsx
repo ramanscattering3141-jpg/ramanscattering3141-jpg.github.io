@@ -42,23 +42,32 @@ export function CellDiagram(props: {
     const [from, to] = side === 'a' ? (c.dir === 'out' ? [ax1, ax0] : [ax0, ax1]) : c.dir === 'out' ? [ax0, ax1] : [ax1, ax0];
     void arrowIn;
     return (
-      <g key={`${side}${i}`} style={{ cursor: c.onClick ? 'pointer' : undefined }} onClick={c.onClick} role={c.onClick ? 'button' : undefined} aria-label={c.onClick ? `Toggle ${c.label}` : undefined}>
+      <g
+        key={`${side}${i}`}
+        style={{ cursor: c.onClick ? 'pointer' : undefined }}
+        onClick={c.onClick}
+        role={c.onClick ? 'button' : undefined}
+        tabindex={c.onClick ? 0 : undefined}
+        onKeyDown={c.onClick ? (e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), c.onClick!()) : undefined}
+        aria-label={c.onClick ? `Toggle ${c.label}` : undefined}
+      >
         <line x1={from} x2={to} y1={y} y2={y} stroke={color} stroke-width={1 + 3 * on} opacity={0.25 + 0.6 * Math.min(1, on)} marker-end="url(#cell-arr)" />
         {c.dir === 'both' && <line x1={to} x2={from} y1={y + 7} y2={y + 7} stroke={color} stroke-width={1 + 2 * on} opacity={0.2 + 0.5 * Math.min(1, on)} marker-end="url(#cell-arr)" />}
-        <circle cx={x} cy={y} r="21" fill={color} opacity={0.25 + 0.75 * Math.min(1, on)} stroke="var(--c-deep)" />
-        <text x={x} y={y + 3.5} text-anchor="middle" style={{ fontSize: c.label.length > 6 ? 7.5 : c.label.length > 4 ? 8.5 : 10, fontWeight: 700, fill: 'var(--c-deep)' }}>
+        {/* tinted with the panel colour rather than faded, so the name stays legible in both themes */}
+        <circle cx={x} cy={y} r="23" fill={`color-mix(in srgb, ${color} ${Math.round(18 + 52 * Math.min(1, on))}%, var(--panel))`} stroke={color} stroke-width="1.5" />
+        <text x={x} y={y + 4} text-anchor="middle" style={{ fontSize: c.label.length > 6 ? 8.5 : c.label.length > 4 ? 10 : 11.5, fontWeight: 700, fill: 'var(--ink)' }}>
           {c.label}
         </text>
-        <text x={side === 'a' ? 4 : 596} y={y - 9} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 10 }}>
+        <text x={side === 'a' ? 4 : 596} y={y - 9} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 11 }}>
           {c.moves}
         </text>
         {c.blocked && (
-          <text x={side === 'a' ? 4 : 596} y={y + 18} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 9.5, fill: 'var(--c-violet)' }}>
+          <text x={side === 'a' ? 4 : 596} y={y + 18} text-anchor={side === 'a' ? 'start' : 'end'} class="svg-label" style={{ fontSize: 10.5, fill: 'var(--c-violet)' }}>
             ✕ {c.blocked}
           </text>
         )}
         {on < 0.05 && (
-          <text x={x} y={y - 22} text-anchor="middle" style={{ fontSize: 9, fill: 'var(--c-red)' }}>
+          <text x={x} y={y - 22} text-anchor="middle" style={{ fontSize: 10.5, fill: 'var(--c-red)' }}>
             off
           </text>
         )}
@@ -84,7 +93,7 @@ export function CellDiagram(props: {
       </text>
       <rect x={x0} y={top} width={x1 - x0} height={cellH} rx="14" fill="var(--panel-2)" stroke="var(--accent-dim)" stroke-width="1.5" />
       {props.cellNote && (
-        <text x="300" y={top + cellH - 8} text-anchor="middle" class="svg-label" style={{ fontSize: 9.5 }}>
+        <text x="300" y={top + cellH - 8} text-anchor="middle" class="svg-label" style={{ fontSize: 10.5 }}>
           {props.cellNote}
         </text>
       )}

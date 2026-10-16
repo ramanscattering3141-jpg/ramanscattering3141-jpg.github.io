@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { PageHead, FiveQuestions, Related, Busy, useTabParam } from '../ui/page';
-import { Panel, Readout, Sources, Predict, Tabs, Chain, toneFor } from '../ui/kit';
+import { Panel, Readout, Sources, Predict, Tabs, Chain, Slider, toneFor } from '../ui/kit';
 import { makeParams, useSteady } from '../sim/hooks';
 
 const TAB_IDS = ['acute', 'chronic'] as const;
@@ -79,8 +79,7 @@ function ChronicTab() {
         <div>
           <Panel title="The tubules fail before the filter" note="Chronic tubulointerstitial disease damages tubules and interstitium, so the tubular functions go early — concentration, acidification and potassium handling — while the GFR is still relatively preserved.">
             <Busy on={run.busy} />
-            <input type="range" min={0.15} max={0.9} step={0.05} value={nf} onInput={(ev) => setNf(parseFloat((ev.target as HTMLInputElement).value))} style={{ width: '100%' }} />
-            <p class="control-hint">Severity — nephron mass {(nf * 100).toFixed(0)}%</p>
+            <Slider label="Functioning nephron mass" value={nf} min={0.15} max={0.9} step={0.05} format={(v) => `${(v * 100).toFixed(0)}%`} onInput={setNf} hint="Slide left for more severe disease" />
             {e && (
               <div class="readout-grid">
                 <Readout label="GFR" value={e.kidney.GFR} digits={0} unit="mL/min" tone={e.kidney.GFR < 30 ? 'danger' : e.kidney.GFR < 80 ? 'high' : 'normal'} />

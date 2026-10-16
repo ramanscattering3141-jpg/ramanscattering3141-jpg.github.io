@@ -143,7 +143,7 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
                   <rect x={x + 2} y={APICAL} width={COL_W - 4} height={BASO - APICAL} rx={16} fill="var(--well)" stroke="var(--line)" stroke-width="1.5" />
                   <line x1={x + 6} x2={x + COL_W - 6} y1={APICAL} y2={APICAL} stroke="var(--c-dim)" stroke-width="3" />
                   <line x1={x + 6} x2={x + COL_W - 6} y1={BASO} y2={BASO} stroke="var(--c-dim)" stroke-width="3" />
-                  <text x={x + 8} y={LUMEN_TOP + 14} class="svg-label" style={{ fontSize: 12, fill: 'var(--ink-faint)' }}>
+                  <text x={x + 8} y={LUMEN_TOP + 14} class="svg-label svg-halo" style={{ fontSize: 12, fill: 'var(--ink-faint)' }}>
                     lumen (urine side){c.voltage ? ' · ' : ''}
                     {c.voltage && <tspan style={{ fontWeight: 700, fill: c.voltage.includes('+') ? 'var(--c-amber)' : 'var(--c-blue)' }}>{c.voltage}</tspan>}
                   </text>
@@ -154,7 +154,7 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
                     {c.name}
                   </text>
                   {wrapText(c.load, 34).map((l, k) => (
-                    <text key={k} x={x + COL_W / 2} y={APICAL + 80 + k * 16} text-anchor="middle" class="svg-label" style={{ fontSize: 13, fill: 'var(--ink-dim)' }}>
+                    <text key={k} x={x + COL_W / 2} y={APICAL + 80 + k * 16} text-anchor="middle" class="svg-label svg-halo" style={{ fontSize: 13, fill: 'var(--ink-dim)' }}>
                       {l}
                     </text>
                   ))}
@@ -221,6 +221,15 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
               const w = glyphW(t);
               // Each ion on its own line, stacked away from the membrane.
               const fy = (k: number) => (t.side === 'apical' ? APICAL - 22 - k * 16 : BASO + 30 + k * 16);
+              // A drug line ends on this glyph: put the ion labels beside it, on the side the line does
+              // not come from, so no line runs through the text.
+              const incoming = PILLS.filter((p) => p.drug.targets.some((x) => x.t === t.id)).map((p) => p.x + p.w / 2 - a.x);
+              const labelW = Math.max(...t.fluxes.map((f) => f.ion.length * 8 + 16), 0);
+              const roomRight = colX(cellIndex(t.cell)) + COL_W - 26 - a.x; // keep clear of the paracellular line
+              let fromRight = incoming.length ? incoming.reduce((u, v) => u + v, 0) / incoming.length > 4 : null;
+              if (fromRight === false && roomRight < labelW + 5) fromRight = true;
+              const fAnchor = fromRight === null ? 'middle' : fromRight ? 'end' : 'start';
+              const fx = fromRight === null ? a.x : fromRight ? a.x - 5 : a.x + 5;
               return (
                 <g key={t.id} {...click}>
                   <rect x={a.x - w / 2} y={a.y - 13} width={w} height={26} rx={13} fill={`color-mix(in srgb, ${fill} 22%, var(--panel))`} stroke={act || sel ? ring : fill} stroke-width={act || sel ? 3.5 : 1.8} />
@@ -229,7 +238,7 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
                   </text>
                   {act === 'block' && <path d={`M${a.x - w / 2 + 4},${a.y - 10} L${a.x + w / 2 - 4},${a.y + 10}`} stroke="var(--c-red)" stroke-width="3" />}
                   {t.fluxes.map((f, k) => (
-                    <text key={k} x={a.x} y={fy(k)} text-anchor="middle" class="svg-label svg-halo" style={{ fontSize: 13.5, fontWeight: 600, fill: f.dir === 'down' ? 'var(--c-green)' : 'var(--c-amber)' }}>
+                    <text key={k} x={fx} y={fy(k)} text-anchor={fAnchor} class="svg-label svg-halo" style={{ fontSize: 13.5, fontWeight: 600, fill: f.dir === 'down' ? 'var(--c-green)' : 'var(--c-amber)' }}>
                       {f.ion} {f.dir === 'down' ? '↓' : '↑'}
                     </text>
                   ))}

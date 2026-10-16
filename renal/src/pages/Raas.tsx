@@ -26,7 +26,8 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
   const h = ev.reg.hormones;
   const k = ev.kidney;
   const n = NORMAL();
-  const node = (x: number, y: number, w: number, label: string, value: number | null, sub?: string, blocked?: string) => (
+  // A blocking drug is named beside its node: to the right where there is room, otherwise above it.
+  const node = (x: number, y: number, w: number, label: string, value: number | null, sub?: string, blocked?: string, bpos: 'right' | 'top' = 'right') => (
     <g>
       <rect x={x} y={y} width={w} height={48} rx="9" fill="var(--bg-2)" stroke={value === null ? 'var(--c-dim)' : col(value)} stroke-width={2} />
       <text x={x + w / 2} y={y + 19} text-anchor="middle" style={{ fontSize: 12, fill: 'var(--ink)', fontWeight: 600 }}>
@@ -39,7 +40,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
         <g>
           <line x1={x + w - 4} y1={y - 6} x2={x + w + 10} y2={y + 8} stroke="var(--c-violet)" stroke-width="3" />
           <line x1={x + w + 10} y1={y - 6} x2={x + w - 4} y2={y + 8} stroke="var(--c-violet)" stroke-width="3" />
-          <text x={x + w + 14} y={y + 4} style={{ fontSize: 11, fill: 'var(--c-violet)' }}>
+          <text x={bpos === 'right' ? x + w + 14 : x + w - 8} y={bpos === 'right' ? y + 4 : y - 4} text-anchor={bpos === 'right' ? 'start' : 'end'} style={{ fontSize: 11, fontWeight: 600, fill: 'var(--c-violet)' }}>
             {blocked}
           </text>
         </g>
@@ -60,17 +61,18 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
   const perfusion = ev.reg.MAP / 93;
   return (
     <div class="svg-scroll wide">
-    <svg viewBox="0 0 760 470" width="100%" role="img" aria-label="Renin–angiotensin–aldosterone pathway with current values">
+    <svg viewBox="0 0 760 484" width="100%" role="img" aria-label="Renin–angiotensin–aldosterone pathway with current values">
       <defs>
         <marker id="raas-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
           <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-dim)" />
         </marker>
       </defs>
+      <g transform="translate(0 14)">
       {/* stimuli */}
       {node(10, 10, 150, 'Renal perfusion', perfusion, 'normal')}
-      {node(180, 10, 170, 'Macula densa NaCl', k.maculaDensa, 'uptake', s.loop ? 'loop diuretic' : undefined)}
-      {node(390, 10, 150, 'Sympathetic β₁', h.sns, '', s.beta ? 'β-blocker' : undefined)}
-      {node(570, 10, 170, 'Prostaglandins', h.pg / 0.2, '', s.nsaid ? 'NSAID' : undefined)}
+      {node(180, 10, 170, 'Macula densa NaCl', k.maculaDensa, 'uptake', s.loop ? 'loop diuretic' : undefined, 'top')}
+      {node(390, 10, 150, 'Sympathetic β₁', h.sns, '', s.beta ? 'β-blocker' : undefined, 'top')}
+      {node(570, 10, 170, 'Prostaglandins', h.pg / 0.2, '', s.nsaid ? 'NSAID' : undefined, 'top')}
       {arrow(85, 58, 290, 100)}
       {arrow(265, 58, 300, 100)}
       {arrow(465, 58, 330, 100)}
@@ -93,7 +95,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
       {node(390, 350, 170, 'Aldosterone', h.aldo, '', undefined)}
       {node(570, 350, 180, 'Systemic vasoconstriction', ev.reg.SVR, 'SVR')}
       {arrow(475, 398, 475, 420)}
-      {node(380, 420, 190, 'MR → ENaC, K⁺, H⁺', h.mr, '', s.mra ? 'MRA' : undefined)}
+      {node(380, 420, 190, 'MR → ENaC, K⁺, H⁺', h.mr, '', s.mra ? 'MRA' : undefined, 'top')}
       <text x="20" y="418" class="svg-label">
         Pgc {k.Pgc.toFixed(0)} mmHg · GFR {k.GFR.toFixed(0)} · RBF {k.RBF.toFixed(0)} · FF {(k.FF * 100).toFixed(0)}%
       </text>
@@ -103,6 +105,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
       <text x="570" y="418" class="svg-label">
         MAP {ev.reg.MAP.toFixed(0)} mmHg
       </text>
+      </g>
     </svg>
     </div>
   );

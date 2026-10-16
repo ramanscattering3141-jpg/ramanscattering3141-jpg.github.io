@@ -101,9 +101,9 @@ export default function Hyponatremia({ query }: { query: URLSearchParams }) {
       />
       <Panel title="The five questions">
         <FiveQuestions
-          normal={<p>Antidiuretic hormone stops below a plasma osmolality of about 275. The urine osmolality then falls to 40–100 mmol/kg and over 10 litres a day of free water can be excreted.</p>}
+          normal={<p>Antidiuretic hormone stops below a plasma osmolality of about 275. The urine osmolality then falls to 40–100 mOsm/kg and over 10 litres a day of free water can be excreted.</p>}
           why={<p>The plasma sodium is exchangeable sodium plus exchangeable potassium over total body water. Only water retention (or, with thiazides, effective solute loss) changes that ratio; isosmotic losses cannot.</p>}
-          change={<p>Impair water excretion even modestly — a urine osmolality that will not go below 222 in someone taking 400 mosmol and 2 L a day — and 200 mL is retained every day, indefinitely.</p>}
+          change={<p>Impair water excretion even modestly — a urine osmolality that will not go below 222 in someone taking 400 mOsm and 2 L a day — and 200 mL is retained every day, indefinitely.</p>}
           abnormal={
             <p>
               Almost every hyponatraemic patient has an excess of antidiuretic hormone: inappropriate in SIADH, appropriate in volume depletion, heart failure and cirrhosis. The exceptions are renal
@@ -131,7 +131,7 @@ function Why() {
   const { ev, busy } = useSteady(p, 25);
   const normal = NORMAL();
   // the arithmetic of Rose's worked example, independent of the simulation
-  const solute = 700; // mosmol/day
+  const solute = 700; // mOsm/day
   const [uosmFloor, setUosmFloor] = useState(222);
   const urineVolume = solute / uosmFloor;
   const netIntake = 2.0;
@@ -141,14 +141,14 @@ function Why() {
     <>
       <div class="grid grid-sidebar">
         <div>
-          <Panel title="A small defect is enough" note="Rose's arithmetic: 700 mosmol of solute and 2 L of net water intake a day.">
+          <Panel title="A small defect is enough" note="Rose's arithmetic: 700 mOsm of solute and 2 L of net water intake a day.">
             <Slider
               label="Lowest urine osmolality this kidney can reach"
               value={uosmFloor}
               min={50}
               max={600}
               step={5}
-              unit=" mmol/kg"
+              unit=" mOsm/kg"
               onInput={setUosmFloor}
               normal={60}
               hint="a normal kidney reaches 40–100"
@@ -163,7 +163,7 @@ function Why() {
             <BarRow label="Water coming in" value={netIntake} max={12} unit=" L/day" color="var(--c-coral)" />
             <p class="control-hint">
               A urine osmolality of 222 is still hypotonic to plasma — the kidney is diluting. It is nonetheless inappropriately high, and that is the whole point: to stay in balance this patient
-              needed 200 mmol/kg, and the shortfall is 200 mL a day, every day. A urine osmolality of 150 in a hyponatraemic patient is not reassurance.
+              needed 200 mOsm/kg, and the shortfall is 200 mL a day, every day. A urine osmolality of 150 in a hyponatraemic patient is not reassurance.
             </p>
           </Panel>
           <Panel title="Now with the whole body">
@@ -173,8 +173,8 @@ function Why() {
             {ev && (
               <div class="readout-grid">
                 <Readout label="Plasma sodium" value={ev.plasma.Na} digits={1} unit="mmol/L" delta={ev.plasma.Na - normal.plasma.Na} deltaDigits={1} tone={ev.plasma.Na < 125 ? 'danger' : ev.plasma.Na < 135 ? 'low' : 'good'} />
-                <Readout label="Plasma osmolality" value={ev.plasma.osm} digits={0} unit="mmol/kg" tone={ev.plasma.osm < 270 ? 'low' : 'normal'} />
-                <Readout label="Urine osmolality" value={ev.kidney.urine.osm} digits={0} unit="mmol/kg" tone={ev.kidney.urine.osm > 300 ? 'high' : 'good'} refRange="< 100 if ADH is off" />
+                <Readout label="Plasma osmolality" value={ev.plasma.osm} digits={0} unit="mOsm/kg" tone={ev.plasma.osm < 270 ? 'low' : 'normal'} />
+                <Readout label="Urine osmolality" value={ev.kidney.urine.osm} digits={0} unit="mOsm/kg" tone={ev.kidney.urine.osm > 300 ? 'high' : 'good'} refRange="< 100 if ADH is off" />
                 <Readout label="Urine volume" value={ev.kidney.urine.volumePerDay} digits={2} unit="L/day" />
                 <Readout label="ADH" value={ev.reg.hormones.adh} digits={2} unit="× normal" />
                 <Readout label="Electrolyte-free water excreted" value={ev.kidney.urine.exc.electrolyteFreeWater} digits={2} unit="L/day" tone={ev.kidney.urine.exc.electrolyteFreeWater < 0 ? 'danger' : 'good'} />
@@ -221,7 +221,7 @@ function Why() {
         </div>
       </div>
       <Predict
-        question="A hyponatraemic patient has a urine osmolality of 180 mmol/kg. Is the kidney diluting appropriately?"
+        question="A hyponatraemic patient has a urine osmolality of 180 mOsm/kg. Is the kidney diluting appropriately?"
         options={['Yes — 180 is hypotonic to plasma', 'No. It is hypotonic, but for a hyponatraemic patient it is far too high: the hormone should be off and the urine should be under 100', 'Cannot tell without the urine sodium', 'Only if the patient is euvolaemic']}
         correct={1}
         explanation="Raising the urine osmolality from 60 to 180 requires removing two-thirds of the water. That patient can excrete only a third of the free water they should, which is more than enough to become progressively hyponatraemic."
@@ -249,8 +249,8 @@ function Diagnose() {
             {ev && (
               <div class="readout-grid">
                 <Readout label="Plasma sodium" value={ev.plasma.Na} digits={1} unit="mmol/L" delta={ev.plasma.Na - normal.plasma.Na} deltaDigits={1} tone={ev.plasma.Na < 125 ? 'danger' : ev.plasma.Na < 135 ? 'low' : 'normal'} />
-                <Readout label="Effective osmolality" value={ev.plasma.effOsm} digits={0} unit="mmol/kg" tone={ev.plasma.effOsm < 270 ? 'low' : 'normal'} />
-                <Readout label="Urine osmolality" value={uosm} digits={0} unit="mmol/kg" tone={uosm > 100 ? 'high' : 'good'} refRange="< 100 = ADH off" />
+                <Readout label="Effective osmolality" value={ev.plasma.effOsm} digits={0} unit="mOsm/kg" tone={ev.plasma.effOsm < 270 ? 'low' : 'normal'} />
+                <Readout label="Urine osmolality" value={uosm} digits={0} unit="mOsm/kg" tone={uosm > 100 ? 'high' : 'good'} refRange="< 100 = ADH off" />
                 <Readout label="Urine sodium" value={una} digits={0} unit="mmol/L" tone={una < 25 ? 'low' : 'high'} refRange="< 25 vs > 40" />
                 <Readout label="Potassium" value={ev.plasma.K} digits={2} unit="mmol/L" tone={ev.plasma.K > 5.5 || ev.plasma.K < 3.4 ? 'danger' : 'normal'} />
                 <Readout label="Bicarbonate" value={ev.plasma.HCO3} digits={1} unit="mmol/L" tone={ev.plasma.HCO3 < 20 ? 'low' : ev.plasma.HCO3 > 28 ? 'high' : 'normal'} />
@@ -345,12 +345,12 @@ const TREATMENTS: { label: string; patch: ParamPatch; note: string }[] = [
   {
     label: 'Isotonic saline 1 L/day',
     patch: { ivNS: 1 },
-    note: 'Watch the sodium go down. The 308 mosmol in that litre leaves in far less than a litre at this urine osmolality, so most of the water stays behind.',
+    note: 'Watch the sodium go down. The 308 mOsm in that litre leaves in far less than a litre at this urine osmolality, so most of the water stays behind.',
   },
   {
     label: 'Hypertonic 3% 0.5 L/day',
     patch: { ivHypertonic: 0.5 },
-    note: 'Three per cent saline is 1026 mosmol/kg. Against a urine osmolality above 1000 that is barely hypertonic to the urine, so it achieves almost nothing.',
+    note: 'Three per cent saline is 1026 mOsm/kg. Against a urine osmolality above 1000 that is barely hypertonic to the urine, so it achieves almost nothing.',
   },
   { label: 'Furosemide alone', patch: { drugs: { furosemide: 0.7 } }, note: 'The urine osmolality falls — but without salt replacement the patient becomes hypovolaemic and the sodium falls further.' },
   {
@@ -382,7 +382,7 @@ function Fluids() {
   return (
     <>
       <Panel title="Rose Table 23-9: what a litre actually does" note="With the urine osmolality fixed by the hormone, a fluid is excreted in whatever volume its solute requires.">
-        <Slider label="Urine osmolality" value={uosm} min={150} max={1200} step={10} unit=" mmol/kg" onInput={setUosm} normal={680} hint="fixed by ADH in SIADH" />
+        <Slider label="Urine osmolality" value={uosm} min={150} max={1200} step={10} unit=" mOsm/kg" onInput={setUosm} normal={680} hint="fixed by ADH in SIADH" />
         <table class="table">
           <thead>
             <tr>
@@ -399,7 +399,7 @@ function Fluids() {
               return (
                 <tr key={fl.label}>
                   <td>{fl.label}</td>
-                  <td>{(fl.osm * fl.volume).toFixed(0)} mosmol</td>
+                  <td>{(fl.osm * fl.volume).toFixed(0)} mOsm</td>
                   <td>{(out * 1000).toFixed(0)} mL</td>
                   <td class={net > 0.02 ? 'bad' : net < -0.02 ? 'good' : ''}>
                     {net > 0 ? '+' : ''}
@@ -444,9 +444,9 @@ function Fluids() {
             {before && day1 && (
               <div class="readout-grid" style={{ marginTop: 10 }}>
                 <Readout label="Starting sodium" value={start!} digits={1} unit="mmol/L" tone="low" />
-                <Readout label="Starting urine osmolality" value={before.kidney.urine.osm} digits={0} unit="mmol/kg" tone="high" />
+                <Readout label="Starting urine osmolality" value={before.kidney.urine.osm} digits={0} unit="mOsm/kg" tone="high" />
                 <Readout label="Sodium at 24 h" value={day1.Na} digits={1} unit="mmol/L" delta={day1.Na - start!} deltaDigits={1} tone={day1.Na - start! > 10 ? 'danger' : day1.Na > start! ? 'good' : 'low'} />
-                <Readout label="Urine osmolality now" value={points![points!.length - 1].urineOsm} digits={0} unit="mmol/kg" />
+                <Readout label="Urine osmolality now" value={points![points!.length - 1].urineOsm} digits={0} unit="mOsm/kg" />
                 <Readout label="Urine volume" value={points![points!.length - 1].urineVolume} digits={2} unit="L/day" />
               </div>
             )}
@@ -472,7 +472,7 @@ function Fluids() {
       </div>
       <Predict
         question="A patient with SIADH and a urine osmolality of 700 is given a litre of isotonic saline. What happens to the plasma sodium?"
-        options={['It rises by about 1 mmol/L', 'It falls — the 308 mosmol leaves in about 440 mL, so around 560 mL of water is retained', 'Nothing', 'It depends on the urine sodium']}
+        options={['It rises by about 1 mmol/L', 'It falls — the 308 mOsm leaves in about 440 mL, so around 560 mL of water is retained', 'Nothing', 'It depends on the urine sodium']}
         correct={1}
         explanation="Select “Isotonic saline” above and watch. This is why the urine osmolality has to be measured before a fluid is chosen, and why the reflex of giving saline to a hyponatraemic patient is sometimes exactly wrong."
       />

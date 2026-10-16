@@ -161,7 +161,7 @@ function Classes() {
         </div>
         <div>
           <Panel title="Where the sodium goes" note="Each segment's share of the filtered load, live. Purple marks a blocked site.">
-            <NephronDiagram marks={marks} notes={notes} height={420} medullaOsm={ev.kidney.medullaOM} />
+            <NephronDiagram marks={marks} notes={notes} height={640} medullaOsm={ev.kidney.medullaOM} />
           </Panel>
           <Panel title="Segment by segment" note="Compare the blocked segment with the one after it: that is the compensation.">
             {(['PT', 'TAL', 'DCT', 'CNT', 'CCD'] as StructureId[]).map((id) => {

@@ -175,7 +175,7 @@ function UrineBlocks({ volume, cosm, efwc }: { volume: number; cosm: number; efw
           {(cosm - volume).toFixed(2)} L returned
         </text>
       )}
-      <line x1={30} x2={30 + Math.max(2, isoWidth) + freeWidth} y1={94} y2={94} stroke="var(--muted)" />
+      <line x1={30} x2={30 + Math.max(2, isoWidth) + freeWidth} y1={94} y2={94} stroke="var(--ink-faint)" />
       <text x={30} y={110} class="svg-small">
         urine passed: {volume.toFixed(2)} L/day{concentrated ? ' (the dashed block was reabsorbed before it left)' : ''}
       </text>

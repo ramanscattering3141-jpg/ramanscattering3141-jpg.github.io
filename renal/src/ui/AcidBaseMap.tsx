@@ -80,7 +80,7 @@ export function AcidBaseMap(props: {
   const h = props.height ?? 320;
   const W = 640;
   const H = h;
-  const pad = { l: 46, r: 12, t: 12, b: 34 };
+  const pad = { l: 46, r: 30, t: 24, b: 34 };
   const pHmin = 6.85;
   const pHmax = 7.75;
   const pcoMin = 8;
@@ -125,12 +125,15 @@ export function AcidBaseMap(props: {
           <g key={iso.hco3}>
             <path d={iso.d} fill="none" stroke="color-mix(in srgb, var(--mix) 9%, transparent)" stroke-width="1" stroke-dasharray="3 3" />
             {iso.label && iso.label[1] > pad.t + 10 && (
-              <text x={iso.label[0] + 3} y={iso.label[1] + 3} fill="color-mix(in srgb, var(--mix) 21%, transparent)" font-size="9">
+              <text x={iso.label[0] + 3} y={iso.label[1] + 3} class="svg-label svg-halo" style={{ fontSize: 10.5, fill: 'var(--ink-faint)' }}>
                 {iso.hco3}
               </text>
             )}
           </g>
         ))}
+        <text x={W - pad.r} y={14} class="svg-label" text-anchor="end" style={{ fontSize: 10.5, fill: 'var(--ink-faint)' }}>
+          dashed lines: plasma HCO₃⁻ (mmol/L)
+        </text>
         {/* disorder bands */}
         {bands.map((b) => {
           const dim = props.highlight && props.highlight !== b.id;
@@ -172,7 +175,7 @@ export function AcidBaseMap(props: {
             <g key={i}>
               <circle cx={px} cy={py} r={current ? 6 : 4} fill={current ? 'var(--c-teal)' : 'var(--c-strong)'} stroke="var(--bg)" stroke-width="1.5" />
               {p.label && (
-                <text x={px + 9} y={py + 4} fill={current ? 'var(--c-teal)' : 'color-mix(in srgb, var(--mix) 80%, transparent)'} font-size="10">
+                <text x={px + 9} y={py + 4} class="svg-halo" style={{ fontSize: 11.5, fill: current ? 'var(--c-teal)' : 'var(--ink)' }}>
                   {p.label}
                 </text>
               )}

@@ -421,7 +421,7 @@ interface Therapy {
 const THERAPIES: Therapy[] = [
   { id: 'calcium', label: 'Calcium gluconate 10%, 10 mL', note: 'Protects the membrane within minutes for 30–60 min; no change in K⁺.' },
   { id: 'insulin', label: 'Insulin 10 U + glucose', note: '0.5–1.5 mmol/L within an hour (0.85 in the ESRD study Rose cites), lasting hours.' },
-  { id: 'albuterol', label: 'Albuterol 10–20 mg nebulised', note: '0.5–1.5 mmol/L, peak at ~90 min; additive to insulin; blunted in some dialysis patients.' },
+  { id: 'albuterol', label: 'Salbutamol (albuterol) 10–20 mg nebulised', note: '0.5–1.5 mmol/L, peak at ~90 min; additive to insulin; blunted in some dialysis patients.' },
   { id: 'bicarb', label: 'Sodium bicarbonate', note: 'Little effect unless there is real acidaemia.' },
   { id: 'resin', label: 'Cation-exchange resin (enema)', note: 'Removes K⁺: 0.5–1.0 mmol/L per enema over 2–3 h.' },
   { id: 'diuretic', label: 'Loop diuretic', note: 'Removes K⁺ only if the kidney can respond.' },
@@ -434,7 +434,7 @@ const wane = (t: number, hold: number, tau: number) => Math.exp(-Math.max(0, t -
 /**
  * Change in plasma K⁺ (mmol/L) at time t (minutes) from each therapy. These are schematic curves
  * fitted to the effect sizes Rose gives in ch. 28 (insulin −0.85 and dialysis −1.3 at one hour,
- * bicarbonate nil without acidaemia; albuterol 0.5–1.5 with a 90-minute peak; resin enema 0.5–1.0),
+ * bicarbonate nil without acidaemia; salbutamol 0.5–1.5 with a 90-minute peak; resin enema 0.5–1.0),
  * not outputs of the renal engine: the shifts are transient, removal is not.
  */
 function therapyEffect(id: string, t: number, pH: number, esrd: boolean): number {
@@ -526,7 +526,7 @@ function TreatTab() {
       />
       <Expand summary="About these curves">
         <p class="muted" style={{ fontSize: '0.88rem' }}>
-          This tab is a pharmacodynamic sketch, not the renal engine: each therapy's curve is shaped to the onset, size and duration Rose gives in chapter 28. Effects are treated as additive, which roughly matches the combination of albuterol with insulin; real responses vary widely between patients. Current practice favours insulin with glucose as the most reliable shift, and the newer binders (patiromer, sodium zirconium cyclosilicate) over sodium polystyrene sulfonate for ongoing removal.
+          This tab is a pharmacodynamic sketch, not the renal engine: each therapy's curve is shaped to the onset, size and duration Rose gives in chapter 28. Effects are treated as additive, which roughly matches the combination of salbutamol with insulin; real responses vary widely between patients. Current practice favours insulin with glucose as the most reliable shift, and the newer binders (patiromer, sodium zirconium cyclosilicate) over sodium polystyrene sulfonate for ongoing removal.
         </p>
         <Sources cite={{ rose: [28], evidence: 'clinical', refs: ['allon1989', 'clase2020', 'packham2015', 'weir2015'] }} />
       </Expand>
@@ -560,7 +560,7 @@ export default function Hyperkalemia({ query }: { query: URLSearchParams }) {
           why={<p>Distal secretion needs nephrons, distal flow and aldosterone effect; the plasma K⁺ drives secretion directly as well as through aldosterone.</p>}
           change={<p>Remove nephrons and adaptation compensates; add oliguria, volume depletion, ACE inhibitors, spironolactone, trimethoprim, heparin or a K⁺ load and it no longer does.</p>}
           abnormal={<p>Depolarisation: peaked T, then conduction slowing, sine wave and arrest; ascending weakness above ~8; suppressed ammoniagenesis and a mild acidosis.</p>}
-          clinical={<p>Exclude artefact; with ECG change give calcium, then insulin–glucose (± albuterol, bicarbonate if acidaemic), then remove K⁺. Chronically: diet, diuretic, binder, and review the drugs.</p>}
+          clinical={<p>Exclude artefact; with ECG change give calcium, then insulin–glucose (± salbutamol, bicarbonate if acidaemic), then remove K⁺. Chronically: diet, diuretic, binder, and review the drugs.</p>}
         />
         <Sources cite={{ rose: [28, 12], evidence: 'clinical', refs: ['palmer2004', 'clase2020', 'juurlink2004', 'montague2008', 'kdigo2024ckd'] }} />
       </Panel>

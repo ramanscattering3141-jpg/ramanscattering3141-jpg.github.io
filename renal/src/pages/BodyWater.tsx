@@ -7,24 +7,26 @@ import { compartments, COMPARTMENT_DEFAULT, starling, STARLING_DEFAULT, type Com
 
 /** Two boxes whose widths are the compartment volumes; the dashed outline is the starting size. */
 function CompartmentBars(props: { icf0: number; ecf0: number; icf: number; ecf: number; osm: number }) {
-  const scale = 560 / 50;
+  // Scaled so the 60 L reference person, and any added volume, fits the 600-unit width.
+  const scale = 556 / Math.max(64, props.icf + props.ecf + 2, props.icf0 + props.ecf0 + 2);
   const h = 96;
   const x0 = 20;
   const icfW = props.icf * scale;
   const ecfW = props.ecf * scale;
   const shade = Math.max(0, Math.min(1, (props.osm - 250) / 70));
-  const fill = (base: [number, number, number]) => `rgb(${base.map((c) => Math.round(c * (1 - 0.35 * shade))).join(',')})`;
+  // Theme colours, deepened as the osmolality rises.
+  const fill = (c: string) => `color-mix(in srgb, ${c} ${Math.round(38 + 30 * shade)}%, var(--panel))`;
   return (
     <div class="svg-scroll">
     <svg viewBox="0 0 600 160" class="diagram" role="img" aria-label="Intracellular and extracellular volumes">
-      <rect x={x0} y={24} width={props.icf0 * scale} height={h} fill="none" stroke="var(--muted)" stroke-dasharray="4 3" />
-      <rect x={x0 + props.icf0 * scale} y={24} width={props.ecf0 * scale} height={h} fill="none" stroke="var(--muted)" stroke-dasharray="4 3" />
-      <rect x={x0} y={30} width={icfW} height={h - 12} rx={6} fill={fill([120, 170, 230])} opacity={0.85} />
-      <rect x={x0 + icfW + 2} y={30} width={ecfW} height={h - 12} rx={6} fill={fill([240, 190, 110])} opacity={0.85} />
-      <rect x={x0 + icfW + 2 + ecfW * 0.75} y={30} width={ecfW * 0.25} height={h - 12} rx={4} fill="rgba(220,80,80,0.35)" />
-      <text x={x0 + icfW / 2} y={70} text-anchor="middle" class="svg-label">ICF {props.icf.toFixed(1)} L</text>
-      <text x={x0 + icfW + 2 + (ecfW * 0.75) / 2} y={70} text-anchor="middle" class="svg-label">ECF {props.ecf.toFixed(1)} L</text>
-      <text x={x0 + icfW + 2 + ecfW * 0.875} y={112} text-anchor="middle" class="svg-small">plasma</text>
+      <rect x={x0} y={24} width={props.icf0 * scale} height={h} fill="none" stroke="var(--ink-faint)" stroke-dasharray="4 3" />
+      <rect x={x0 + props.icf0 * scale} y={24} width={props.ecf0 * scale} height={h} fill="none" stroke="var(--ink-faint)" stroke-dasharray="4 3" />
+      <rect x={x0} y={30} width={icfW} height={h - 12} rx={6} fill={fill('var(--c-blue)')} />
+      <rect x={x0 + icfW + 2} y={30} width={ecfW} height={h - 12} rx={6} fill={fill('var(--c-amber)')} />
+      <rect x={x0 + icfW + 2 + ecfW * 0.75} y={30} width={ecfW * 0.25} height={h - 12} rx={4} fill="color-mix(in srgb, var(--c-red) 45%, transparent)" />
+      <text x={x0 + icfW / 2} y={70} text-anchor="middle" class="svg-label" style={{ fill: 'var(--ink)', fontWeight: 600 }}>ICF {props.icf.toFixed(1)} L</text>
+      <text x={x0 + icfW + 2 + (ecfW * 0.75) / 2} y={70} text-anchor="middle" class="svg-label" style={{ fill: 'var(--ink)', fontWeight: 600 }}>ECF {props.ecf.toFixed(1)} L</text>
+      <text x={Math.min(x0 + icfW + 2 + ecfW * 0.875, 600 - 22)} y={112} text-anchor="middle" class="svg-small" style={{ fill: 'var(--ink)' }}>plasma</text>
       <text x={x0} y={16} class="svg-small">K⁺ salts hold water in cells</text>
       <text x={580} y={16} class="svg-small" text-anchor="end">Na⁺ salts hold water outside cells</text>
       <text x={x0} y={138} class="svg-small">dashed outline = starting volumes · deeper colour = higher osmolality</text>

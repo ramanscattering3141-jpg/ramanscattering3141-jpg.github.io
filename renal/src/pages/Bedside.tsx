@@ -64,7 +64,7 @@ const WALKS: Walkthrough[] = [
     steps: [
       { text: 'FENa first, bearing in mind she takes furosemide.', eq: 'fena', values: { una: 35, pcr: 265, pna: 138, ucr: 8 } },
       { text: 'About 0.8%. Furosemide pushes FENa up, so a low-looking value is reassuring, but a high one would be uninterpretable. FEUrea is unaffected by loop diuretics.', eq: 'feurea', values: { uurea: 150, pcr: 265, purea: 25, ucr: 8 } },
-      { text: 'Below 35%: pre-renal physiology. The urea:creatinine ratio is borderline at about 94. The indices rarely all agree, which is why none is used alone.', eq: 'ureacr', values: { urea: 25, cr: 265 } },
+      { text: 'Below 35%: pre-renal physiology. The urea:creatinine ratio is about 94 (a BUN:creatinine of about 23), modestly above the ~80 that points the same way. The indices often disagree, which is why none is used alone.', eq: 'ureacr', values: { urea: 25, cr: 265 } },
       { text: 'The eGFR equation assumes a steady state. Put her creatinine in and see what it reports, then remember it is not true while the creatinine is still rising.', eq: 'ckdepi', values: { scr: 265, age: 70, female: 1 } },
     ],
     plan: 'Pre-renal AKI from GI losses on a diuretic. Hold the furosemide (and any ACE inhibitor, ARB, SGLT2 inhibitor or NSAID), give cautious isotonic fluid while watching her lungs, and recheck the creatinine in 24 hours. Do not dose drugs from the eGFR until the creatinine is stable.',
