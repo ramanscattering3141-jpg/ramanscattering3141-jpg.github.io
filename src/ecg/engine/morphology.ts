@@ -80,8 +80,10 @@ export function shapeAt(s: Shape, u: number): number {
       // Digoxin "reverse tick": gradual sagging depression that recovers into the T wave.
       return Math.sin(Math.PI * Math.pow(u, 0.75));
     case 'ramp':
-      // Pre-excitation delta wave: slow, slurred rise until the His–Purkinje impulse arrives, then fades.
-      return u < 0.7 ? Math.pow(u / 0.7, 1.3) : Math.pow(1 - (u - 0.7) / 0.3, 2);
+      // Pre-excitation delta wave: slow, slurred rise until the His–Purkinje impulse arrives. The
+      // pre-excited wavefront is then progressively overtaken by the rapid normal activation, so its
+      // force fades gently at first (no abrupt loss that would notch the upstroke back toward baseline).
+      return u < 0.7 ? Math.pow(u / 0.7, 1.3) : 1 - smoothstep(0.7, 1, u);
     case 'decay':
       // Maximal at the J point, then returning steadily toward baseline (upsloping ST segment).
       return u < 0.1 ? smoothstep(0, 0.1, u) : Math.pow(1 - (u - 0.1) / 0.9, 1.3);
@@ -91,7 +93,7 @@ export function shapeAt(s: Shape, u: number): number {
 }
 
 /** ∫shape du for area calculations. */
-const SHAPE_AREA: Record<Shape, number> = { bump: 0.5, tskew: 0.5, plateau: 0.7, spike: 0.5, sag: 0.62, decay: 0.44, ramp: 0.4, tent: 0.38 };
+const SHAPE_AREA: Record<Shape, number> = { bump: 0.5, tskew: 0.5, plateau: 0.7, spike: 0.5, sag: 0.62, decay: 0.44, ramp: 0.45, tent: 0.38 };
 
 export function areaVector(comps: Comp[]): Vec3 {
   let a: Vec3 = ZERO;
@@ -116,8 +118,10 @@ const D = {
   // Hypertrophied basal septum: its (normally small) left→right initial force becomes large and
   // points rightward, superior and anterior — away from the lateral and inferior leads.
   hcmSeptal: norm(vec(-0.62, -0.42, 0.66)),
-  // Takotsubo: apical/mid-ventricular ballooning; repolarisation abnormality centred on the apex.
-  apex: norm(vec(0.35, 0.55, 0.75)),
+  // Takotsubo: apical/mid-ventricular ballooning; repolarisation abnormality centred on the apex
+  // (inferior-leftward-anterior). Its vector is nearly perpendicular to V1, so the deepest T inversion
+  // is in V3–V6, II and −aVR while V1 is spared (Kosuge 2012: no negative T in V1 + positive T in aVR).
+  apex: norm(vec(0.62, 0.62, 0.33)),
 };
 
 /** Epicardial surface normal for each ischaemic territory (injury current points toward injured epicardium). */
@@ -369,16 +373,26 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
     const loc = ev.apLocation ?? p.rhythm.ap.location;
     const full = transformAll(p, focusQRS(AP_SITE[loc].pos, w, false, p.lvMass), 0.5);
     const hd = ev.hisDelay;
-    if (!Number.isFinite(hd) || hd >= 170) act = full;
+    const fullEnd = qrsEnd(full);
+    // A His–Purkinje impulse arriving when the pre-excited wavefront has almost finished adds nothing.
+    if (!Number.isFinite(hd) || hd >= Math.min(170, fullEnd - 25)) act = full;
     else {
       // Fusion: the pathway pre-excites the ventricle near its insertion (slurred delta wave)
       // until the His–Purkinje impulse arrives and rapidly activates the rest.
       const f = clamp(hd / 170, 0, 1);
-      const delta = { ...full[0], dur: (hd + 14) / 0.7, amp: 0.38 + 0.4 * f, shape: 'ramp' as Shape, tag: 'delta wave (pre-excited myocardium)' };
+      // Fusion can only shorten activation: nothing is still unactivated after the time the
+      // pre-excited wavefront alone would have needed, so the fused QRS is never wider than the
+      // fully pre-excited one.
+      const delta = { ...full[0], dur: Math.min((hd + 14) / 0.7, fullEnd / 0.93), amp: 0.38 + 0.4 * f, shape: 'ramp' as Shape, tag: 'delta wave (pre-excited myocardium)' };
       // The pre-excited wavefront has already crossed the septum: no normal septal q in the remainder.
-      const rest = transformAll(p, patternQRS(p, bundle, w * (0.78 - 0.15 * f)))
+      let rest = transformAll(p, patternQRS(p, bundle, w * (0.78 - 0.15 * f)))
         .filter((x) => x.tag !== 'septum (left→right)')
         .map((x) => ({ ...x, t0: x.t0 + hd, amp: x.amp * (1 - 0.6 * f) }));
+      const restEnd = qrsEnd(rest);
+      if (restEnd > fullEnd) {
+        const k = (fullEnd - hd) / (restEnd - hd);
+        rest = rest.map((x) => ({ ...x, t0: hd + (x.t0 - hd) * k, dur: x.dur * k }));
+      }
       act = [delta, ...(f > 0.5 ? [{ ...full[1], amp: full[1].amp * (f - 0.5) }] : []), ...rest];
     }
   } else {
@@ -428,7 +442,9 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
 
   // RV pressure load (acute PE): rightward terminal forces (S in I), small q in III.
   if (p.rvStrain > 0) {
-    act.push(c(8, 26 * w, norm(vec(-0.55, -0.85, 0.1)), 0.18 * p.rvStrain, 'altered initial forces (q in III)'));
+    // Acute RV dilatation displaces the initial QRS forces superiorly (≈ −30°): a q wave in III
+    // (± aVF) with no q in II — the "Q3" of McGinn–White's S1Q3T3.
+    act.push(c(0, 28 * w, norm(vec(0.82, -0.52, 0.1)), 0.5 * p.rvStrain, 'superiorly displaced initial forces (q in III)'));
     act.push(c(64 * w, 34 * w, norm(vec(-0.8, 0.25, 0.55)), 0.35 * p.rvStrain, 'delayed RV activation (S in I, R′ in V1)'));
   }
   // ARVC: fibrofatty replacement slows RV free-wall/outflow activation → terminal activation
@@ -437,6 +453,16 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // Sodium-channel blockade (TCA): disproportionate slowing of terminal rightward forces → R in aVR.
   if (p.drugs.naBlocker > 0.2) act.push(c(qrsEnd(act) - 34 * w, 42 * w, norm(vec(-0.75, -0.55, 0.2)), 0.42 * p.drugs.naBlocker, 'slowed terminal rightward activation (R in aVR)'));
 
+  // Pre-terminal hyperkalaemia (K⁺ ≳ 9 mmol/L): conduction is so slow and uneven that every
+  // wavefront is smeared out in time, so the QRS loses its sharp deflections and becomes a broad,
+  // smooth wave (same area, lower peak) that runs into the T wave — the sine-wave pattern.
+  const smear = smoothstep(8.5, 9.4, p.K);
+  if (smear > 0) {
+    act = act.map((x) => {
+      const d = x.dur * (1 + 1.2 * smear);
+      return { ...x, t0: Math.max(0, x.t0 - (d - x.dur) / 2), dur: d, amp: (x.amp * x.dur) / d };
+    });
+  }
   // Voltage (habitus, effusion) and electrical alternans.
   const alt = p.alternans > 0 ? 1 + (ctx.index % 2 === 0 ? 0.3 : -0.3) * p.alternans : 1;
   act = act.map((x) => ({ ...x, amp: x.amp * vf * alt }));
@@ -494,6 +520,9 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // With grossly abnormal activation (BBB, ectopy, pacing, pre-excitation) repolarisation follows the
   // altered activation sequence, so the T wave is dominated by the secondary (discordant) vector.
   let T: Vec3 = activationNormal ? Tn : add(scale(Tn, 1 - 0.5 * secK), secT);
+  // In the sine-wave stage repolarisation follows the grossly slowed activation sequence, so the
+  // broad T wave is discordant to the broad QRS and the two fuse into one sinusoidal cycle.
+  if (smear > 0) T = add(scale(T, 1 - smear), scale(norm(area), -len(Tn) * smear));
   let ST: Vec3 = activationNormal ? ZERO : secST;
   let tShape: Shape = 'tskew';
   let stShape: Shape = 'plateau';
@@ -595,7 +624,8 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
   // Electrolytes.
   if (hk > 0) {
     T = scale(T, 1 + 1.6 * hk);
-    tShape = hk > 0.3 ? 'tent' : 'bump';
+    // Peaked ("tented") T waves — until the sine-wave stage, where the T is as broad as the QRS.
+    tShape = hk > 0.3 && smear < 0.5 ? 'tent' : 'bump';
   }
   if (lk > 0) {
     T = scale(T, 1 - 0.8 * lk);
@@ -615,7 +645,10 @@ export function buildVentBeat(p: Physio, ev: VentEvent, ctx: BeatContext): BeatM
     T = scale(T, 1 + 0.25 * p.earlyRepol);
   }
   if (p.hypothermia > 0) {
-    comps.push(c(qrsDur - 18, 60, norm(area), 0.45 * p.hypothermia * vf, 'Osborn (J) wave'));
+    // Cold enhances the epicardial Ito notch — the same J-wave mechanism as early repolarisation, so
+    // the Osborn wave points the same way: upright in II, III, aVF and V2–V6, inverted in aVR.
+    const jDir = globalTransform(p, norm(vec(0.55, 0.7, 0.4)));
+    comps.push(c(qrsDur - 18, 60, jDir, 0.45 * p.hypothermia * vf, 'Osborn (J) wave'));
   }
 
   // ST segment (injury/secondary) from the J point through the early T wave.

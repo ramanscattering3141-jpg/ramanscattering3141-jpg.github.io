@@ -356,3 +356,79 @@ describe('technical', () => {
     expect(R(r, 'V6')).toBeLessThan(R(r, 'V1'));
   });
 });
+
+describe('regressions from the publication audit', () => {
+  it('bigeminy: no sinus P that falls during a PVC is conducted (no partially "interpolated" beats with a long PR)', () => {
+    const r = run('pvcBigeminy');
+    const pvcs = r.sim.ventricular.filter((v) => v.mechanism === 'pvc' && v.t > 0);
+    const after = r.sim.atrial.filter((a) => a.kind === 'sinus' && pvcs.some((v) => a.t > v.t && a.t < v.t + 450));
+    expect(after.length).toBeGreaterThan(3);
+    expect(after.every((a) => !a.conducted)).toBe(true);
+    expect(r.m.prRange![1] - r.m.prRange![0]).toBeLessThan(10);
+  });
+  it('an interpolated PVC (slow sinus rate) still lets the next sinus P conduct', () => {
+    const r = run('pvcInterpolated');
+    expect(r.m.avRelation).toBe('1:1 AV conduction');
+  });
+  it('fusion via an accessory pathway is never wider than full pre-excitation', () => {
+    const r = run('preexAf');
+    const ap = r.sig.beats.filter((b) => b.ev.route === 'ap');
+    const full = ap.filter((b) => !Number.isFinite(b.ev.hisDelay));
+    expect(full.length).toBeGreaterThan(0);
+    const fullDur = Math.max(...full.map((b) => b.morph.qrsDur));
+    for (const b of ap) expect(b.morph.qrsDur).toBeLessThanOrEqual(fullDur + 0.5);
+  });
+  it('acute PE shows S1Q3T3: S in I, q in III without a q in I, T inversion in III', () => {
+    const r = run('pe');
+    expect(S(r, 'I')).toBeGreaterThan(0.15);
+    expect(q(r, 'III').depth).toBeGreaterThan(0.1);
+    expect(q(r, 'I').depth).toBeLessThan(0.03);
+    expect(tWave(r, 'III')).toBeLessThan(0);
+  });
+  it('Takotsubo: T inversion deepest in the apical leads, V1 spared, T upright in aVR (Kosuge 2012)', () => {
+    const r = run('takotsubo');
+    expect(tWave(r, 'V1')).toBeGreaterThan(-0.05);
+    for (const l of ['V3', 'V4', 'V5', 'II'] as LeadId[]) expect(tWave(r, l), l).toBeLessThan(-0.3);
+    expect(tWave(r, 'aVR')).toBeGreaterThan(0.1);
+  });
+  it('hypothermia: Osborn waves are upright in II and V2–V6 and inverted in aVR', () => {
+    const r = run('hypothermia');
+    const b = beat(r);
+    const j = (l: LeadId) => at(r, l, b.ev.t + b.morph.qrsDur) - base(r, l);
+    for (const l of ['II', 'V2', 'V3', 'V4', 'V5', 'V6'] as LeadId[]) expect(j(l), l).toBeGreaterThan(0.05);
+    expect(j('aVR')).toBeLessThan(-0.05);
+  });
+  it('sine-wave hyperkalaemia (9.2): QRS ≥ 200 ms, smooth, with a broad T discordant to it; 8.3 keeps a peaked concordant T', () => {
+    const s = run('hyperK9');
+    expect(s.m.qrs!).toBeGreaterThanOrEqual(200);
+    const b = beat(s);
+    let area = 0;
+    for (let t = 0; t < b.morph.qrsDur; t++) area += at(s, 'II', b.ev.t + t) - base(s, 'II');
+    expect(Math.sign(tWave(s, 'II'))).toBe(-Math.sign(area));
+    // no sharp deflection: the steepest slope in II is far below a normal R upstroke
+    const slope = (r: EcgRun) => {
+      const bb = beat(r);
+      let m = 0;
+      for (let t = 0; t < bb.morph.qrsDur; t++) m = Math.max(m, Math.abs(at(r, 'II', bb.ev.t + t + 1) - at(r, 'II', bb.ev.t + t)));
+      return m;
+    };
+    expect(slope(s)).toBeLessThan(0.5 * slope(run('nsr')));
+    expect(beat(run('hyperK8')).morph.comps.some((c) => c.tag === 'T wave' && c.shape === 'tent')).toBe(true);
+    expect(tWave(run('hyperK8'), 'II')).toBeGreaterThan(0);
+  });
+  it('AV-relation read-out does not call ectopy "block"', () => {
+    expect(run('pvc').m.avRelation).toMatch(/^1:1 AV conduction of sinus beats; \d+ P waves? coinciding with ventricular ectopic beats not conducted$/);
+    expect(run('pvcBigeminy').m.avRelation).toMatch(/^1:1 AV conduction of sinus beats/);
+    expect(run('pacBlocked').m.avRelation).toMatch(/premature P′ not conducted/);
+    expect(run('mobitz1', 12000).m.avRelation).toMatch(/^\d+ of \d+ P waves conducted$/);
+    expect(run('aivr').m.avRelation).toMatch(/^AV dissociation during the idioventricular rhythm/);
+    expect(run('torsades').m.avRelation).toMatch(/^AV dissociation during torsades de pointes/);
+  });
+  it('fixed-ratio AV block is named by its ratio and matches the preset (2:1, 3:1)', () => {
+    expect(run('avb21').m.avRelation).toMatch(/^2:1 AV conduction/);
+    expect(run('atWithBlock').m.avRelation).toMatch(/^2:1 AV conduction/);
+    const h = run('highGrade');
+    expect(h.m.avRelation).toMatch(/^3:1 AV conduction/);
+    expect(Math.abs(h.m.ventRate! - h.m.atrialRate! / 3)).toBeLessThan(3);
+  });
+});

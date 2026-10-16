@@ -295,8 +295,10 @@ function shape(s: string, u: number): number {
       return Math.sin(Math.PI * u ** 1.45) ** 2;
     case 'spike':
       return u < 0.5 ? u * 2 : (1 - u) * 2;
-    case 'ramp':
-      return u < 0.7 ? Math.pow(u / 0.7, 1.3) : Math.pow(1 - (u - 0.7) / 0.3, 2);
+    case 'ramp': {
+      const x = Math.min(1, Math.max(0, (u - 0.7) / 0.3));
+      return u < 0.7 ? Math.pow(u / 0.7, 1.3) : 1 - x * x * (3 - 2 * x);
+    }
     default:
       return Math.sin(Math.PI * u) ** 2;
   }

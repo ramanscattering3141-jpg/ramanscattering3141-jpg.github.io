@@ -260,10 +260,43 @@ export function measure(p: Physio, sim: SimResult, sig: EcgSignal): Measurements
       avRelation = tracked.filter((x) => x.paced).length > tracked.length / 2 ? `AV sequential pacing (AV delay ${d} ms)` : `atrial-tracked ventricular pacing (AV delay ${d} ms)`;
     } else if (as.length && vs.length) {
       const frac = conducted / as.length;
+      // Non-conducted P waves that ectopy explains are not AV block: a premature P′ reaching a still
+      // refractory node, or a P wave coinciding with a ventricular ectopic beat (it arrives less than
+      // one PR interval before it, or during its QRS–T, when concealed retrograde penetration has left
+      // the node refractory).
+      const blocked = as.filter((a) => !a.conducted);
+      const sinusDominant = dominant === 'conducted' || dominant === 'ap';
+      const ectoV = vs.filter((v) => v.route === 'focus' && ['pvc', 'VT', 'bidirectional VT'].includes(v.mechanism));
+      const byPAC = blocked.filter((a) => a.kind === 'ectopic' && /premature/.test(a.label));
+      const byPVC = blocked.filter((a) => !byPAC.includes(a) && ectoV.some((v) => a.t > v.t - (pr ?? 160) - 10 && a.t < v.t + 600));
+      const allExplained = sinusDominant && blocked.length > 0 && conducted > 0 && byPAC.length + byPVC.length === blocked.length;
       if (frac > 0.95 && pr !== null && prRange && prRange[1] - prRange[0] < 40) avRelation = '1:1 AV conduction';
       else if (frac > 0.95) avRelation = '1:1 with varying PR';
       else if (conducted === 0) avRelation = 'AV dissociation (no P wave conducts)';
-      else avRelation = `${conducted} of ${as.length} P waves conducted`;
+      else if (allExplained) {
+        const parts = [
+          ...(byPAC.length ? [`${byPAC.length} premature P′ not conducted (node still refractory)`] : []),
+          ...(byPVC.length ? [`${byPVC.length} P wave${byPVC.length > 1 ? 's' : ''} coinciding with ventricular ectopic beats not conducted`] : []),
+        ];
+        avRelation = `1:1 AV conduction of sinus beats; ${parts.join(', ')}`;
+      } else if (['VT', 'polymorphic VT', 'torsades de pointes', 'bidirectional VT', 'AIVR'].includes(dominant)) {
+        // The ventricles are driven by the ectopic rhythm: the sinus P waves march through it
+        // (AV dissociation) and conduct only outside it or when they find the ventricles excitable.
+        const during = dominant === 'AIVR' ? 'the idioventricular rhythm' : dominant === 'torsades de pointes' ? dominant : `the ${dominant}`;
+        avRelation = `AV dissociation during ${during}; ${conducted} of ${as.length} P waves conducted`;
+      } else {
+        // Fixed-ratio block (2:1, 3:1 …): every conducted P is followed by the same number of blocked ones.
+        const runs: number[] = [];
+        let run = -1;
+        for (const a of as) {
+          if (a.conducted) {
+            if (run >= 0) runs.push(run);
+            run = 0;
+          } else if (run >= 0) run++;
+        }
+        const n = runs.length >= 2 && runs.every((x) => x === runs[0]) && runs[0] >= 1 ? runs[0] + 1 : 0;
+        avRelation = n ? `${n}:1 AV conduction (${conducted} of ${as.length} P waves conducted)` : `${conducted} of ${as.length} P waves conducted`;
+      }
     } else if (!as.length && retro.length && vs.length) {
       const rp: number[] = [];
       for (const a of retro) {

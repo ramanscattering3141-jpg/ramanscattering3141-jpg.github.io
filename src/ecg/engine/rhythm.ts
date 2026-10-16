@@ -678,10 +678,16 @@ export function simulate(p: Physio, opts: SimOptions): SimResult {
       if (R.pvc.retrograde) hisArriveLater(t + R.vaDelay * 0.6);
       else {
         // Concealed retrograde penetration of the His–Purkinje system/AV node (it reaches the node
-        // about one VA-conduction time after the ectopic beat): a sinus P falling within the
-        // ectopic beat's QRS–ST is blocked (→ fully compensatory pause); a later one conducts,
-        // possibly with a longer PR (interpolated PVC).
-        FP.lastExit = Math.max(FP.lastExit, t + R.vaDelay);
+        // about one VA-conduction time after the ectopic beat and leaves it as refractory as a
+        // wavefront that had just traversed it): a sinus P falling within the ectopic beat's
+        // QRS–ST–T is blocked (→ fully compensatory pause, and in bigeminy every post-ectopic P);
+        // a later one conducts, possibly with a longer PR (interpolated PVC).
+        const pen = t + R.vaDelay;
+        FP.lastExit = Math.max(FP.lastExit, pen + R.avnAHmin);
+        if (dual) {
+          FP.lastEntry = Math.max(FP.lastEntry, pen);
+          SP.lastEntry = Math.max(SP.lastEntry, pen);
+        }
         HIS.last = Math.max(HIS.last, t + 40);
         resetJunction(t + 40);
       }
