@@ -110,7 +110,7 @@ export function EcgStrip(props: { k: number; calcium?: number; rate?: number; se
       <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" aria-label={`Schematic ECG at plasma potassium ${props.k.toFixed(1)} mmol/L: ${f.notes.join('; ')}`}>
         <rect x={0} y={0} width={w} height={h} fill="var(--ink)" opacity={0.06} />
         {grid}
-        <polyline points={pts.join(' ')} fill="none" stroke="var(--accent)" strokeWidth={1.8} strokeLinejoin="round" />
+        <polyline points={pts.join(' ')} fill="none" stroke="var(--accent)" stroke-width={1.8} stroke-linejoin="round" />
         <text x={6} y={14} class="svg-small">{props.label ?? `lead II · K⁺ ${props.k.toFixed(1)} mmol/L${props.calcium ? ' · after IV calcium' : ''}`}</text>
       </svg>
       <figcaption>{f.notes.join(' · ')}</figcaption>

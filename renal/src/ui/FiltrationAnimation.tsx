@@ -90,6 +90,7 @@ export function FiltrationAnimation(props: { profile: ProfilePoint[]; flow: numb
   }, []);
 
   return (
+    <div class="svg-scroll">
     <svg ref={ref} viewBox="0 0 600 150" width="100%" style={{ maxHeight: props.height ?? 170 }} role="img" aria-label="Animation of filtration along a glomerular capillary">
       <text x="40" y="20" class="svg-label">
         afferent end
@@ -104,5 +105,6 @@ export function FiltrationAnimation(props: { profile: ProfilePoint[]; flow: numb
       </text>
       <g class="particles" />
     </svg>
+    </div>
   );
 }

@@ -300,7 +300,7 @@ export function DiureticMap() {
               </g>
               <g>
                 {ORDER.map((id) => (
-                  <g key={id} class="seg" tabIndex={0} role="button" aria-label={SEGS[id].full} {...bind(id, null)}>
+                  <g key={id} class="seg" tabindex={0} role="button" aria-label={SEGS[id].full} {...bind(id, null)}>
                     {id === 'glom' ? <circle cx="270" cy="92" r="50" class="hitc" /> : <path d={SEGS[id].path} class="hit" />}
                   </g>
                 ))}
@@ -315,7 +315,7 @@ export function DiureticMap() {
                     <g
                       key={i}
                       class={`dl ${labelOn(m.d, m.site) ? 'on' : ''}`}
-                      tabIndex={focusable ? 0 : undefined}
+                      tabindex={focusable ? 0 : undefined}
                       role={focusable ? 'button' : undefined}
                       aria-label={focusable ? `${DRUGS[m.d].name}: ${m.lines.slice(1).join(', ')}` : undefined}
                       {...bind(m.site, m.d)}

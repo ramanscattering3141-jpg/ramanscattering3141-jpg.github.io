@@ -196,7 +196,7 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
               const sel = selTr?.id === t.id;
               const ring = act ? ACTION_COLOR[act] : sel ? 'var(--c-orange)' : 'var(--line)';
               const fill = t.kind === 'pump' ? 'var(--c-teal)' : t.kind === 'channel' ? 'var(--c-blue)' : t.kind === 'receptor' ? 'var(--c-violet)' : t.kind === 'enzyme' ? 'var(--c-amber)' : t.kind === 'junction' ? 'var(--c-grey)' : 'var(--c-green)';
-              const click = { class: 'hit', role: 'button' as const, tabIndex: 0, 'aria-label': t.name, onClick: () => pick(null, t.id), onKeyDown: (e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), pick(null, t.id)) };
+              const click = { class: 'hit', role: 'button' as const, tabindex: 0, 'aria-label': t.name, onClick: () => pick(null, t.id), onKeyDown: (e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), pick(null, t.id)) };
               if (t.side === 'para') {
                 return (
                   <g key={t.id} {...click}>
@@ -241,7 +241,7 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
               const on = drugActive(p.drug);
               const sel = selDrug?.id === p.drug.id;
               return (
-                <g key={p.drug.id} class="hit" role="button" tabIndex={0} aria-label={p.drug.name} opacity={on ? 1 : 0.25} onClick={() => pick(sel ? null : p.drug.id, null)} onKeyDown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), pick(sel ? null : p.drug.id, null))}>
+                <g key={p.drug.id} class="hit" role="button" tabindex={0} aria-label={p.drug.name} opacity={on ? 1 : 0.25} onClick={() => pick(sel ? null : p.drug.id, null)} onKeyDown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), pick(sel ? null : p.drug.id, null))}>
                   <rect x={p.x} y={p.y} width={p.w} height={PILL_H} rx={13} fill={sel ? 'var(--c-violet)' : 'color-mix(in srgb, var(--c-violet) 16%, var(--panel))'} stroke="var(--c-violet)" stroke-width={sel ? 2.5 : 1.4} />
                   <text x={p.x + p.w / 2} y={p.y + 17.5} text-anchor="middle" class="svg-label" style={{ fontSize: 13.5, fontWeight: 600, fill: sel ? 'var(--c-deep)' : 'var(--ink)' }}>
                     {p.drug.name}

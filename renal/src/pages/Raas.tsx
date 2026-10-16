@@ -39,18 +39,19 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
         <g>
           <line x1={x + w - 4} y1={y - 6} x2={x + w + 10} y2={y + 8} stroke="var(--c-violet)" stroke-width="3" />
           <line x1={x + w + 10} y1={y - 6} x2={x + w - 4} y2={y + 8} stroke="var(--c-violet)" stroke-width="3" />
-          <text x={x + w + 14} y={y + 4} style={{ fontSize: 10, fill: 'var(--c-violet)' }}>
+          <text x={x + w + 14} y={y + 4} style={{ fontSize: 11, fill: 'var(--c-violet)' }}>
             {blocked}
           </text>
         </g>
       )}
     </g>
   );
-  const arrow = (x1: number, y1: number, x2: number, y2: number, label?: string) => (
+  // A label sits beside its arrow (lx, ly), never on the line itself.
+  const arrow = (x1: number, y1: number, x2: number, y2: number, label?: string, lx = (x1 + x2) / 2 + 6, ly = (y1 + y2) / 2 + 4) => (
     <g>
       <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink-dim)" stroke-width="1.6" marker-end="url(#raas-arr)" />
       {label && (
-        <text x={(x1 + x2) / 2 + 4} y={(y1 + y2) / 2 - 3} class="svg-label" style={{ fontSize: 9.5 }}>
+        <text x={lx} y={ly} class="svg-label svg-halo" style={{ fontSize: 11 }}>
           {label}
         </text>
       )}
@@ -73,7 +74,7 @@ function Pathway({ ev, s }: { ev: Evaluation; s: S }) {
       {arrow(85, 58, 290, 100)}
       {arrow(265, 58, 300, 100)}
       {arrow(465, 58, 330, 100)}
-      {arrow(640, 58, 350, 100, 'mediate release')}
+      {arrow(640, 58, 350, 100, 'mediate release', 480, 98)}
       {node(240, 100, 170, 'Renin (JG cells)', h.renin, 'PRA', s.aliskiren ? 'aliskiren' : undefined)}
       <text x="430" y="130" class="svg-label">
         + angiotensinogen (liver)

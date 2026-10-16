@@ -159,7 +159,7 @@ export function NephronDiagram(props: NephronDiagramProps) {
         }
       : undefined;
   const interactive = (id: StructureId, name: string) =>
-    props.onSelect ? { role: 'button' as const, tabIndex: 0, 'aria-label': name, 'aria-pressed': sel === id, onClick: click(id), onKeyDown: key(id), class: 'hit' } : {};
+    props.onSelect ? { role: 'button' as const, tabindex: 0, 'aria-label': name, 'aria-pressed': sel === id, onClick: click(id), onKeyDown: key(id), class: 'hit' } : {};
   const colorFor = (id: StructureId, base: string) => {
     const m = props.marks?.[id];
     if (sel === id) return 'var(--c-orange)';
@@ -179,6 +179,9 @@ export function NephronDiagram(props: NephronDiagramProps) {
   };
 
   return (
+    // On a phone the drawing keeps a readable minimum width and scrolls sideways (.svg-scroll)
+    // rather than shrinking its labels; a thumbnail without labels may shrink freely.
+    <div class={props.labels === false ? undefined : `svg-scroll nephron-scroll${hasL || hasR ? ' xwide' : ''}`}>
     <svg viewBox={viewBox} width="100%" style={{ maxHeight: props.height ?? 640 }} role="img" aria-label={props.title ?? 'Diagram of a juxtamedullary nephron and its blood supply'}>
       <defs>
         <linearGradient id="medulla-grad" x1="0" y1="0" x2="0" y2="1">
@@ -195,11 +198,11 @@ export function NephronDiagram(props: NephronDiagramProps) {
       <line x1="0" x2="640" y1="228" y2="228" stroke="color-mix(in srgb, var(--mix) 13%, transparent)" stroke-dasharray="4 4" />
       <line x1="0" x2="640" y1="430" y2="430" stroke="color-mix(in srgb, var(--mix) 13%, transparent)" stroke-dasharray="4 4" />
       {ZONES.map((z) => (
-        <text key={z.name} x="628" y={(z.y0 + z.y1) / 2} text-anchor="middle" transform={`rotate(-90 628 ${(z.y0 + z.y1) / 2})`} class="svg-label svg-halo" style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, fill: 'var(--ink-faint)' }}>
+        <text key={z.name} x="628" y={(z.y0 + z.y1) / 2} text-anchor="middle" transform={`rotate(-90 628 ${(z.y0 + z.y1) / 2})`} class="svg-label svg-halo" style={{ fontSize: labels ? 12 : 19, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, fill: 'var(--ink-faint)' }}>
           {z.name}
         </text>
       ))}
-      <text x="632" y="690" text-anchor="end" class="svg-label" style={{ fontSize: 12 }}>
+      <text x="632" y="690" text-anchor="end" class="svg-label" style={{ fontSize: labels ? 12 : 19 }}>
         papilla ≈ {Math.round(osm)} mOsm/kg
       </text>
 
@@ -237,8 +240,8 @@ export function NephronDiagram(props: NephronDiagramProps) {
             <g class="svg-label svg-halo" style={{ fontSize: 12.5, fill: 'var(--ink-dim)' }}>
               <text x="4" y="318">Renal artery</text>
               <text x="4" y="334">Renal vein</text>
-              <text x="36" y="214" text-anchor="start">Afferent</text>
-              <text x="24" y="48">Efferent</text>
+              <text x="98" y="224" text-anchor="start">Afferent</text>
+              <text x="92" y="50">Efferent</text>
               <text x="387" y="234" text-anchor="middle">Vasa recta</text>
               <text x="8" y="140">Peritubular</text>
             </g>
@@ -345,13 +348,16 @@ export function NephronDiagram(props: NephronDiagramProps) {
               </g>
             );
           })}
-          <text x="150" y="176" text-anchor="middle" class="svg-label svg-halo" style={{ fontSize: 12.5, fill: 'var(--ink)' }}>
+          <text x="160" y="176" text-anchor="middle" class="svg-label svg-halo" style={{ fontSize: 12.5, fill: 'var(--ink)' }}>
             Glomerulus
           </text>
-          <text x="216" y="118" class="svg-label svg-halo" style={{ fontSize: 11.5 }}>
+          {/* labels for the two small structures sit in clear space, tied to them by a short leader */}
+          <path d="M214,124 L208,102" stroke="var(--ink-faint)" stroke-width="1" fill="none" />
+          <text x="216" y="135" class="svg-label svg-halo" style={{ fontSize: 11.5 }}>
             macula densa
           </text>
-          <text x="104" y="190" text-anchor="end" class="svg-label svg-halo" style={{ fontSize: 11.5 }}>
+          <path d="M117,187 L116,178" stroke="var(--ink-faint)" stroke-width="1" fill="none" />
+          <text x="108" y="199" text-anchor="start" class="svg-label svg-halo" style={{ fontSize: 11.5 }}>
             JG cells
           </text>
         </g>
@@ -359,5 +365,6 @@ export function NephronDiagram(props: NephronDiagramProps) {
       {props.overlay}
       {props.children}
     </svg>
+    </div>
   );
 }

@@ -674,4 +674,10 @@ tbody tr.active th[scope='row'] { color: var(--accent); }
 
 /* Fixed-size diagrams keep a readable text size on phones and scroll sideways instead of shrinking. */
 .svg-scroll { overflow-x: auto; }
-@media (max-width: 700px) { .svg-scroll > svg { min-width: 560px; } .svg-scroll.wide > svg { min-width: 700px; } }
+@media (max-width: 700px) {
+  .svg-scroll > svg { min-width: 560px; }
+  .svg-scroll.wide > svg { min-width: 700px; }
+  .svg-scroll.xwide > svg { min-width: 840px; }
+  /* the nephron keeps its proportions at the readable width instead of a desktop height cap */
+  .svg-scroll.nephron-scroll > svg { max-height: none !important; }
+}

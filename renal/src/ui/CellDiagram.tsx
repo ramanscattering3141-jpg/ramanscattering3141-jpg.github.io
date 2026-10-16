@@ -66,6 +66,7 @@ export function CellDiagram(props: {
     );
   };
   return (
+    <div class="svg-scroll">
     <svg viewBox={`0 0 600 ${H}`} width="100%" role="img" aria-label={props.title ?? 'Tubular epithelial cell with apical and basolateral transporters'}>
       <defs>
         <marker id="cell-arr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto">
@@ -106,5 +107,6 @@ export function CellDiagram(props: {
         </g>
       ) : null}
     </svg>
+    </div>
   );
 }

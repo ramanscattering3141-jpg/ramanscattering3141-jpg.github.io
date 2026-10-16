@@ -228,6 +228,7 @@ function SecretionTab() {
 function PrincipalCell({ aldo, enac, romk, voltage, secretion, anion }: { aldo: number; enac: number; romk: number; voltage: number; secretion: number; anion: boolean }) {
   const op = (x: number) => 0.25 + 0.75 * Math.min(1, x);
   return (
+    <div class="svg-scroll">
     <svg viewBox="0 0 600 210" class="diagram" role="img" aria-label="Principal cell: ENaC, Na-K-ATPase and luminal K channels">
       <text x={62} y={20} text-anchor="middle" class="svg-small">LUMEN</text>
       <text x={300} y={20} text-anchor="middle" class="svg-small">PRINCIPAL CELL</text>
@@ -253,6 +254,7 @@ function PrincipalCell({ aldo, enac, romk, voltage, secretion, anion }: { aldo: 
         lumen {(-15 - 35 * Math.min(1.2, voltage)).toFixed(0)} mV · secreting {secretion.toFixed(0)} mmol/day{anion ? ' · non-reabsorbable anion raises the voltage' : ''}
       </text>
     </svg>
+    </div>
   );
 }
 

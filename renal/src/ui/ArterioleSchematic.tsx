@@ -10,6 +10,7 @@ export function ArterioleSchematic(props: { ra: number; re: number; pgc: number;
   const flowW = Math.max(1.5, Math.min(24, (props.rbf / 1150) * 14));
   const filtW = Math.max(0.5, Math.min(16, (props.gfr / 125) * 7));
   return (
+    <div class="svg-scroll">
     <svg viewBox="0 0 600 230" width="100%" role="img" aria-label={props.label ?? 'Afferent and efferent arterioles around the glomerulus'}>
       <defs>
         <marker id="arr-sch" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto">
@@ -51,5 +52,6 @@ export function ArterioleSchematic(props: { ra: number; re: number; pgc: number;
         peritubular capillaries
       </text>
     </svg>
+    </div>
   );
 }
