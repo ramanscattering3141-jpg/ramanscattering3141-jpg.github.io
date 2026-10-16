@@ -200,6 +200,8 @@ export class Heart3D {
   private mirror = 1;
   private view: View = 'section';
   private bar: HTMLDivElement;
+  private hudKey = '';
+  private hudTime: HTMLSpanElement | null = null;
 
   constructor(opts: Heart3DOptions = {}) {
     this.compact = !!opts.compact;
@@ -1284,7 +1286,13 @@ export class Heart3D {
     else if (cont.some((c) => c.kind === 'flutter')) items.push(['af', 'Atrial flutter circuit']);
     else if (ac && t - ac.t < 110) items.push(['adepol', `Atria depolarising${ac.kind === 'retro' ? ' (retrograde)' : ac.kind === 'ectopic' ? ' (ectopic focus)' : ''}`]);
     if (!items.length) items.push(['rest', 'Electrical diastole — tissue resting']);
-    this.hud.replaceChildren(...items.map(([cls, txt]) => h('span', { class: `hv-pill ${cls}` }, txt)), h('span', { class: 'hv-time' }, `${Math.round(t)} ms`));
+    const key = items.map((x) => x.join(':')).join('|');
+    if (key !== this.hudKey) {
+      this.hudKey = key;
+      this.hudTime = h('span', { class: 'hv-time' });
+      this.hud.replaceChildren(...items.map(([cls, txt]) => h('span', { class: `hv-pill ${cls}` }, txt)), this.hudTime);
+    }
+    if (this.hudTime) this.hudTime.textContent = `${Math.round(t)} ms`;
   }
 
   private updateLegend(): void {
