@@ -137,7 +137,7 @@ export const chapter: ChapterContent = {
     { label: 'Fall in plasma K⁺ on 50 mg chlorthalidone', value: '0.8–0.9 mmol/L' },
     { label: 'Low-dose thiazide', value: '12.5 mg HCTZ or 15 mg chlorthalidone — most of the BP effect' },
     { label: 'Cirrhosis starting regimen', value: 'spironolactone 100 mg + furosemide 40 mg, single morning dose' },
-    { label: 'Thiazides become ineffective below', value: 'GFR ~20 mL/min, unless combined with a loop' },
+    { label: 'Thiazides become ineffective below', value: 'GFR ~20 mL/min, unless combined with a loop', note: 'the book’s view; chlorthalidone has since lowered BP in stage 4 CKD' },
   ],
   equations: ['fena', 'feurea', 'unauk'],
   clinical: [
@@ -252,6 +252,11 @@ export const chapter: ChapterContent = {
       topic: 'Chlorthalidone versus hydrochlorothiazide',
       text: 'The chapter notes chlorthalidone is longer-acting and causes more potassium loss at equal milligrams, which is still true. Whether that translates into better outcomes was tested in a pragmatic trial of 13,523 patients: cardiovascular events were no different (10.4% vs 10.0%, hazard ratio 1.04, 95% CI 0.94–1.16), while hypokalaemia was more common with chlorthalidone (6.0% vs 4.4%). At the doses actually used in practice, the choice between them appears to matter less than the chapter’s emphasis on using a low dose.',
       cite: { refs: ['ishani2022dcp'], evidence: 'clinical' },
+    },
+    {
+      topic: 'Thiazides in advanced chronic kidney disease',
+      text: 'The chapter teaches that thiazides lose their effect once the GFR falls below about 20 mL/min unless they are combined with a loop diuretic. In a placebo-controlled trial in stage 4 CKD (mean eGFR 23 mL/min/1.73 m², 60% already on a loop diuretic), chlorthalidone lowered 24-hour ambulatory systolic pressure by about 10.5 mmHg more than placebo at 12 weeks and halved albuminuria, at the cost of more hypokalaemia, reversible rises in creatinine and hyperuricaemia.',
+      cite: { refs: ['agarwal2021click'], rose: [15], evidence: 'clinical' },
     },
   ],
   modules: ['/diuretics', '/edema', '/transport'],

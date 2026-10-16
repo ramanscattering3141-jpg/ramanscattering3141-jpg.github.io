@@ -38,6 +38,38 @@ describe('content integrity', () => {
     expect(missing).toEqual([]);
   });
 
+  test('every reference id is registered once', () => {
+    const seen = new Set<string>();
+    const dup: string[] = [];
+    for (const r of ALL_REFS) {
+      if (seen.has(r.id)) dup.push(r.id);
+      seen.add(r.id);
+      expect(r.pmid, `${r.id} has no PMID`).toMatch(/^\d+$/);
+    }
+    expect(dup).toEqual([]);
+  });
+
+  test('no reference id leaks into the visible text', () => {
+    // a citation belongs in `cite.refs`; an id such as "umpierrez2024" in prose is a bug
+    const ids = [...refIds].filter((id) => /\d{4}/.test(id));
+    const bad: string[] = [];
+    const scan = (where: string, text: string | undefined) => {
+      if (!text) return;
+      for (const id of ids) if (new RegExp(`\\b${id}\\b`).test(text)) bad.push(`${where}: ${id}`);
+    };
+    for (const ch of CHAPTERS) {
+      scan(`ch${ch.n} thesis`, ch.thesis);
+      for (const c of ch.concepts) {
+        [...c.body, ...(c.points ?? []), ...(c.chain ?? [])].forEach((t) => scan(`ch${ch.n} "${c.heading}"`, t));
+        scan(`ch${ch.n} "${c.heading}" update`, c.cite?.update);
+      }
+      ch.updates?.forEach((u) => { scan(`ch${ch.n} update`, u.text); scan(`ch${ch.n} update`, u.cite.update); });
+      ch.clinical.forEach((t) => scan(`ch${ch.n} clinical`, t));
+    }
+    for (const e of EQUATIONS) [e.explain, e.caveat, e.cite?.update, ...(e.patient?.steps ?? [])].forEach((t) => scan(`equation ${e.id}`, t));
+    expect(bad).toEqual([]);
+  });
+
   test('every cited Rose chapter number exists', () => {
     const missing: string[] = [];
     for (const { where, cite } of allCitations()) {

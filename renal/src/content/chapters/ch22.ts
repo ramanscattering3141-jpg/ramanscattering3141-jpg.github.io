@@ -84,8 +84,8 @@ export const chapter: ChapterContent = {
   numbers: [
     { label: 'Total body water', value: '60% of lean weight (men), 50% (women)' },
     { label: 'Distribution', value: '60% intracellular, 40% extracellular; 1/5 of the ECF is plasma' },
-    { label: 'Normal plasma osmolality', value: '275–290 mmol/kg' },
-    { label: 'Glucose and urea normally contribute', value: '< 10 mmol/kg' },
+    { label: 'Normal plasma osmolality', value: '275–290 mOsm/kg' },
+    { label: 'Glucose and urea normally contribute', value: 'about 10 mOsm/kg' },
     { label: 'Osmoreceptor sensitivity', value: '~1% change in osmolality' },
     { label: 'Daily water turnover', value: '2600 mL in and out', note: 'drink 1400, food 850, oxidation 350; urine 1500, skin 500, lungs 400, stool 200' },
     { label: 'Sweat losses with exercise or heat', value: 'occasionally over 5 L/day' },

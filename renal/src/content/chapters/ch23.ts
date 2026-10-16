@@ -19,9 +19,9 @@ export const chapter: ChapterContent = {
     {
       heading: 'Why the water stays: the hormone and the delivery',
       body: [
-        'Antidiuretic hormone secretion stops when the plasma osmolality falls below about 275 mmol/kg — a plasma sodium near 135. Without it the urine osmolality falls to 40–100 mmol/kg and more than 10 litres a day of solute-free water can be excreted, with more than 80 per cent of a water load gone within four hours. Against that capacity, water retention takes real impairment.',
+        'Antidiuretic hormone secretion stops when the plasma osmolality falls below about 275 mOsm/kg — a plasma sodium near 135. Without it the urine osmolality falls to 40–100 mOsm/kg and more than 10 litres a day of solute-free water can be excreted, with more than 80 per cent of a water load gone within four hours. Against that capacity, water retention takes real impairment.',
         'Free-water excretion needs two things: sodium chloride reabsorbed without water in the loop and distal tubule to generate dilute fluid, and a collecting duct kept impermeable so the water actually leaves. Anything that reduces delivery to the diluting segments — a fall in glomerular filtration rate, increased proximal reabsorption — limits the first. Antidiuretic hormone defeats the second, and it is much the more important of the two: an antagonist reverses the defect in experimental heart failure and cirrhosis without improving perfusion at all.',
-        'The impairment can be modest and still do it. Rose\'s arithmetic: a patient taking 400 mosmol of solute and two litres of net water a day needs an average urine osmolality of 200 to stay in balance. If they cannot get below 222 — still hypotonic to plasma — that solute leaves in 1800 mL, 200 mL of water is retained every day, and the sodium drifts down. A urine osmolality of 100 to 200 is hypotonic and still inappropriately high.',
+        'The impairment can be modest and still do it. Rose\'s arithmetic: a patient taking 400 mOsm of solute and two litres of net water a day needs an average urine osmolality of 200 to stay in balance. If they cannot get below 222 — still hypotonic to plasma — that solute leaves in 1800 mL, 200 mL of water is retained every day, and the sodium drifts down. A urine osmolality of 100 to 200 is hypotonic and still inappropriately high.',
       ],
       chain: [
         'Plasma osmolality falls below ~275',
@@ -91,7 +91,7 @@ export const chapter: ChapterContent = {
       heading: 'Three measurements make the diagnosis',
       body: [
         'First the plasma osmolality, to confirm the hyponatraemia is real. A normal or raised effective osmolality means pseudohyponatraemia or an osmotically active solute, and the treatment is aimed at the tonicity, not the number.',
-        'Then the urine osmolality. Below 100 mmol/kg the hormone is fully and appropriately off, which leaves primary polydipsia or a reset osmostat — separated by water restriction, which keeps the urine dilute until the sodium is normal in polydipsia but raises the urine osmolality progressively with a reset osmostat. Above 100, water excretion is impaired, which covers the great majority.',
+        'Then the urine osmolality. Below 100 mOsm/kg the hormone is fully and appropriately off, which leaves primary polydipsia or a reset osmostat — separated by water restriction, which keeps the urine dilute until the sodium is normal in polydipsia but raises the urine osmolality progressively with a reset osmostat. Above 100, water excretion is impaired, which covers the great majority.',
         'Then the urine sodium. Under 25 mmol/L points to effective circulating volume depletion, including heart failure and cirrhosis; over 40 to SIADH, renal failure, a reset osmostat, a diuretic still acting, adrenal insufficiency, or vomiting with obligatory bicarbonate loss. Where it is equivocal, give saline and re-measure: if the hyponatraemia was hypovolaemic and the volume is now restored, the urine osmolality falls below 100 as the hormone switches off; if it stays high with a urine sodium above 40, SIADH was there as well.',
         'The acid–base and potassium picture adds a last discriminator. Metabolic alkalosis with hypokalaemia suggests vomiting or a diuretic; metabolic acidosis with hyperkalaemia and reasonable renal function is highly suggestive of adrenal insufficiency.',
       ],
@@ -106,10 +106,10 @@ export const chapter: ChapterContent = {
     {
       heading: 'Why isotonic saline can make SIADH worse',
       body: [
-        'This is the most useful piece of arithmetic in the chapter, and it is entirely counterintuitive. In SIADH the urine osmolality is fixed by the hormone. Give a litre of isotonic saline — 308 mosmol in a litre — to a patient whose urine osmolality is 680, and that solute is excreted in 453 mL. All of the salt leaves; more than half the water stays. The plasma sodium falls.',
-        'What decides the effect of a fluid is its osmolality relative to the urine\'s, not relative to the plasma\'s. Three per cent saline is 1026 mosmol/kg, so against a urine osmolality of 680 it produces a net water loss and the sodium rises — but against a urine osmolality above 1000 even that is barely enough.',
+        'This is the most useful piece of arithmetic in the chapter, and it is entirely counterintuitive. In SIADH the urine osmolality is fixed by the hormone. Give a litre of isotonic saline — 308 mOsm in a litre — to a patient whose urine osmolality is 680, and that solute is excreted in 453 mL. All of the salt leaves; more than half the water stays. The plasma sodium falls.',
+        'What decides the effect of a fluid is its osmolality relative to the urine\'s, not relative to the plasma\'s. Three per cent saline is 1026 mOsm/kg, so against a urine osmolality of 680 it produces a net water loss and the sodium rises — but against a urine osmolality above 1000 even that is barely enough.',
         'The answer is to change the urine, not the infusion. A loop diuretic blocks sodium chloride reabsorption in the medullary thick ascending limb, which is the first step of countercurrent multiplication, so the medullary gradient collapses and the urine osmolality falls toward 300. The same litre of 3 per cent saline now leaves in 3400 mL and the sodium rises properly. Give the salt back, or the diuresis simply makes the patient hypovolaemic and the sodium falls further.',
-        'The same logic runs the chronic treatment. With the urine osmolality fixed, urine volume is set by how much solute is excreted — 680 mosmol a day gives a litre, 1020 gives 1.5 litres. A high-salt, high-protein diet raises solute output and therefore water output. Below a urine osmolality of 400 that is usually enough on its own; above 600 to 700 a loop diuretic or a drug that blocks the hormone at the tubule is needed.',
+        'The same logic runs the chronic treatment. With the urine osmolality fixed, urine volume is set by how much solute is excreted — 680 mOsm a day gives a litre, 1020 gives 1.5 litres. A high-salt, high-protein diet raises solute output and therefore water output. Below a urine osmolality of 400 that is usually enough on its own; above 600 to 700 a loop diuretic or a drug that blocks the hormone at the tubule is needed.',
       ],
       chain: [
         'Uosm is fixed by ADH',
@@ -118,7 +118,7 @@ export const chapter: ChapterContent = {
         'Fluid osmolality > Uosm → net water lost → sodium rises',
         'Lower the Uosm with a loop diuretic and everything gets easier',
       ],
-      points: ['Isotonic saline in SIADH with Uosm 680: 453 mL out, 547 mL retained', '3% saline is 1026 mosmol/kg', 'Furosemide takes Uosm toward 300 and must be given with salt'],
+      points: ['Isotonic saline in SIADH with Uosm 680: 453 mL out, 547 mL retained', '3% saline is 1026 mOsm/kg', 'Furosemide takes Uosm toward 300 and must be given with salt'],
       cite: { rose: [23, 15, 4], evidence: 'physiology' },
       route: '/hyponatremia',
     },
@@ -138,8 +138,8 @@ export const chapter: ChapterContent = {
   ],
   numbers: [
     { label: 'Hyponatraemia', value: '< 135 mmol/L' },
-    { label: 'ADH off below', value: 'Posm 275 mmol/kg', note: 'plasma Na⁺ about 135' },
-    { label: 'Minimum urine osmolality', value: '40–100 mmol/kg', note: 'specific gravity 1.001–1.003' },
+    { label: 'ADH off below', value: 'Posm 275 mOsm/kg', note: 'plasma Na⁺ about 135' },
+    { label: 'Minimum urine osmolality', value: '40–100 mOsm/kg', note: 'specific gravity 1.001–1.003' },
     { label: 'Maximum free-water excretion', value: '> 10 L/day' },
     { label: 'Water load excreted', value: '> 80% within 4 h' },
     { label: 'Urine sodium', value: '< 25 mmol/L in volume depletion; > 40 in SIADH' },
@@ -214,7 +214,7 @@ export const chapter: ChapterContent = {
       q: 'A patient with SIADH and a urine osmolality of 680 is given a litre of isotonic saline. What happens to the plasma sodium?',
       options: [
         'It rises — the saline is isotonic',
-        'It falls: the 308 mosmol of solute is excreted in 453 mL at that urine osmolality, so more than half the litre is retained as water',
+        'It falls: the 308 mOsm of solute is excreted in 453 mL at that urine osmolality, so more than half the litre is retained as water',
         'It does not change',
         'It depends on the urine sodium',
       ],
@@ -302,8 +302,8 @@ export const chapter: ChapterContent = {
     },
     {
       topic: 'Guidelines, and relowering after overcorrection',
-      text: 'The chapter\'s rate limits — under 10 to 12 mmol/L in the first day — have held up and are now formal guidance, with European guidance recommending a 150 mL bolus of 3% saline repeated for severe symptoms rather than an hourly infusion rate. The chapter also raises, as an unresolved question, whether deliberately relowering the sodium helps when correction has gone too fast, citing one rat study and one patient. That has become accepted practice: desmopressin with hypotonic fluid to bring the sodium back down is now a recognised rescue, and giving desmopressin proactively alongside hypertonic saline is used to make the rise predictable.',
-      cite: { refs: ['spasovski2014'], rose: [23], evidence: 'guideline', update: 'The chapter\'s open question became standard practice.' },
+      text: 'The chapter\'s rate limits — under 10 to 12 mmol/L in the first day — have held up and are now formal guidance. European guidance sets a limit of 10 mmol/L in the first 24 hours and 8 mmol/L in each 24 hours after that; the US expert panel recommends no more than 8 mmol/L in any 24 hours for patients at high risk of osmotic demyelination (sodium ≤ 105 mmol/L, hypokalaemia, alcoholism, malnutrition, advanced liver disease). For severe symptoms European guidance replaces an hourly infusion rate with a 150 mL bolus of 3% saline over 20 minutes, repeated up to twice, aiming at a rise of 5 mmol/L in the first hour. The chapter also raises, as an unresolved question, whether deliberately relowering the sodium helps when correction has gone too fast, citing one rat study and one patient. That has become accepted practice: desmopressin with hypotonic fluid to bring the sodium back down is now a recognised rescue, and some clinicians give desmopressin proactively alongside hypertonic saline to make the rise more predictable.',
+      cite: { refs: ['spasovski2014', 'verbalis2013'], rose: [23], evidence: 'guideline', update: 'The chapter\'s open question became standard practice.' },
     },
   ],
   modules: ['/hyponatremia', '/water-disorders', '/adh', '/free-water', '/body-water'],

@@ -22,7 +22,7 @@ export const chapter: ChapterContent = {
       heading: 'Two classes of acid, two routes of disposal',
       body: [
         'Carbohydrate and fat metabolism generates about 15,000 mmol of CO₂ a day. CO₂ is not itself an acid, but it hydrates to carbonic acid, so it would accumulate as acid if the lungs did not excrete it.',
-        'Non-carbonic acid comes mostly from protein: oxidising the sulphur-containing amino acids methionine and cysteine yields sulphuric acid. This amounts to only 50–100 mmol/day, and those H⁺ must be excreted by the kidney.',
+        'Non-carbonic acid comes mostly from protein: oxidising the sulfur-containing amino acids methionine and cysteine yields sulfuric acid. This amounts to only 50–100 mmol/day, and those H⁺ must be excreted by the kidney.',
         'The difference in scale (15,000 versus 50–100 mmol/day) is why a few minutes of apnoea threatens life while renal failure takes days to produce acidosis.',
       ],
       cite: { rose: [10, 11], evidence: 'physiology' },
@@ -207,7 +207,7 @@ export const chapter: ChapterContent = {
     },
     {
       topic: 'Treating the acidosis of chronic kidney disease',
-      text: 'The chapter’s account of bone and muscle buffering predicts that correcting chronic metabolic acidosis should protect both. Trials of alkali in CKD show improved bone and nutritional markers and slower loss of GFR, and KDIGO now suggests treating a serum bicarbonate below 18–20 mmol/L, though optimal targets remain uncertain.',
+      text: 'The chapter’s account of bone and muscle buffering predicts that correcting chronic metabolic acidosis should protect both. Trials of alkali in CKD show improved bone and nutritional markers and slower loss of GFR, and KDIGO’s 2024 guideline suggests considering drug treatment when the serum bicarbonate is persistently below 18 mmol/L, though optimal targets remain uncertain.',
       cite: { refs: ['debrito2009', 'wesson2020', 'kdigo2024ckd'], evidence: 'guideline' },
     },
   ],

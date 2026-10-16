@@ -31,7 +31,7 @@ export const chapter: ChapterContent = {
       heading: 'Mineralocorticoid excess: hypokalaemia, alkalosis and hypertension',
       body: [
         'Excess aldosterone (or any mineralocorticoid) increases Na⁺ reabsorption and K⁺ and H⁺ secretion, so hypokalaemia comes with metabolic alkalosis. Oedema does not develop, because aldosterone escape — pressure natriuresis and atrial natriuretic peptide — limits Na⁺ retention; the mild volume expansion raises the blood pressure and resets the osmostat, so the sodium sits near 145.',
-        'The causes separate on renin and aldosterone. Primary aldosteronism (adenoma about 65 per cent, hyperplasia most of the rest, glucocorticoid-remediable forms) has low renin and high aldosterone. Renal artery stenosis, malignant hypertension and renin-secreting tumours have high renin and high aldosterone. Low renin with low aldosterone points to another mineralocorticoid: Cushing\'s syndrome with very high cortisol (especially ectopic ACTH), congenital adrenal hyperplasia (11β- or 17α-hydroxylase deficiency, through deoxycorticosterone), liquorice or apparent mineralocorticoid excess (cortisol reaching the receptor because 11β-hydroxysteroid dehydrogenase is inhibited or defective), fludrocortisone, and Liddle syndrome (a gain-of-function mutation in the collecting-duct sodium channel itself).',
+        'The causes separate on renin and aldosterone. Primary aldosteronism (in the book an adenoma in about 65 per cent, hyperplasia in most of the rest, plus glucocorticoid-remediable forms; now that normokalaemic patients are screened, bilateral hyperplasia is the commoner cause) has low renin and high aldosterone. Renal artery stenosis, malignant hypertension and renin-secreting tumours have high renin and high aldosterone. Low renin with low aldosterone points to another mineralocorticoid: Cushing\'s syndrome with very high cortisol (especially ectopic ACTH), congenital adrenal hyperplasia (11β- or 17α-hydroxylase deficiency, through deoxycorticosterone), liquorice or apparent mineralocorticoid excess (cortisol reaching the receptor because 11β-hydroxysteroid dehydrogenase is inhibited or defective), fludrocortisone, and Liddle syndrome (a gain-of-function mutation in the collecting-duct sodium channel itself).',
         'For hypokalaemia to appear there must be enough distal delivery. Hypovolaemia (urine Na⁺ below 25) can hide the K⁺ wasting of hyperaldosteronism; a high-salt diet unmasks it, which is why sodium-induced hypokalaemia strongly suggests non-suppressible aldosterone.',
       ],
       chain: ['Autonomous mineralocorticoid activity', 'ENaC-mediated Na⁺ reabsorption ↑; lumen more negative', 'K⁺ and H⁺ secretion ↑', 'Hypokalaemia + metabolic alkalosis', 'Mild volume expansion → hypertension, escape, Na⁺ ≈ 145, renin suppressed'],
@@ -113,7 +113,7 @@ export const chapter: ChapterContent = {
     { label: 'ECG changes', value: 'from < 3.0; in ~90% < 2.7 mmol/L' },
     { label: 'Hypomagnesaemia among hypokalaemic patients', value: 'up to 40%' },
     { label: 'Maximum IV rate (usual)', value: '10–20 mmol/h', note: '≤ 60 mmol/L peripheral' },
-    { label: 'Adenoma share of primary aldosteronism', value: '≈ 65%' },
+    { label: 'Adenoma share of primary aldosteronism', value: '≈ 65% (book)', note: 'about 30–40% with modern screening; bilateral hyperplasia ≈ 60%' },
   ],
   equations: ['ukcr', 'ttkg', 'kdeficit', 'femg'],
   clinical: [
@@ -174,7 +174,7 @@ export const chapter: ChapterContent = {
   updates: [
     {
       topic: 'Screening for primary aldosteronism',
-      text: 'The book suggests screening hypertensive patients with unexplained hypokalaemia or resistant hypertension. The Endocrine Society guideline widens this considerably — sustained hypertension above 150/100, resistant hypertension, hypertension with hypokalaemia (spontaneous or diuretic-induced), adrenal incidentaloma, sleep apnoea, or a family history of early hypertension — using the aldosterone-to-renin ratio, and confirms lateralisation by adrenal vein sampling before surgery. It also recognises that most patients are normokalaemic.',
+      text: 'The book suggests screening hypertensive patients with unexplained hypokalaemia or resistant hypertension. The Endocrine Society guideline widens this considerably — sustained hypertension above 150/100, resistant hypertension, hypertension with hypokalaemia (spontaneous or diuretic-induced), adrenal incidentaloma, sleep apnoea, or a family history of early hypertension — using the aldosterone-to-renin ratio, and confirms lateralisation by adrenal vein sampling before surgery. It also recognises that most patients are normokalaemic, and that once they are included bilateral adrenal hyperplasia (about 60%) outnumbers aldosterone-producing adenoma (about 30%).',
       cite: { refs: ['funder2016'], evidence: 'guideline' },
     },
     {

@@ -69,7 +69,7 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => ({ value: (v.mg * 10) / v.mw, unit: 'mmol/L', digits: 2 }),
     show: (v) => `(${f(v.mg)} × 10) ÷ ${f(v.mw, 1)}`,
-    explain: 'Canadian laboratories report in SI units; Rose & Post and most US sources use mg/dL. The factor of 10 converts per-decilitre to per-litre. Glucose (MW 180): mg/dL ÷ 18 = mmol/L. Blood urea nitrogen (two nitrogens, 28 g/mol): mg/dL ÷ 2.8 = urea mmol/L. Creatinine: mg/dL × 88.4 = µmol/L. Calcium: mg/dL × 0.25 = mmol/L. Albumin: g/dL × 10 = g/L.',
+    explain: 'Canadian laboratories report in SI units; Rose & Post and most US sources use mg/dL. The factor of 10 converts per-decilitre to per-litre. Glucose (MW 180): mg/dL ÷ 18 = mmol/L. Blood urea nitrogen (two nitrogens, 28 g/mol): mg/dL ÷ 2.8 = urea mmol/L. Creatinine: mg/dL × 88.4 = µmol/L. Calcium: mg/dL × 0.25 = mmol/L. Magnesium: mg/dL × 0.41 = mmol/L. Phosphate (as phosphorus): mg/dL × 0.323 = mmol/L. Albumin: g/dL × 10 = g/L.',
     chapters: [1, 30],
     keywords: ['conversion', 'millimole', 'milliequivalent'],
   },
@@ -85,7 +85,7 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => {
       const val = 2 * v.na + v.glu + v.urea;
-      return { value: val, unit: 'mOsm/kg', read: val < 275 ? 'Hypo-osmolal' : val > 295 ? 'Hyperosmolal' : 'Normal range (≈275–290)' };
+      return { value: val, unit: 'mOsm/kg', read: val < 275 ? 'Hypo-osmolal' : val > 295 ? 'Hyperosmolal' : 'Normal range (≈275–295)' };
     },
     show: (v) => `2 × ${f(v.na)} + ${f(v.glu, 1)} + ${f(v.urea, 1)}`,
     explain: 'Sodium is doubled to account for its accompanying anions. In SI units glucose and urea are added directly (the book, in mg/dL, divides glucose by 18 and BUN by 2.8). Urea counts toward measured osmolality but not toward tonicity, because it crosses cell membranes.',
@@ -132,7 +132,7 @@ export const EQUATIONS: EquationDef[] = [
     caveat: 'An estimate: it assumes no ongoing losses or infusions, and the true factor varies between patients.',
     chapters: [25, 22],
     route: '/hyperglycemia',
-    cite: { refs: ['hillier1999'], rose: [25], evidence: 'clinical' },
+    cite: { refs: ['katz1973', 'hillier1999'], rose: [25], evidence: 'clinical' },
     keywords: ['corrected sodium', 'Katz', 'Hillier', 'translocational hyponatremia', 'pseudohyponatremia'],
   },
   {
@@ -212,7 +212,7 @@ export const EQUATIONS: EquationDef[] = [
       { key: 'pif', label: 'Interstitial hydraulic pressure', unit: 'mmHg', min: -6, max: 12, step: 0.5, value: -3 },
       { key: 'picap', label: 'Plasma oncotic pressure', unit: 'mmHg', min: 5, max: 35, step: 0.5, value: 28 },
       { key: 'piif', label: 'Interstitial oncotic pressure', unit: 'mmHg', min: 0, max: 22, step: 0.5, value: 8 },
-      { key: 'sigma', label: 'Reflection coefficient σ', unit: '', min: 0, max: 1, step: 0.05, value: 0.95 },
+      { key: 'sigma', label: 'Reflection coefficient σ', unit: '', min: 0, max: 1, step: 0.05, value: 1 },
     ],
     compute: (v) => {
       const n = v.pcap - v.pif - v.sigma * (v.picap - v.piif);
@@ -222,7 +222,7 @@ export const EQUATIONS: EquationDef[] = [
         read:
           n > 15
             ? 'Beyond the ~15 mmHg the safety factors can absorb — oedema forms'
-            : n > 0.3
+            : n > 1
               ? 'Filtration raised, but within the safety margin; lymph flow carries it'
               : n < 0
                 ? 'Net absorption'
@@ -231,7 +231,7 @@ export const EQUATIONS: EquationDef[] = [
     },
     show: (v) => `(${f(v.pcap)} − ${f(v.pif)}) − ${f(v.sigma)}(${f(v.picap)} − ${f(v.piif)})`,
     explain:
-      'The normal muscle capillary sits at about +0.3 mmHg, and the filtrate is returned by the lymphatics. Oedema needs roughly a 15 mmHg rise, because lymph flow increases, interstitial oncotic pressure washes out and interstitial hydraulic pressure rises. σ is the reflection coefficient: 1 if the wall is impermeable to protein, 0 if freely permeable — near 0 in the hepatic sinusoid, which is why portal hypertension so readily produces ascites, and reduced by capillary injury in burns and sepsis.',
+      'With the classic mean values for a muscle capillary (and σ taken as 1) the net pressure is only about +0.3 mmHg outward, and the filtrate is returned by the lymphatics. Oedema needs a rise of roughly 15 mmHg, because lymph flow increases, interstitial oncotic pressure washes out and interstitial hydraulic pressure rises. σ is the reflection coefficient: 1 if the wall is impermeable to protein, 0 if freely permeable — near 0 in the hepatic sinusoid, which is why portal hypertension so readily produces ascites, and reduced by capillary injury in burns and sepsis.',
     chapters: [7, 16],
     route: '/edema',
     keywords: ['Starling', 'oedema', 'oncotic', 'reflection coefficient', 'capillary'],
@@ -550,7 +550,7 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'hplus',
     name: 'Hydrogen ion concentration',
-    formula: '[H⁺] (nEq/L) = 24 × PCO₂ ÷ [HCO₃⁻]',
+    formula: '[H⁺] (nmol/L) = 24 × PCO₂ ÷ [HCO₃⁻]',
     group: 'Acid–base',
     vars: [
       { key: 'hco3', label: 'HCO₃⁻', unit: 'mmol/L', min: 2, max: 60, step: 0.5, value: 24 },
@@ -558,10 +558,10 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => {
       const h = (24 * v.pco2) / v.hco3;
-      return { value: h, unit: 'nEq/L', digits: 0, read: `pH ≈ ${(9 - Math.log10(h)).toFixed(2)}` };
+      return { value: h, unit: 'nmol/L', digits: 0, read: `pH ≈ ${(9 - Math.log10(h)).toFixed(2)}` };
     },
     show: (v) => `24 × ${f(v.pco2)} ÷ ${f(v.hco3, 1)}`,
-    explain: 'The Henderson form avoids logarithms. At pH 7.40, [H⁺] is 40 nEq/L; around the normal range, each 0.1 rise in pH multiplies [H⁺] by about 0.8 and each 0.1 fall multiplies it by about 1.25.',
+    explain: 'The Henderson form avoids logarithms. At pH 7.40, [H⁺] is 40 nmol/L (the book’s 40 nEq/L); around the normal range, each 0.1 rise in pH multiplies [H⁺] by about 0.8 and each 0.1 fall multiplies it by about 1.25.',
     chapters: [10, 30],
     route: '/acid-base',
   },
@@ -579,7 +579,7 @@ export const EQUATIONS: EquationDef[] = [
     compute: (v) => {
       const ag = v.na - v.cl - v.hco3;
       const corr = ag + 0.25 * (40 - v.alb);
-      return { value: ag, unit: 'mmol/L', read: `Albumin-corrected ≈ ${corr.toFixed(0)}. ${corr > 14 ? 'Raised: unmeasured anions (lactate, ketones, uraemic anions, toxins).' : 'Not raised.'}` };
+      return { value: ag, unit: 'mmol/L', read: `Albumin-corrected ≈ ${corr.toFixed(0)}. ${corr > 14 ? 'Above the textbook range (12 ± 2): unmeasured anions (lactate, ketones, uraemic anions, toxins).' : 'Within the textbook range (12 ± 2); compare it with your laboratory’s own range, which is often lower.'}` };
     },
     show: (v) => `${f(v.na)} − (${f(v.cl)} + ${f(v.hco3)})`,
     explain: 'Plasma is electroneutral, so the gap between measured cations and measured anions represents unmeasured anions — mostly albumin normally. When an acid other than HCl is added, its anion replaces the bicarbonate consumed, so the gap widens.',
@@ -603,12 +603,12 @@ export const EQUATIONS: EquationDef[] = [
       return {
         value: r,
         digits: 2,
-        read: r < 0.8 ? '<1: bicarbonate fell more than the gap rose — a coexisting normal-gap acidosis' : r > 2 ? '>2: the gap rose more than bicarbonate fell — a coexisting metabolic alkalosis' : '1–2: consistent with a pure high-anion-gap acidosis (lactic acidosis tends toward 1.6)',
+        read: r < 1 ? 'Below 1: bicarbonate fell more than the gap rose — a coexisting normal-gap acidosis (in ketoacidosis, ketoanions lost in the urine can also do this)' : r > 2 ? 'Above 2: the gap rose more than bicarbonate fell — a coexisting metabolic alkalosis (or a compensated chronic respiratory acidosis)' : '1–2: consistent with a pure high-anion-gap acidosis (lactic acidosis tends toward 1.6, ketoacidosis toward 1)',
       };
     },
     show: (v) => `(${f(v.ag)} − 12) ÷ (24 − ${f(v.hco3)})`,
     explain: 'In a pure high-gap acidosis each mmol of acid adds one anion and removes one bicarbonate, so the two change roughly one-for-one. Buffering by cells and bone (and renal loss of the anion, as with ketones) shifts the ratio.',
-    caveat: 'A rough guide: the normal ranges of both terms are wide, so the ratio is imprecise near its boundaries.',
+    caveat: 'A rough guide: the normal ranges of both terms are wide, so the ratio is imprecise near its boundaries. Use your laboratory’s normal anion gap in place of 12 if it differs.',
     chapters: [17, 19],
     route: '/mixed',
     cite: { rose: [17, 19], evidence: 'clinical', refs: ['rastegar2007'] },
@@ -634,15 +634,15 @@ export const EQUATIONS: EquationDef[] = [
   {
     id: 'alkComp',
     name: 'Respiratory compensation for metabolic alkalosis',
-    formula: 'Expected ΔPCO₂ ≈ 0.6–0.7 × ΔHCO₃⁻',
+    formula: 'Expected ΔPCO₂ ≈ 0.7 × ΔHCO₃⁻',
     group: 'Acid–base',
     vars: [{ key: 'hco3', label: 'HCO₃⁻', unit: 'mmol/L', min: 24, max: 60, step: 0.5, value: 34 }],
-    compute: (v) => ({ value: 40 + 0.6 * (v.hco3 - 24), unit: 'mmHg', digits: 0, read: `With 0.7: ${(40 + 0.7 * (v.hco3 - 24)).toFixed(0)} mmHg` }),
-    show: (v) => `40 + 0.6 × (${f(v.hco3, 1)} − 24)`,
+    compute: (v) => ({ value: 40 + 0.7 * (v.hco3 - 24), unit: 'mmHg', digits: 0, read: 'A PCO₂ well away from this suggests a second, respiratory, disorder' }),
+    show: (v) => `40 + 0.7 × (${f(v.hco3, 1)} − 24)`,
     explain: 'Hypoventilation is limited by hypoxaemia, so compensation is smaller than for acidosis, but PCO₂ values above 50–55 mmHg can be pure compensation.',
     chapters: [17, 18, 30],
     route: '/metabolic-alkalosis',
-    cite: { rose: [17, 30], evidence: 'clinical', update: 'The textbook uses 0.6 mmHg per mmol/L; later summaries (Adrogué & Madias) often quote 0.7.', refs: ['adrogue2010rules'] },
+    cite: { rose: [17, 18], evidence: 'clinical', refs: ['adrogue2010rules'] },
   },
   {
     id: 'respComp',
@@ -661,7 +661,7 @@ export const EQUATIONS: EquationDef[] = [
       return { value: hco3, unit: 'mmol/L', digits: 1, read: `Expected pH ≈ ${pH.toFixed(2)}` };
     },
     show: (v) => `24 + ${v.pco2 > 40 ? (v.chronic ? '0.35' : '0.1') : v.chronic ? '0.4' : '0.2'} × (${f(v.pco2)} − 40)`,
-    explain: 'Acutely, only cell buffers change bicarbonate, and only a little. Over 3–5 days the kidney adjusts H⁺ secretion and ammonium excretion, producing a much larger change.',
+    explain: 'Acutely, only cell buffers change bicarbonate, and only a little. Over 3–5 days the kidney adjusts H⁺ secretion and ammonium excretion, producing a much larger change. These are the textbook’s coefficients; some later series put chronic respiratory alkalosis at 4–5 mmol/L per 10 mmHg.',
     chapters: [20, 21, 30],
     route: '/respiratory',
     cite: { rose: [20, 21], evidence: 'clinical' },
@@ -1041,7 +1041,7 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => {
       const r = (v.uca * v.pcr) / (v.pca * v.ucr * 1000);
-      return { value: r, digits: 4, read: r < 0.01 ? 'Below 0.01: strongly suggests familial hypocalciuric hypercalcaemia (FHH); test the CASR gene before any parathyroid surgery' : r > 0.02 ? 'Above 0.02: favours primary hyperparathyroidism' : '0.01–0.02: grey zone; CASR testing is reasonable' };
+      return { value: r, digits: 4, read: r < 0.01 ? 'Below 0.01: strongly suggests familial hypocalciuric hypercalcaemia (FHH); test the CASR gene before any parathyroid surgery' : r > 0.02 ? 'Above 0.02: favours primary hyperparathyroidism' : '0.01–0.02: grey zone; a two-step approach tests the CASR gene in everyone at or below 0.020' };
     },
     show: (v) => `(${f(v.uca, 1)} × ${f(v.pcr)}) ÷ (${f(v.pca, 2)} × ${f(v.ucr, 1)} × 1000)`,
     explain: 'In primary hyperparathyroidism the filtered calcium load is so high that urine calcium rises despite PTH. In FHH an insensitive calcium-sensing receptor in the thick ascending limb keeps reabsorbing calcium, so the urine stays calcium-poor despite hypercalcaemia.',
@@ -1062,10 +1062,10 @@ export const EQUATIONS: EquationDef[] = [
     ],
     compute: (v) => {
       const r = (v.urea / v.cr) * 1000;
-      return { value: r, digits: 0, read: r > 100 ? 'Above ~100 (≈ BUN:creatinine above 20 in US units): urea reabsorbed avidly with water (pre-renal), or high urea production (GI bleeding, corticosteroids, catabolism, protein load)' : r < 40 ? 'Low: little urea production (low protein intake, liver disease) or creatinine raised out of proportion (rhabdomyolysis)' : 'Unremarkable' };
+      return { value: r, digits: 0, read: r > 80 ? 'Above ~80 (≈ BUN:creatinine above 20 in US units; some laboratories use 100): urea reabsorbed avidly with water (pre-renal), or high urea production (GI bleeding, corticosteroids, catabolism, protein load)' : r < 40 ? 'Low: little urea production (low protein intake, liver disease) or creatinine raised out of proportion (rhabdomyolysis)' : 'Unremarkable' };
     },
     show: (v) => `${f(v.urea, 1)} ÷ ${f(v.cr)} × 1000`,
-    explain: 'Creatinine is filtered and not reabsorbed; urea is partly reabsorbed, and more so when tubular flow is low and ADH is high. In volume depletion urea therefore rises faster than creatinine.',
+    explain: 'Creatinine is filtered and not reabsorbed; urea is partly reabsorbed, and more so when tubular flow is low and ADH is high. In volume depletion urea therefore rises faster than creatinine. Because 1 mg/dL of BUN is 0.357 mmol/L of urea and 1 mg/dL of creatinine is 88.4 µmol/L, the SI ratio is about 4 times the US BUN:creatinine ratio (20 ≈ 80, 10 ≈ 40).',
     caveat: 'A weak test on its own: protein intake, GI bleeding, steroids, liver disease and muscle mass all move it independently of the kidney.',
     chapters: [13, 14],
     route: '/prerenal-atn',

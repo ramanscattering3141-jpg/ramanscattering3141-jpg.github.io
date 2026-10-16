@@ -74,11 +74,11 @@ export const chapter: ChapterContent = {
       heading: 'Treatment follows the physiology',
       body: [
         'Severity sets urgency. A K⁺ above 8, severe weakness or marked ECG change is an emergency needing almost everything in Table 28-4; an asymptomatic 6.5 can be treated with a resin alone.',
-        'Calcium antagonises the membrane effect within minutes but briefly: 10 mL of 10% calcium gluconate over 2–3 minutes, repeated after 5 if the ECG is unchanged, with care in digitalised patients. Insulin (10 units with 30–50 g of glucose, then a dextrose infusion to prevent late hypoglycaemia) lowers the K⁺ by 0.5–1.5 mmol/L within an hour, and its K⁺-lowering effect survives the insulin resistance of renal failure; insulin alone suffices in the hyperglycaemic. Sodium bicarbonate drives K⁺ into cells mainly when there is significant acidaemia; in dialysis patients with little acidosis it achieved almost nothing in the first hours. Albuterol, 10–20 mg nebulised, lowers the K⁺ 0.5–1.5 mmol/L, peaking at about 90 minutes; about four in ten dialysis patients respond by less than 0.5, so it is added to insulin rather than used alone. In one study of dialysis patients the fall at an hour was nil with bicarbonate, 0.3 with adrenaline, 0.85 with insulin–glucose and 1.3 with haemodialysis.',
+        'Calcium antagonises the membrane effect within minutes but briefly: 10 mL of 10% calcium gluconate over 2–3 minutes, repeated after 5 if the ECG is unchanged, with care in digitalised patients. Insulin (10 units with 30–50 g of glucose, then a dextrose infusion to prevent late hypoglycaemia) lowers the K⁺ by 0.5–1.5 mmol/L within an hour, and its K⁺-lowering effect survives the insulin resistance of renal failure; insulin alone suffices in the hyperglycaemic. Sodium bicarbonate drives K⁺ into cells mainly when there is significant acidaemia; in dialysis patients with little acidosis it achieved almost nothing in the first hours. Salbutamol (albuterol), 10–20 mg nebulised, lowers the K⁺ 0.5–1.5 mmol/L, peaking at about 90 minutes; about four in ten dialysis patients respond by less than 0.5, so it is added to insulin rather than used alone. In one study of dialysis patients the fall at an hour was nil with bicarbonate, 0.3 with adrenaline, 0.85 with insulin–glucose and 1.3 with haemodialysis.',
         'These shifts last hours. Removal follows: diuretics where the kidney can respond, sodium polystyrene sulfonate (1 mmol K⁺ bound per gram, exchanging Na⁺, with a risk of Na⁺ retention and of intestinal necrosis, particularly with sorbitol after surgery), or dialysis — haemodialysis much faster than peritoneal, and essential in hypercatabolic acute renal failure.',
       ],
       chain: ['Calcium: restores excitability in minutes, lowers K⁺ not at all', 'Insulin + glucose, β₂-agonist (± bicarbonate if acidaemic): shift K⁺ into cells within an hour', 'Diuretic, resin or dialysis: remove K⁺ from the body'],
-      points: ['Calcium gluconate 10% 10 mL over 2–3 min', 'Insulin 10 U + glucose: −0.5 to −1.5 mmol/L within 1 h', 'Albuterol 10–20 mg nebulised: similar, less reliable in ESRD', 'Bicarbonate: only with acidaemia'],
+      points: ['Calcium gluconate 10% 10 mL over 2–3 min', 'Insulin 10 U + glucose: −0.5 to −1.5 mmol/L within 1 h', 'Salbutamol 10–20 mg nebulised: similar, less reliable in ESRD', 'Bicarbonate: only with acidaemia'],
       cite: { rose: [28], evidence: 'clinical', refs: ['allon1989', 'clase2020'] },
       route: '/hyperkalemia',
     },
@@ -100,7 +100,7 @@ export const chapter: ChapterContent = {
   clinical: [
     'First exclude pseudohyperkalaemia if nothing explains the result and the ECG is normal.',
     'With ECG changes, give calcium before anything else; it buys minutes, not a solution.',
-    'Insulin–glucose is the most reliable shift; add albuterol; give bicarbonate only for real acidaemia.',
+    'Insulin–glucose is the most reliable shift; add salbutamol; give bicarbonate only for real acidaemia.',
     'Plan removal while the shift lasts: diuretic, resin or dialysis.',
     'Chronic hyperkalaemia is an excretory problem: look for drugs (ACE inhibitors, ARBs, MRAs, NSAIDs, trimethoprim, heparin, calcineurin inhibitors), oliguria, volume depletion and hypoaldosteronism.',
     'Hyperkalaemia itself causes a mild acidosis by suppressing ammonium excretion; lowering the K⁺ can correct it.',

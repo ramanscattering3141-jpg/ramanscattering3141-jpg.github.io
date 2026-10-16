@@ -110,7 +110,7 @@ export const chapter: ChapterContent = {
     {
       heading: 'Calcium',
       body: [
-        'About 40% of plasma calcium is albumin-bound and not filtered; of the filtered 60%, most is ionised. About 80–85% of filtered calcium is reabsorbed in the proximal tubule and loop, largely passively following sodium and water (paracellularly in the thick ascending limb, via paracellin-1/claudin-16). Only ~5% is excreted.',
+        'About 40% of plasma calcium is albumin-bound and not filtered; of the filtered 60%, most is ionised. About 80–85% of filtered calcium is reabsorbed in the proximal tubule and loop, largely passively following sodium and water (paracellularly in the thick ascending limb, via paracellin-1/claudin-16). Only about 1–2% of the filtered load is excreted.',
         'Regulation happens in the distal tubule, connecting segment and cortical thick ascending limb: PTH (and to a lesser degree calcitriol) increases calcium entry through apical calcium channels, and extrusion by a basolateral Na⁺/Ca²⁺ exchanger and Ca²⁺-ATPase.',
         'Because most calcium reabsorption follows sodium, anything that changes proximal and loop sodium reabsorption changes calcium excretion in parallel. Saline and a loop diuretic increase calcium excretion (treatment of hypercalcaemia); a low-sodium diet with a thiazide or amiloride reduces it (hypercalciuric stone formers) — thiazides and amiloride also increase distal calcium reabsorption directly.',
         'In hypoparathyroidism, loss of PTH-dependent distal reabsorption means calciuria persists at low plasma calcium, and raising calcium toward normal causes hypercalciuria — which limits correction.',
@@ -174,7 +174,7 @@ export const chapter: ChapterContent = {
     { label: 'Glucose threshold (splay)', value: '≈10–11 mmol/L' },
     { label: 'Apparent HCO₃⁻ reabsorption plateau', value: '26–28 mmol/L filtrate (volume-dependent)' },
     { label: 'Filtered urea excreted', value: '50–60%' },
-    { label: 'Filtered Ca²⁺ reabsorbed (PT + loop)', value: '80–85%; ~5% excreted' },
+    { label: 'Filtered Ca²⁺ reabsorbed (PT + loop)', value: '80–85%; ~1–2% excreted' },
     { label: 'Filtered phosphate reabsorbed', value: '80–95%' },
     { label: 'Filtered Mg²⁺', value: '70–80% of plasma; ~3% excreted; 50–60% reabsorbed in the loop' },
     { label: 'Urate excreted', value: '6–12% of filtered' },

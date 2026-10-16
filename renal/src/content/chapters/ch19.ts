@@ -45,7 +45,7 @@ export const chapter: ChapterContent = {
       heading: 'The anion gap asks what the acid was',
       body: [
         'Sodium minus chloride minus bicarbonate is not a real gap; it is the difference between the unmeasured anions and the unmeasured cations, and in health almost all of it is the negative charge on albumin. The other unmeasured ions — potassium, calcium and magnesium on one side, phosphate, sulfate and organic anions on the other — very nearly cancel. Modern autoanalysers read chloride higher than the older ones, so the normal range is now about 5 to 11 rather than the 12 of the older literature, and the number from your own laboratory is the one to use.',
-        'Because albumin is most of it, the gap must be corrected downwards in hypoalbuminaemia: about 2.5 mmol/L for every 1 g/dL below normal. A gap of 15 in someone with an albumin of 20 g/L is not mildly raised, it is markedly raised, because their baseline was about 3.',
+        'Because albumin is most of it, the normal value of the gap falls in hypoalbuminaemia: about 2.5 mmol/L for every 10 g/L that the albumin falls below 40 g/L. A gap of 15 in someone with an albumin of 20 g/L is not mildly raised, it is markedly raised, because their baseline was about 3.',
         'Now the diagnosis. Add hydrochloric acid and chloride replaces the bicarbonate one for one: the gap does not move, and the acidosis is hyperchloraemic. Add lactic or ketoacid and the anion stays behind unmeasured: the gap rises. That is the whole of it — the gap is a question about the anion, not about the acid.',
       ],
       chain: [
@@ -55,7 +55,7 @@ export const chapter: ChapterContent = {
         'If the anion is retained (lactate, ketoacid, sulfate) → gap rises',
         'If the anion is excreted as fast as it arrives (hippurate, D-lactate) → gap normal despite an organic acid',
       ],
-      points: ['Normal gap ≈ 5–11 on modern analysers', 'Subtract 2.5 per 1 g/dL fall in albumin', 'Above 25 there is almost always lactate, ketones, renal failure or an ingestion'],
+      points: ['Normal gap ≈ 5–11 on modern analysers', 'Add back 2.5 for every 10 g/L the albumin is below 40', 'Above 25 there is almost always lactate, ketones, renal failure or an ingestion'],
       cite: { rose: [19], evidence: 'clinical' },
       route: '/metabolic-acidosis',
       equation: 'ag',
@@ -96,7 +96,7 @@ export const chapter: ChapterContent = {
         'Where tubular function is disproportionately impaired, the picture inverts. Sulfate reabsorption falls too, so sulfate excretion is maintained; the sodium leaving with it is replaced by sodium chloride reabsorption; and the result is retention of hydrogen and chloride with a normal anion gap. That is why the renal tubular acidoses, where filtration is intact, are hyperchloraemic while uraemic acidosis is not.',
         'The acidosis of renal failure is also notable for what it does not do: it plateaus. Bone carbonate is an enormous slowly exchangeable alkali reserve, and it buffers the retained acid at the cost of the skeleton. The bicarbonate settles around 12 to 20 mmol/L and stops falling, which is why patients survive years of positive acid balance.',
       ],
-      points: ['Dietary acid ≈ 50–100 mmol/day, mostly H₂SO₄', 'Ammonium excretion per remaining nephron is normal in renal failure — there are just too few nephrons', 'Urine pH can still be lowered below 5.3 in renal failure'],
+      points: ['Dietary acid ≈ 50–100 mmol/day, mostly H₂SO₄', 'Ammonium excretion per remaining nephron is maintained, even increased, in renal failure — there are just too few nephrons', 'Urine pH can still be lowered below 5.3 in renal failure'],
       cite: { rose: [19, 6], evidence: 'physiology' },
       route: '/ckd',
     },
@@ -143,7 +143,7 @@ export const chapter: ChapterContent = {
     { label: 'Dietary acid load', value: '50–100 mmol/day', note: 'mostly sulfuric acid from sulfur amino acids' },
     { label: 'Buffered outside the ECF', value: '55–60%', note: 'higher as the bicarbonate falls' },
     { label: 'Respiratory compensation', value: '1.2 mmHg per 1 mmol/L', note: 'floor 10–15 mmHg' },
-    { label: 'Normal anion gap', value: '5–11 mmol/L', note: 'modern analysers; subtract 2.5 per 1 g/dL albumin' },
+    { label: 'Normal anion gap', value: '5–11 mmol/L', note: 'modern analysers; corrects by 2.5 per 10 g/L of albumin' },
     { label: 'Δ gap / Δ HCO₃⁻', value: '1 to 2', note: '≈1.6 in lactic acidosis, ≈1 in ketoacidosis' },
     { label: 'Maximum NH₄⁺ excretion', value: '> 250 mmol/day', note: 'against 30–60 normally' },
     { label: 'Maximum net acid excretion', value: '~500 mmol/day', note: 'five times normal' },
@@ -207,7 +207,7 @@ export const chapter: ChapterContent = {
     },
     {
       name: 'Uraemic acidosis',
-      broken: 'Too few nephrons: ammonium excretion per nephron is normal, total excretion is not',
+      broken: 'Too few nephrons: ammonium excretion per nephron is maintained or increased, total excretion is not',
       consequence: 'High anion gap acidosis from retained sulfate, phosphate, urate and hippurate, plateauing at 12–20 mmol/L on bone buffer, at the cost of the skeleton.',
       route: '/ckd',
     },
@@ -300,8 +300,8 @@ export const chapter: ChapterContent = {
     },
     {
       topic: 'Alkali for the acidosis of chronic kidney disease',
-      text: 'The chapter treats uraemic acidosis mainly as something to correct for bone and growth. Since then, correcting it has been shown to slow the kidney disease itself. In de Brito-Ashurst\'s randomised trial, 134 patients with a creatinine clearance of 15–30 mL/min per 1.73 m² and a bicarbonate of 16–20 mmol/L took oral sodium bicarbonate or had standard care for two years. Creatinine clearance fell by 1.88 mL/min per 1.73 m² against 5.93 in the controls, rapid progression occurred in 9% against 45%, and end-stage disease in 6.5% against 33%. Nutritional measures improved. Later trials in less advanced disease have been less impressive, so this is not settled, but correcting a bicarbonate below about 22 mmol/L is now standard.',
-      cite: { refs: ['britoashurst2009'], rose: [19, 6], evidence: 'clinical', update: 'A new reason to treat an old problem.' },
+      text: 'The chapter treats uraemic acidosis mainly as something to correct for bone and growth. Since then, correcting it has been shown to slow the kidney disease itself. In de Brito-Ashurst\'s randomised trial, 134 patients with a creatinine clearance of 15–30 mL/min per 1.73 m² and a bicarbonate of 16–20 mmol/L took oral sodium bicarbonate or had standard care for two years. Creatinine clearance fell by 1.88 mL/min per 1.73 m² against 5.93 in the controls, rapid progression occurred in 9% against 45%, and end-stage disease in 6.5% against 33%. Nutritional measures improved. Later trials in less advanced disease have been less impressive, so this is not settled. KDIGO once suggested treating a bicarbonate below 22 mmol/L; its 2024 guideline suggests considering drug treatment when the bicarbonate is persistently below 18 mmol/L, without raising it above the normal range.',
+      cite: { refs: ['britoashurst2009', 'kdigo2024ckd'], rose: [19, 6], evidence: 'clinical', update: 'A new reason to treat an old problem.' },
     },
     {
       topic: 'Toxic alcohols: fomepizole',

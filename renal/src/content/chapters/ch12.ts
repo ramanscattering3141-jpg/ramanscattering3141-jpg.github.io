@@ -58,7 +58,7 @@ export const chapter: ChapterContent = {
       body: [
         'K⁺ enters the cell basolaterally on the Na⁺-K⁺-ATPase and leaves passively through luminal K⁺ channels. Because the final step is passive, only three things govern it: the concentration gradient from cell to lumen, the electrical gradient, and the number of open channels.',
         'The cell’s total K⁺ is 140–150 mmol/L but its activity is nearer 80–90; the size of this transport pool is not fixed — it rises after a K⁺ load and falls with depletion, under the control of the plasma K⁺ and aldosterone.',
-        'The electrical gradient comes from Na⁺ entering through ENaC: reabsorbing a cation leaves the lumen negative, and chloride follows only after a delay. Replace luminal Na⁺ with a non-reabsorbable cation and the voltage falls to zero; replace luminal Cl⁻ with sulphate and the voltage — and K⁺ secretion — increase.',
+        'The electrical gradient comes from Na⁺ entering through ENaC: reabsorbing a cation leaves the lumen negative, and chloride follows only after a delay. Replace luminal Na⁺ with a non-reabsorbable cation and the voltage falls to zero; replace luminal Cl⁻ with sulfate and the voltage — and K⁺ secretion — increase.',
       ],
       chain: ['Na⁺-K⁺-ATPase loads the cell with K⁺', 'ENaC lets Na⁺ in: lumen becomes 15–50 mV negative', 'K⁺ leaves through ROMK/BK channels down that gradient', 'Flow carries the secreted K⁺ away, keeping the gradient favourable'],
       cite: { rose: [12, 5], evidence: 'physiology' },

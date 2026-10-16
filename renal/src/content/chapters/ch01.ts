@@ -100,7 +100,7 @@ export const chapter: ChapterContent = {
     { label: 'GFR', value: '135–180 L/day', note: 'about 25% lower in women' },
     { label: 'Filtered Na⁺', value: '≈26,000 mmol/day', note: 'excreted 100–250 (>99% reabsorbed)' },
     { label: 'Filtered Cl⁻', value: '≈21,000 mmol/day', note: '>99% reabsorbed' },
-    { label: 'Filtered HCO₃⁻', value: '≈4,800 mmol/day', note: '≈100% reabsorbed' },
+    { label: 'Filtered HCO₃⁻', value: '≈4,300–4,800 mmol/day', note: '≈100% reabsorbed' },
     { label: 'Filtered K⁺', value: '≈800 mmol/day', note: 'excreted 40–120; urine K⁺ is set by distal secretion' },
     { label: 'Filtered urea', value: '≈54 g/day', note: '40–50% reabsorbed' },
     { label: 'Water', value: '180 L filtered', note: '0.5–3 L excreted (98–99% reabsorbed)' },

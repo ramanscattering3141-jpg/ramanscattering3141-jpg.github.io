@@ -263,7 +263,7 @@ export const SEGMENT_INFO: Record<SegmentId, SegmentInfo> = {
         cite: { rose: [4], evidence: 'experimental', refs: ['kokko1972', 'stephenson1972'] },
       },
     ],
-    clinical: ['Only long-looped (juxtamedullary) nephrons have this segment; the ~40% of nephrons with short loops do not.'],
+    clinical: ['Only long-looped (juxtamedullary) nephrons have this segment; the short-looped majority (roughly 60–70% of nephrons) do not.'],
     diuretics: [],
     disorders: [],
     cite: { rose: [1, 4], evidence: 'experimental', refs: ['kokko1972'] },

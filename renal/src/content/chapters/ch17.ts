@@ -161,7 +161,7 @@ export const chapter: ChapterContent = {
       route: '/mixed',
     },
     {
-      q: 'A PCO₂ of 60 mmHg is found in two patients. In one the bicarbonate is 26, in the other 45. What does the difference tell you?',
+      q: 'A PCO₂ of 60 mmHg is found in two patients. In one the bicarbonate is 26, in the other 31. What does the difference tell you?',
       options: [
         'Nothing useful',
         'How long it has been there: about 1 mmol/L per 10 mmHg is acute buffering, about 3.5 is established renal compensation',
@@ -170,7 +170,7 @@ export const chapter: ChapterContent = {
       ],
       answer: 1,
       explanation:
-        'Only the respiratory disorders have an acute and a chronic form, because only the renal response is slow. The first patient has acute hypercapnia and will be markedly acidaemic; the second has had it for days and is much better protected.',
+        'Only the respiratory disorders have an acute and a chronic form, because only the renal response is slow. A 20 mmHg rise predicts a bicarbonate of about 26 acutely (24 + 2 × 1) and about 31 once the kidney has responded (24 + 2 × 3.5). The first patient has acute hypercapnia and will be markedly acidaemic (pH about 7.26); the second has had it for days and is much better protected (pH about 7.34). A bicarbonate well above 31 would mean a metabolic alkalosis as well.',
       route: '/respiratory',
     },
     {

@@ -31,7 +31,7 @@ export const chapter: ChapterContent = {
       heading: 'Fractional excretion of sodium — and why 1% is not a constant',
       body: [
         'FENa expresses sodium excretion as a fraction of what was filtered, using creatinine to cancel the urine flow rate: FENa = (UNa × Pcr) ÷ (PNa × Ucr) × 100. It removes the water-reabsorption problem that makes the urine sodium concentration ambiguous, which is why it separates pre-renal from tubular injury better in the overlap zone of 20–40 mmol/L.',
-        'But the threshold depends on the filtered load. With a normal GFR of 180 L/day and plasma Na⁺ 150, about 27,000 mmol is filtered and 1% is 270 mmol/day — far more than anyone eats, so a normal person on a normal diet has a FENa well below 1%. When GFR falls to a tenth of normal, 1% of the filtered load is only about 14 mmol/day. The same number means different things at different GFRs.',
+        'But the threshold depends on the filtered load. With a normal GFR of 180 L/day and plasma Na⁺ 150, about 27,000 mmol is filtered and 1% is 270 mmol/day — far more than anyone eats, so a normal person on a normal diet has a FENa well below 1%. When GFR falls to a tenth of normal, 1% of the filtered load is only about 27 mmol/day. The same number means different things at different GFRs.',
         'Exceptions run both ways. FENa can be under 1% in established acute tubular necrosis when it is superimposed on chronic effective volume depletion — cirrhosis, heart failure, burns — and in contrast- or pigment-induced injury. And diuretics raise FENa in genuinely hypovolaemic patients, making it uninterpretable.',
         'Alternatives for the diuretic problem: fractional excretion of urea (less affected by loop diuretics because urea reabsorption is largely passive) and of urate — in one study a fractional urate excretion below 12% suggested pre-renal disease, with modest sensitivity (68%) and specificity (78%). Fractional lithium clearance measures proximal function directly but is rarely available.',
       ],
@@ -135,7 +135,7 @@ export const chapter: ChapterContent = {
     },
     {
       q: 'Why does a FENa of 1% mean something different at a GFR of 120 than at a GFR of 12 mL/min?',
-      options: ['It does not', 'Because FENa is a fraction of the filtered load: 1% of a tenth of the normal load is only about 14 mmol/day', 'Because creatinine changes', 'Because urine flow differs'],
+      options: ['It does not', 'Because FENa is a fraction of the filtered load: 1% of a tenth of the normal load is only about 26 mmol/day', 'Because creatinine changes', 'Because urine flow differs'],
       answer: 1,
       explanation: 'The threshold is not fixed. A patient with advanced CKD excreting 1% of a small filtered load may still be in sodium balance.',
       route: '/fractional-excretion',

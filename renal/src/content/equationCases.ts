@@ -60,7 +60,7 @@ export const EQUATION_CASES: Record<string, PatientCase> = {
     steps: [
       'Sodium needed = 55 × 0.5 × (123 − 115) ≈ 220 mmol.',
       'In 3% saline (513 mmol/L) that is about 430 mL over 24 hours, before any urine losses.',
-      'Because this is chronic, the brain has adapted. A rise above 10 mmol/L in the first 24 hours risks osmotic demyelination, and she is high risk (older, likely low K⁺ and poor intake).',
+      'Because this is chronic, the brain has adapted, and too fast a rise risks osmotic demyelination. With poor intake and a likely low K⁺ she is at high risk, for whom the usual limit is 8 mmol/L in any 24 hours (10 mmol/L for others).',
       'Plan the rescue in advance: if the Na⁺ overshoots, give D5W and consider desmopressin to stop the water diuresis.',
     ],
     takeaway: 'The deficit sets a ceiling on what to give. Correction limits and ongoing urine output decide the pace.',
@@ -117,18 +117,19 @@ export const EQUATION_CASES: Record<string, PatientCase> = {
     steps: [
       'Calculated osmolality = 2 × 138 + 6 + 5 = 287. Gap = 330 − 287 = 43 mOsm/kg.',
       'A gap this large means unmeasured osmoles: ethanol, methanol, ethylene glycol, isopropanol, mannitol.',
-      'Ethanol raises the gap by about 1 mOsm/kg per mmol/L. If his ethanol level does not explain the gap, and he is acidotic, treat as toxic alcohol: fomepizole and dialysis.',
+      'Ethanol raises the gap by about 1–1.25 mOsm/kg per mmol/L. If his ethanol level does not explain the gap, and he is acidotic, treat as toxic alcohol: fomepizole and dialysis.',
       'A normal gap does not rule it out: late in poisoning the parent alcohol has been metabolised into acids.',
     ],
     takeaway: 'High osmolal gap plus high anion gap acidosis: toxic alcohol until proven otherwise.',
   },
   nacorr: {
     title: 'The hidden hypernatraemia of DKA',
-    story: 'A 19-year-old in diabetic ketoacidosis: glucose 45 mmol/L, measured Na⁺ 128 mmol/L.',
-    values: { na: 128, glu: 45, k: 2.4 },
+    story: 'A 19-year-old in diabetic ketoacidosis: glucose 50 mmol/L, measured Na⁺ 128 mmol/L.',
+    values: { na: 128, glu: 50, k: 2.4 },
     steps: [
-      'Glucose pulls water out of cells and dilutes the Na⁺. Corrected Na⁺ ≈ 128 + 2.4 × (45 − 5.6)/5.6 ≈ 145.',
-      'She has lost more water than salt through the osmotic diuresis: she is really hypernatraemic.',
+      'Glucose pulls water out of cells and dilutes the Na⁺. Corrected Na⁺ ≈ 128 + 2.4 × (50 − 5.6)/5.6 ≈ 147.',
+      'She has lost more water than salt through the osmotic diuresis: once the glucose is normal she will be hypernatraemic.',
+      'Set k to 1.6 (Katz): the corrected value is about 141. The factor you choose changes the answer, which is one reason to follow the measured Na⁺ as the glucose falls.',
       'As insulin lowers the glucose, the measured Na⁺ should rise. If it falls instead, she is getting too much free water, which increases the risk of cerebral oedema (especially in children).',
     ],
     takeaway: 'In hyperglycaemia, track the corrected Na⁺, not the measured one.',
@@ -161,7 +162,7 @@ export const EQUATION_CASES: Record<string, PatientCase> = {
     story: 'A 66-year-old with melaena. Urea 28 mmol/L, creatinine 160 µmol/L.',
     values: { urea: 28, cr: 160 },
     steps: [
-      'Ratio = 28 ÷ 160 × 1000 = 175, well above 100.',
+      'Ratio = 28 ÷ 160 × 1000 = 175, well above 80–100 (a BUN:creatinine ratio of about 43 in US units).',
       'Two things push it up here: blood digested in the gut is a protein load (more urea made), and volume depletion increases urea reabsorption.',
       'A disproportionately high urea in a patient without known kidney disease is a clue to upper GI bleeding.',
     ],
@@ -217,7 +218,7 @@ export const EQUATION_CASES: Record<string, PatientCase> = {
     story: 'A patient with pyloric obstruction: HCO₃⁻ 40 mmol/L, PCO₂ 50 mmHg, no lung history.',
     values: { hco3: 40 },
     steps: [
-      'Expected PCO₂ ≈ 40 + 0.6–0.7 × 16 ≈ 50–51 mmHg.',
+      'Expected PCO₂ ≈ 40 + 0.7 × 16 ≈ 51 mmHg.',
       'His PCO₂ matches: this is appropriate respiratory compensation, not a second disorder.',
       'Treat with saline and KCl. The PCO₂ will fall as the bicarbonate does.',
     ],
