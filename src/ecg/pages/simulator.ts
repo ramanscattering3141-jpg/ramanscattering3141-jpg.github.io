@@ -228,7 +228,7 @@ export function renderSimulator(root: HTMLElement, _parts: string[], q: URLSearc
   const variability = h(
     'div',
     { class: 'btn-row' },
-    button('🎲 New patient variability', () => {
+    button('Vary the patient', () => {
       state.p = randomVariation(state.p);
       rebuild();
       rerun();

@@ -47,7 +47,7 @@ export function renderCases(root: HTMLElement, _parts: string[], q: URLSearchPar
       measureRow('11. Management', t.mgmtFocus),
     ];
     const reveal = h('div', { class: 'answer' });
-    const inputs = answers.slice(0, 8).map(([k]) => h('div', { class: 'ctl' }, h('label', null, h('span', null, k)), h('input', { type: 'text', placeholder: 'your answer', style: 'width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' })));
+    const inputs = answers.slice(0, 8).map(([k], i) => h('div', { class: 'ctl' }, h('label', { for: `case-a${i}` }, h('span', null, k)), h('input', { id: `case-a${i}`, type: 'text', placeholder: 'Your answer', autocomplete: 'off', class: 'case-input' })));
     const feedback = h('div');
     const dxButtons = options.map((o) =>
       button(o.name, () => {
@@ -67,6 +67,7 @@ export function renderCases(root: HTMLElement, _parts: string[], q: URLSearchPar
       refList(d.management?.refs ?? d.refs),
     );
     const vit = caseVitals(t, rng, m.ventRate);
+    const revealCard = h('section', { class: 'card', hidden: true }, h('h2', null, 'Explanation'), reveal);
     host.replaceChildren(
       h(
         'section',
@@ -79,8 +80,12 @@ export function renderCases(root: HTMLElement, _parts: string[], q: URLSearchPar
         t.labs ? p(`**Labs:** ${t.labs(rng)}.`) : null,
         panel.el,
       ),
-      h('section', { class: 'card' }, h('h2', null, 'Your interpretation'), h('div', { class: 'grid' }, ...inputs), h('h3', null, '9. Diagnosis — choose one'), ...dxButtons, feedback, h('div', { class: 'btn-row' }, button('Reveal full explanation', () => reveal.classList.add('show'), 'btn-primary'), button('Next case', newCase))),
-      h('section', { class: 'card' }, reveal),
+      h('section', { class: 'card' }, h('h2', null, 'Your interpretation'), h('div', { class: 'grid' }, ...inputs), h('h3', null, '9. Diagnosis — choose one'), ...dxButtons, feedback, h('div', { class: 'btn-row' }, button('Reveal full explanation', () => {
+        reveal.classList.add('show');
+        revealCard.hidden = false;
+        revealCard.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }, 'btn-primary'), button('Next case', newCase))),
+      revealCard,
     );
   };
   root.append(
@@ -100,7 +105,7 @@ export function renderCases(root: HTMLElement, _parts: string[], q: URLSearchPar
       ),
       button('New case', newCase, 'btn-primary'),
     ),
-    ...(dxFilter ? [p(`Showing cases for **${resolveDx(dxFilter)?.name ?? dxFilter}** — [all cases](#/cases).`)] : []),
+    ...(dxFilter ? [p(CASES.some((c) => c.dx === resolveDx(dxFilter)?.id) ? `Showing cases for **${resolveDx(dxFilter)?.name ?? dxFilter}** — [show all cases](#/cases).` : `There is no case for **${resolveDx(dxFilter)?.name ?? dxFilter}**, so a case is chosen from the full set — [show all cases](#/cases).`)] : []),
     host,
   );
   newCase();

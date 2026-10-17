@@ -1,20 +1,40 @@
-// Headless smoke test for the ECG app: visits every main route in Chromium, fails on any
-// console error / page error, and checks for horizontal overflow at phone width.
+// Headless smoke test for the ECG app: visits every ECG route in Chromium, fails on any console
+// error / page error, a missing <h1>, a "not found" page, or horizontal overflow at phone width.
 // Usage: npm run build && node tools/ecg-smoke.mjs
+// Options (environment variables):
+//   ECG_DIST=<dir>   built site to serve (default: dist)
+//   PORT=<n>         preview port (default: 4179)
+//   ECG_ROUTES=a,b   only these routes (e.g. "dx/avnrt,tools/qtc")
+//   ECG_QUICK=1      main pages only (skip the per-diagnosis, eponym, glossary and case pages)
+import { readFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { preview } from 'vite';
 
-const ROUTES = [
-  '', 'fundamentals', 'fundamentals/leads', 'fundamentals/ap', 'fundamentals/systematic', 'physiology', 'physiology/activation', 'why/wide-qrs',
-  'simulator', 'simulator?preset=dextrocardia', 'rhythms', 'rhythms/avnrt-lab', 'rhythms/avrt-lab', 'rhythms/flutter-lab', 'conduction', 'conduction/av', 'conduction/bbb',
-  'structural', 'ischemia', 'electrolytes', 'electrolytes/drugs', 'inherited', 'management', 'acls', 'cases', 'challenge',
-  'sandbox', 'sandbox/one', 'sandbox/build', 'sandbox/adenosine', 'sandbox/compare', 'sandbox/axis', 'sandbox/p', 'sandbox/qrs', 'sandbox/st', 'sandbox/hierarchy',
-  'ddx', 'search?q=wide%20QRS', 'search?q=epsilon', 'sources', 'tools', 'tools/qtc', 'tools/chads', 'tools/sgarbossa', 'tools/wct', 'tools/leads', 'glossary', 'glossary/reentry', 'path', 'heart3d', 'heart3d?preset=lbbb', 'heart3d?preset=chbVentricular', 'heart3d?preset=vf', 'az', 'eponyms', 'eponyms/wellens', 'eponyms/sgarbossa', 'normal', 'omi',
-  'dx/avnrt', 'dx/stemi', 'dx/hcm', 'dx/arvc', 'dx/athlete', 'dx/takotsubo', 'dx/deWinter', 'dx/lvAneurysm', 'dx/cpvt', 'dx/dextrocardia', 'dx/leadReversal', 'dx/artifact',
-];
+const src = (f) => readFileSync(new URL(`../src/ecg/${f}`, import.meta.url), 'utf8');
+const ids = (f, re) => [...src(f).matchAll(re)].map((m) => m[1]);
 
-const server = await preview({ preview: { port: 4179, strictPort: true }, logLevel: 'silent' });
-const base = 'http://localhost:4179/ecg/';
+const MAIN = [
+  '', 'fundamentals', 'fundamentals/leads', 'fundamentals/ap', 'fundamentals/systematic', 'physiology', 'physiology/activation',
+  'simulator', 'simulator?preset=dextrocardia', 'simulator?preset=wpw', 'rhythms', 'rhythms/avnrt-lab', 'rhythms/avrt-lab', 'rhythms/flutter-lab',
+  'conduction', 'conduction/av', 'conduction/bbb', 'structural', 'ischemia', 'electrolytes', 'electrolytes/drugs', 'inherited', 'management', 'acls',
+  'cases', 'cases?dx=avnrt', 'challenge', 'sandbox', 'sandbox/one', 'sandbox/build', 'sandbox/adenosine', 'sandbox/compare', 'sandbox/axis', 'sandbox/p',
+  'sandbox/qrs', 'sandbox/st', 'sandbox/hierarchy', 'ddx', 'search', 'search?q=wide%20QRS', 'search?q=regular%20narrow%20tachycardia', 'search?q=adenosine',
+  'search?q=epsilon', 'sources', 'tools', 'tools/qtc', 'tools/chads', 'tools/sgarbossa', 'tools/wct', 'tools/leads', 'glossary', 'path',
+  'heart3d', 'heart3d?preset=lbbb', 'heart3d?preset=chbVentricular', 'heart3d?preset=vf', 'az', 'eponyms', 'normal', 'omi',
+];
+// Every diagnosis, finding ("why"), differential, eponym and glossary page, read from the content files.
+const DETAIL = [
+  ...['dx_rhythm', 'dx_reentry', 'dx_ventricular', 'dx_conduction', 'dx_morph', 'dx_metabolic', 'dx_extra'].flatMap((f) => ids(`content/${f}.ts`, /^ {4}id: '([^']+)'/gm)).map((id) => `dx/${id}`),
+  ...ids('content/findings.ts', /^ {4}id: '([^']+)'/gm).map((id) => `why/${id}`),
+  ...ids('content/differentials.ts', /^ {4}id: '([^']+)'/gm).map((id) => `ddx/${id}`),
+  ...ids('content/eponyms.ts', /^ {4}id: '([^']+)'/gm).map((id) => `eponyms/${id}`),
+  ...ids('content/glossary.ts', /id: '([^']+)'/g).map((id) => `glossary/${id}`),
+];
+const ROUTES = process.env.ECG_ROUTES ? process.env.ECG_ROUTES.split(',') : process.env.ECG_QUICK ? MAIN : [...MAIN, ...DETAIL];
+
+const port = Number(process.env.PORT || 4179);
+const server = await preview({ build: { outDir: process.env.ECG_DIST || 'dist' }, preview: { port, strictPort: true }, logLevel: 'silent' });
+const base = `http://localhost:${port}/ecg/`;
 const args = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium', args }).catch(() => chromium.launch({ args }));
 let failures = 0;
@@ -29,7 +49,8 @@ for (const [w, h, label] of [[1280, 900, 'desktop'], [390, 844, 'mobile']]) {
     await page.waitForTimeout(250);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     const h1 = await page.locator('h1').first().textContent().catch(() => null);
-    const bad = errors.length || !h1 || (label === 'mobile' && overflow > 1);
+    const notFound = !!h1 && /not found|does not exist/i.test(h1);
+    const bad = errors.length || !h1 || notFound || (label === 'mobile' && overflow > 1);
     if (bad) {
       failures++;
       console.log(`✗ [${label}] #/${r}`, { errors, h1, overflow });

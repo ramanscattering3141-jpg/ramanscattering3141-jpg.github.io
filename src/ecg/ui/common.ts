@@ -74,7 +74,8 @@ export function section(title: string, ...children: (Node | string | null)[]): H
 
 /** In-page "jump to" link that scrolls without changing the hash route. */
 export function jump(label: string, id: string): HTMLAnchorElement {
-  return h('a', { href: '#', class: 'jump', onclick: (e: Event) => (e.preventDefault(), document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }, label);
+  const smooth = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return h('a', { href: '#', class: 'jump', onclick: (e: Event) => (e.preventDefault(), document.getElementById(id)?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })) }, label);
 }
 
 export function bullets(items: string[] | undefined): HTMLElement | null {

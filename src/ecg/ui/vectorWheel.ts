@@ -54,13 +54,13 @@ export class VectorExplorer {
       svg.append(s('text', { x: (x / n) * 116 - 9, y: (y / n) * 116 + 4, class: 'vec-lab' }, `${id}+`));
     }
     if (plane === 'frontal') {
-      for (const [deg, lab] of [[0, '0°'], [90, '+90°'], [180, '±180°'], [-90, '−90°']] as const) {
-        const r = (deg * Math.PI) / 180;
-        svg.append(s('text', { x: Math.cos(r) * 78 - 10, y: Math.sin(r) * 78 + 4, class: 'ref-meta', 'font-size': 8, fill: 'var(--muted)' }, lab));
+      // Degree marks sit beside (never on) their axis line.
+      for (const [x, y, anchor, lab] of [[86, 14, 'middle', '0°'], [-6, 84, 'end', '+90°'], [-86, 14, 'middle', '±180°'], [-6, -78, 'end', '−90°']] as const) {
+        svg.append(s('text', { x, y, 'text-anchor': anchor, class: 'vec-deg' }, lab));
       }
     } else {
-      svg.append(s('text', { x: -125, y: -118, class: 'ref-meta', 'font-size': 8, fill: 'var(--muted)' }, '↑ anterior'));
-      svg.append(s('text', { x: -125, y: 125, class: 'ref-meta', 'font-size': 8, fill: 'var(--muted)' }, '↓ posterior'));
+      svg.append(s('text', { x: -125, y: -118, class: 'vec-deg' }, '↑ anterior'));
+      svg.append(s('text', { x: -125, y: 125, class: 'vec-deg' }, '↓ posterior'));
     }
     const arrow = s('line', { x1: 0, y1: 0, x2: 0, y2: 0, class: 'vec-arrow', 'data-arrow': '1' });
     const handle = s('circle', { r: 9, class: 'vec-handle', 'data-handle': '1' });

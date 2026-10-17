@@ -7,6 +7,7 @@ import { isReviewed, setReviewed } from '../ui/progress';
 import { ALL_DX, SECTION_CATS, dxByCategory, presetLabel, resolveDx } from '../content/index';
 import { CATEGORY_LABEL, type Category, type Dx, type Management } from '../content/types';
 import { PRESETS } from '../engine/presets';
+import { CASES } from '../content/cases';
 import { randomVariation } from '../engine/variability';
 import type { Physio } from '../engine/params';
 
@@ -36,8 +37,8 @@ export function renderLibrary(root: HTMLElement): void {
 }
 
 const SECTION_META: Record<string, { kicker: string; title: string; intro: string }> = {
-  structural: { kicker: 'F · Structural / Physiological ECG Changes', title: 'Hypertrophy, cardiomyopathy, pericardial, pulmonary and positional patterns', intro: 'How chamber mass, myocardial disease, fluid, inflammation, pressure load — and the position of the heart and electrodes — reshape the vectors, and therefore the voltages, axis and ST–T.' },
-  inherited: { kicker: 'I · Inherited / Primary Electrical Syndromes', title: 'Repolarisation and J-wave disorders', intro: 'Channelopathies change the action potential in specific layers of the ventricle; the ECG pattern follows from which current and which layer. Use the ST/T/QT lab and the action-potential explorer alongside.' },
+  structural: { kicker: 'F · Structural & Physiological Changes', title: 'Hypertrophy, cardiomyopathy, pericardial, pulmonary and positional patterns', intro: 'How chamber mass, myocardial disease, fluid, inflammation, pressure load — and the position of the heart and electrodes — reshape the vectors, and therefore the voltages, axis and ST–T.' },
+  inherited: { kicker: 'I · Inherited & Electrical Syndromes', title: 'Repolarisation and J-wave disorders', intro: 'Channelopathies change the action potential in specific layers of the ventricle; the ECG pattern follows from which current and which layer. Use the ST/T/QT lab and the action-potential explorer alongside.' },
 };
 
 export function renderSection(root: HTMLElement, key: string): void {
@@ -104,7 +105,7 @@ function atAGlance(d: Dx): HTMLElement {
 export function renderDx(root: HTMLElement, parts: string[]): (() => void) | void {
   const d = resolveDx(parts[0] ?? '');
   if (!d) {
-    root.append(header('Library', 'Not found'), h('a', { href: '#/rhythms' }, 'Back to library'));
+    root.append(header('ECG library', 'Diagnosis not found', 'There is no diagnosis page at this address. Find it in the A–Z index or search for it.'), h('div', { class: 'btn-row' }, h('a', { class: 'btn btn-primary', href: '#/az' }, 'ECG library A–Z'), h('a', { class: 'btn', href: '#/rhythms' }, 'Rhythm library'), h('a', { class: 'btn', href: '#/search' }, 'Search')));
     return;
   }
   root.append(header(CATEGORY_LABEL[d.category as Category], d.name, d.definition));
@@ -139,7 +140,7 @@ export function renderDx(root: HTMLElement, parts: string[]): (() => void) | voi
             'Variant',
           )
         : null,
-      button('🎲 Patient variability', () => {
+      button('Vary the patient', () => {
         phys = randomVariation(presetPhysio(current));
         show();
       }),
@@ -165,7 +166,8 @@ export function renderDx(root: HTMLElement, parts: string[]): (() => void) | voi
   if (d.management) root.append(section('Management — mechanism-linked', managementBlock(d.management)));
   else if (d.acute || d.longTerm || d.cautions) root.append(section('Management', d.acute ? h('h3', null, 'Acute') : null, bullets(d.acute), d.longTerm ? h('h3', null, 'Long-term') : null, bullets(d.longTerm), d.cautions ? h('h3', null, 'Cautions') : null, bullets(d.cautions)));
   if (d.pearls) root.append(section('Pearls', ul(d.pearls)));
-  root.append(section('Practice', h('div', { class: 'btn-row' }, h('a', { class: 'btn', href: `#/cases?dx=${d.id}` }, 'Generate a case with this diagnosis'), h('a', { class: 'btn', href: '#/challenge' }, 'Challenge mode'), h('a', { class: 'btn', href: '#/sandbox/compare' }, 'Compare with a look-alike'))));
+  const hasCase = CASES.some((c) => c.dx === d.id);
+  root.append(section('Practice', h('div', { class: 'btn-row' }, hasCase ? h('a', { class: 'btn', href: `#/cases?dx=${d.id}` }, 'Generate a case with this diagnosis') : h('a', { class: 'btn', href: '#/cases' }, 'Generate a random case'), h('a', { class: 'btn', href: '#/challenge' }, 'Challenge mode'), h('a', { class: 'btn', href: '#/sandbox/compare' }, 'Compare with a look-alike'))));
   const rl = refList(Array.from(new Set([...d.refs, ...(d.management?.refs ?? [])])));
   rl.id = 'sec-references';
   root.append(rl);

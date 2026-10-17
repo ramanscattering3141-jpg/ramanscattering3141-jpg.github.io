@@ -21,7 +21,8 @@ import { renderGlossary } from './pages/glossary';
 import { renderPath } from './pages/path';
 import { renderHeart3d } from './pages/heart3dPage';
 import { renderAZ, renderEponyms, renderNormal, renderOmi } from './pages/reference';
-import { disclaimer } from './ui/common';
+import { disclaimer, header } from './ui/common';
+import { SECTION_CATS, resolveDx } from './content/index';
 
 export type Cleanup = (() => void) | void;
 type Renderer = (root: HTMLElement, parts: string[], query: URLSearchParams) => Cleanup;
@@ -32,28 +33,56 @@ const NAV: { letter: string; label: string; href: string; match: string }[] = [
   { letter: 'C', label: 'ECG Simulator', href: '#/simulator', match: 'simulator' },
   { letter: 'D', label: 'Rhythm Library', href: '#/rhythms', match: 'rhythms' },
   { letter: 'E', label: 'Conduction Disorders', href: '#/conduction', match: 'conduction' },
-  { letter: 'F', label: 'Structural / Physiological', href: '#/structural', match: 'structural' },
+  { letter: 'F', label: 'Structural & Physiological', href: '#/structural', match: 'structural' },
   { letter: 'G', label: 'Ischaemia & Infarction', href: '#/ischemia', match: 'ischemia' },
   { letter: 'H', label: 'Electrolytes & Toxicology', href: '#/electrolytes', match: 'electrolytes' },
-  { letter: 'I', label: 'Inherited / Electrical', href: '#/inherited', match: 'inherited' },
+  { letter: 'I', label: 'Inherited & Electrical Syndromes', href: '#/inherited', match: 'inherited' },
   { letter: 'J', label: 'Arrhythmia Management', href: '#/management', match: 'management' },
   { letter: 'K', label: 'ACLS ECG Reference', href: '#/acls', match: 'acls' },
   { letter: 'L', label: 'ECG Cases', href: '#/cases', match: 'cases' },
   { letter: 'M', label: 'ECG Challenge Mode', href: '#/challenge', match: 'challenge' },
   { letter: 'N', label: 'Physiology Sandbox', href: '#/sandbox', match: 'sandbox' },
 ];
-const EXTRA: { label: string; href: string; match: string }[] = [
-  { label: 'Heart simulator (3-D, slow motion)', href: '#/heart3d', match: 'heart3d' },
-  { label: 'ECG library A–Z', href: '#/az', match: 'az' },
-  { label: 'Named signs & eponyms', href: '#/eponyms', match: 'eponyms' },
-  { label: 'Normal values & variants', href: '#/normal', match: 'normal' },
-  { label: 'STEMI equivalents & mimics', href: '#/omi', match: 'omi' },
-  { label: 'Learning path & progress', href: '#/path', match: 'path' },
-  { label: 'Differential diagnosis engine', href: '#/ddx', match: 'ddx' },
-  { label: 'Clinical tools & calculators', href: '#/tools', match: 'tools' },
-  { label: 'Glossary', href: '#/glossary', match: 'glossary' },
-  { label: 'Sources & evidence', href: '#/sources', match: 'sources' },
+const EXTRA: { group: string; items: { label: string; href: string; match: string }[] }[] = [
+  {
+    group: 'Interactive',
+    items: [
+      { label: 'Heart simulator (3-D, slow motion)', href: '#/heart3d', match: 'heart3d' },
+      { label: 'Differential diagnosis engine', href: '#/ddx', match: 'ddx' },
+      { label: 'Clinical tools & calculators', href: '#/tools', match: 'tools' },
+      { label: 'Learning path & progress', href: '#/path', match: 'path' },
+    ],
+  },
+  {
+    group: 'Reference',
+    items: [
+      { label: 'ECG library A–Z', href: '#/az', match: 'az' },
+      { label: 'Named signs & eponyms', href: '#/eponyms', match: 'eponyms' },
+      { label: 'Normal values & variants', href: '#/normal', match: 'normal' },
+      { label: 'STEMI equivalents & mimics', href: '#/omi', match: 'omi' },
+      { label: 'Glossary', href: '#/glossary', match: 'glossary' },
+      { label: 'Sources & evidence', href: '#/sources', match: 'sources' },
+    ],
+  },
 ];
+
+/** Sidebar entry to highlight for a diagnosis page: the section its category belongs to. */
+const SECTION_NAV: Record<string, string> = { rhythm: 'rhythms', conduction: 'conduction', structural: 'structural', ischemia: 'ischemia', metabolic: 'electrolytes', inherited: 'inherited' };
+function navKeyFor(key: string, parts: string[]): string {
+  if (key === 'why') return 'physiology';
+  if (key !== 'dx') return key;
+  const d = resolveDx(parts[1] ?? '');
+  if (!d) return '';
+  const sec = Object.entries(SECTION_CATS).find(([, cats]) => cats.includes(d.category));
+  return sec ? (SECTION_NAV[sec[0]] ?? '') : '';
+}
+
+function renderNotFound(root: HTMLElement): void {
+  root.append(
+    header('Page not found', 'This page does not exist', 'The link may be out of date. Try the search box, or start from one of these pages:'),
+    h('div', { class: 'notfound-links' }, ...[['Home', '#/'], ['Rhythm library', '#/rhythms'], ['ECG library A–Z', '#/az'], ['Learning path', '#/path'], ['Search', '#/search']].map(([l, href]) => h('a', { class: 'btn', href }, l))),
+  );
+}
 
 const ROUTES: Record<string, Renderer> = {
   '': renderHome,
@@ -102,14 +131,15 @@ function build(): void {
   app.classList.add('app');
   const nav = h('nav', { class: 'nav', 'aria-label': 'Main' });
   const main = h('main', { class: 'main', id: 'content', tabindex: '-1' });
-  const menuBtn = h('button', { class: 'btn', 'aria-label': 'Open menu', 'aria-expanded': 'false' }, '☰');
-  const topbar = h('div', { class: 'topbar' }, menuBtn, h('strong', null, 'ECG Physiology Lab'));
+  const menuBtn = h('button', { class: 'btn', type: 'button', 'aria-label': 'Open menu', 'aria-expanded': 'false', 'aria-controls': 'ecg-nav' }, '☰');
+  nav.id = 'ecg-nav';
+  const topbar = h('div', { class: 'topbar' }, menuBtn, h('a', { class: 'topbar-brand', href: '#/' }, 'ECG Physiology Lab'));
   menuBtn.addEventListener('click', () => {
     const open = nav.classList.toggle('open');
     menuBtn.setAttribute('aria-expanded', String(open));
   });
 
-  const search = h('input', { type: 'search', placeholder: 'Search: "wide QRS", "adenosine"…', 'aria-label': 'Search' });
+  const search = h('input', { type: 'search', placeholder: 'Search, e.g. “wide QRS”', 'aria-label': 'Search the ECG lab', enterkeyhint: 'search' });
   search.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && search.value.trim()) location.hash = `#/search?q=${encodeURIComponent(search.value.trim())}`;
   });
@@ -124,10 +154,13 @@ function build(): void {
     nav.append(a);
   }
   nav.append(h('div', { class: 'sep' }));
-  for (const n of EXTRA) {
-    const a = h('a', { class: 'nav-item', href: n.href, dataset: { match: n.match } }, h('span', { class: 'letter' }, '•'), h('span', null, n.label));
-    items.push(a);
-    nav.append(a);
+  for (const g of EXTRA) {
+    nav.append(h('div', { class: 'nav-group' }, g.group));
+    for (const n of g.items) {
+      const a = h('a', { class: 'nav-item', href: n.href, dataset: { match: n.match } }, h('span', { class: 'letter', 'aria-hidden': 'true' }), h('span', null, n.label));
+      items.push(a);
+      nav.append(a);
+    }
   }
   const themeSel = h('select', { 'aria-label': 'Colour theme', class: 'btn theme-btn' }, h('option', { value: 'auto' }, 'Theme: system'), h('option', { value: 'light' }, 'Theme: light'), h('option', { value: 'dark' }, 'Theme: dark'));
   themeSel.value = storageGet('ecg.theme', 'auto');
@@ -137,7 +170,21 @@ function build(): void {
     route();
   });
   nav.append(themeSel);
-  app.append(nav, h('div', null, topbar, main));
+  app.append(h('a', { class: 'skip-link', href: '#content', onclick: (e: Event) => (e.preventDefault(), main.focus()) }, 'Skip to content'), nav, h('div', null, topbar, main));
+  // Close the phone menu with Escape or by tapping outside it.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && nav.classList.contains('open')) {
+      nav.classList.remove('open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuBtn.focus();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (nav.classList.contains('open') && !nav.contains(e.target as Node) && !menuBtn.contains(e.target as Node)) {
+      nav.classList.remove('open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
 
   let cleanup: Cleanup;
   function route(): void {
@@ -145,20 +192,30 @@ function build(): void {
     const [path, qs] = raw.split('?');
     const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
     const key = parts[0] ?? '';
-    const fn = ROUTES[key] ?? renderHome;
+    const fn = ROUTES[key] ?? renderNotFound;
     if (typeof cleanup === 'function') cleanup();
     clear(main);
     const root = h('div');
     main.append(root, disclaimer());
     cleanup = fn(root, parts.slice(1), new URLSearchParams(qs ?? ''));
-    for (const a of items) a.classList.toggle('on', a.dataset.match === (key === 'dx' ? '' : key));
+    const active = navKeyFor(key, parts);
+    for (const a of items) {
+      const on = a.dataset.match === active;
+      a.classList.toggle('on', on);
+      if (on) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    }
     nav.classList.remove('open');
     menuBtn.setAttribute('aria-expanded', 'false');
     window.scrollTo(0, 0);
     const h1 = root.querySelector('h1');
     document.title = h1 ? `${h1.textContent} · ECG Physiology Lab` : 'ECG Physiology Lab';
   }
-  window.addEventListener('hashchange', route);
+  window.addEventListener('hashchange', () => {
+    route();
+    // Move keyboard and screen-reader focus to the new page (without scrolling past its top).
+    main.focus({ preventScroll: true });
+  });
   route();
 }
 

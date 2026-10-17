@@ -1,5 +1,6 @@
-// ECG paper renderer: standard 3×4 12-lead layout with rhythm strip, stacked strips,
-// conduction ladder diagram, annotations and on-screen calipers.
+// ECG paper renderer: standard 3×4 12-lead layout with rhythm strip (6×2 on narrow screens),
+// stacked strips, conduction ladder diagram, beat annotations and on-screen calipers.
+// Geometry is in millimetres of ECG paper; the grid is drawn in device pixels so it stays crisp.
 
 import { LAYOUT_3x4, type LeadId } from '../engine/leads';
 import type { EcgRun } from '../engine';
@@ -35,13 +36,19 @@ const DEF: Required<Omit<EcgViewOptions, 'leads' | 'highlight' | 'caption'>> = {
   minPxPerMm: 3,
 };
 
+/** Below this width (CSS px) a 12-lead is printed as 6 rows × 2 columns so it fits a phone. */
+const NARROW_PX = 600;
+const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const INTERVENTION_LABEL: Record<string, string> = { adenosine: 'adenosine', vagal: 'vagal manoeuvre', shock: 'shock', avnBlocker: 'AV-nodal blocker', atropine: 'atropine' };
+
 interface Strip {
   lead: LeadId;
   x0: number; // mm
   y0: number; // mm baseline
+  top: number; // mm, top of the row band
+  bottom: number; // mm, bottom of the row band
   t0: number; // ms
   t1: number;
-  label: boolean;
 }
 
 export class EcgView {
@@ -54,8 +61,11 @@ export class EcgView {
   private pxmm = 3;
   private wMm = 0;
   private hMm = 0;
+  private calMm = 8;
   private strips: Strip[] = [];
   private ladderY = 0;
+  private laneY: number | null = null;
+  private laneMm = 0;
   private rhythmStrip: Strip | null = null;
   private cursor: number | null = null;
   private seg: { t0: number; t1: number; label: string } | null = null;
@@ -63,6 +73,7 @@ export class EcgView {
   onSeek: ((t: number) => void) | null = null;
   private cal: { x0: number; x1: number; y: number } | null = null;
   private ro: ResizeObserver;
+  private lastW = 0;
   private readout: HTMLSpanElement;
   private scaleTag: HTMLSpanElement;
 
@@ -77,14 +88,18 @@ export class EcgView {
     this.scroller = h('div', { class: 'ecg-scroll' }, h('div', { class: 'ecg-stack' }, this.base, this.over));
     this.el = h('div', { class: 'ecg-view' }, this.scroller, h('div', { class: 'ecg-readout' }, this.readout, this.scaleTag));
     this.over.setAttribute('role', 'img');
-    this.ro = new ResizeObserver(() => this.layout());
+    this.ro = new ResizeObserver(() => {
+      // Only re-lay out when the width changes (height follows from the layout itself).
+      const w = this.el.clientWidth;
+      if (w !== this.lastW) this.layout();
+    });
     this.ro.observe(this.el);
     this.bindCalipers();
   }
 
   setRun(run: EcgRun): void {
     this.run = run;
-    this.over.setAttribute('aria-label', `Simulated ECG: ventricular rate ${run.m.ventRate ?? 'n/a'}/min, ${run.m.regularity}, QRS ${run.m.qrs ?? 'n/a'} ms`);
+    this.over.setAttribute('aria-label', `Simulated ECG: ventricular rate ${run.m.ventRate ?? 'not measurable'}${run.m.ventRate ? '/min' : ''}, ${run.m.regularity}, QRS ${run.m.qrs ?? 'not measurable'}${run.m.qrs ? ' ms' : ''}`);
     this.layout();
   }
 
@@ -114,51 +129,110 @@ export class EcgView {
     this.ro.disconnect();
   }
 
+  setReadoutHint(text: string): void {
+    this.readout.textContent = text;
+  }
+
   // ------------------------------------------------------------------ layout
+  /** Font size in mm that is at least `minPx` CSS pixels on screen. */
+  private fontMm(mm: number, minPx: number): number {
+    return Math.max(mm, minPx / this.pxmm);
+  }
+
   private layout(): void {
     const run = this.run;
     if (!run) return;
     const o = this.o;
     const dur = run.sim.duration;
     const mmPerMs = o.speed / 1000;
+    const avail = Math.max(280, this.el.clientWidth || 800);
+    this.lastW = this.el.clientWidth;
+    this.calMm = Math.max(8, 200 * mmPerMs + 3);
+    const cal = this.calMm;
     this.strips = [];
+    this.rhythmStrip = null;
+    this.laneY = null;
+    const rowMm = o.rowMm;
+    const add = (lead: LeadId, x0: number, top: number, t0: number, t1: number): Strip => {
+      const st: Strip = { lead, x0, top, y0: top + rowMm * 0.55, bottom: top + rowMm, t0, t1 };
+      this.strips.push(st);
+      return st;
+    };
+
+    // Width first: it fixes the scale (px per mm), which in turn sizes the text lanes.
+    const colMs = dur / 4;
+    const colMm = colMs * mmPerMs;
+    const narrow = o.layout === '12' && avail < NARROW_PX && !o.showLadder;
+    let minPx = o.minPxPerMm;
+    if (o.layout === '12') this.wMm = cal + (narrow ? 2 : 4) * colMm + 2;
+    else this.wMm = cal + dur * mmPerMs + 2;
+    if (narrow) minPx = Math.min(minPx, 2.2);
+    this.pxmm = Math.max(minPx, avail / this.wMm);
+
     let y = 0;
-    const calMm = 6;
     if (o.layout === '12') {
-      const colMs = dur / 4;
-      const colMm = colMs * mmPerMs;
-      LAYOUT_3x4.forEach((row, r) => {
-        row.forEach((lead, c) => {
-          this.strips.push({ lead, x0: calMm + c * colMm, y0: y + o.rowMm * (r + 0.55), t0: c * colMs, t1: (c + 1) * colMs, label: true });
-        });
-      });
-      y += o.rowMm * 3;
-      this.wMm = calMm + 4 * colMm + 2;
-      if (o.showRhythm && o.rhythmLead) {
-        const st: Strip = { lead: o.rhythmLead, x0: calMm, y0: y + o.rowMm * 0.55, t0: 0, t1: dur, label: true };
-        this.strips.push(st);
-        this.rhythmStrip = st;
-        y += o.rowMm;
-      } else this.rhythmStrip = null;
+      if (!narrow) {
+        LAYOUT_3x4.forEach((row, r) => row.forEach((lead, c) => add(lead, cal + c * colMm, r * rowMm, c * colMs, (c + 1) * colMs)));
+        y = 3 * rowMm;
+        if (o.showRhythm && o.rhythmLead) {
+          this.rhythmStrip = add(o.rhythmLead, cal, y, 0, dur);
+          y += rowMm;
+        }
+      } else {
+        // 6 × 2: limb leads on the left, chest leads on the right. Each lead keeps the time window
+        // it has in the standard 3 × 4 printout, and the rhythm strip wraps onto two lines.
+        LAYOUT_3x4.forEach((row, r) => row.forEach((lead, c) => add(lead, cal + Math.floor(c / 2) * colMm, (r + 3 * (c % 2)) * rowMm, c * colMs, (c + 1) * colMs)));
+        y = 6 * rowMm;
+        if (o.showRhythm && o.rhythmLead) {
+          this.rhythmStrip = add(o.rhythmLead, cal, y, 0, dur / 2);
+          add(o.rhythmLead, cal, y + rowMm, dur / 2, dur);
+          y += 2 * rowMm;
+        }
+      }
     } else {
       const leads = o.leads ?? ['II'];
-      this.wMm = calMm + dur * mmPerMs + 2;
+      if (o.showLabels) {
+        // Annotation lane above the first strip: beat labels on one line, P-wave markers below.
+        const fs = this.fontMm(2.5, 11);
+        this.laneMm = 2 * fs + 3.4;
+        this.laneY = 0;
+        y = this.laneMm;
+      }
       leads.forEach((lead, i) => {
-        const st: Strip = { lead, x0: calMm, y0: y + o.rowMm * 0.55, t0: 0, t1: dur, label: true };
-        this.strips.push(st);
+        const st = add(lead, cal, y, 0, dur);
         if (i === leads.length - 1) this.rhythmStrip = st;
-        y += o.rowMm;
+        y += rowMm;
       });
     }
+    // Tall complexes in the top row and deep ones in the bottom row get extra paper, so a trace is
+    // never cut off at the edge of the printout (rows in between may overlap, as on real paper).
+    const firstTop = Math.min(...this.strips.map((st) => st.top));
+    const lastBottom = Math.max(...this.strips.map((st) => st.bottom));
+    let padTop = 0;
+    let padBottom = 0;
+    for (const st of this.strips) {
+      const [lo, hi] = this.sigRange(st.lead, st.t0, st.t1);
+      if (st.top === firstTop && this.laneY === null) padTop = Math.max(padTop, hi * o.gain - (st.y0 - st.top) + 1);
+      if (st.bottom === lastBottom) padBottom = Math.max(padBottom, -lo * o.gain - (st.bottom - st.y0) + 1);
+    }
+    padTop = Math.min(20, Math.ceil(padTop));
+    padBottom = Math.min(20, Math.ceil(padBottom));
+    if (padTop > 0) {
+      for (const st of this.strips) {
+        st.top += padTop;
+        st.y0 += padTop;
+        st.bottom += padTop;
+      }
+      y += padTop;
+    }
+    y += padBottom;
     this.ladderY = y;
-    if (o.showLadder) y += run.physio.rhythm.ap.present ? 30 : 24;
+    if (o.showLadder) y += this.ladderHeight();
     this.hMm = y + 1;
 
-    const avail = Math.max(280, this.el.clientWidth || 800);
-    this.pxmm = Math.max(o.minPxPerMm, avail / this.wMm);
     const wPx = Math.round(this.wMm * this.pxmm);
     const hPx = Math.round(this.hMm * this.pxmm);
-    const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
     for (const c of [this.base, this.over]) {
       c.width = Math.round(wPx * dpr);
       c.height = Math.round(hPx * dpr);
@@ -169,62 +243,125 @@ export class EcgView {
     this.drawOverlay();
   }
 
+  private ladderRows(): string[] {
+    return this.run?.physio.rhythm.ap.present ? ['A', 'AV', 'V', 'AP'] : ['A', 'AV', 'V'];
+  }
+
+  private ladderHeight(): number {
+    return 2 + this.ladderRows().length * 6 + this.fontMm(2.4, 11) + 3;
+  }
+
   // ------------------------------------------------------------------ drawing
+  /** Pink millimetre grid, drawn in device pixels so every line is a whole number of pixels wide. */
+  private drawGrid(ctx: CanvasRenderingContext2D, dpr: number): void {
+    const k = dpr * this.pxmm; // device px per mm
+    const W = this.base.width;
+    const H = this.base.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = css('--ecg-paper') || '#fffaf8';
+    ctx.fillRect(0, 0, W, H);
+    const thin = 1;
+    const thick = dpr >= 1.5 ? Math.max(2, Math.round(dpr * 0.8)) : 1;
+    const lines = (stepMm: number, skipEvery: number, width: number, color: string, alpha: number): void => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.globalAlpha = alpha;
+      const off = width % 2 ? 0.5 : 0;
+      ctx.beginPath();
+      for (let i = 0; i * stepMm <= this.wMm; i++) {
+        if (skipEvery && i % skipEvery === 0) continue;
+        const x = Math.round(i * stepMm * k) + off;
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+      }
+      for (let i = 0; i * stepMm <= this.hMm; i++) {
+        if (skipEvery && i % skipEvery === 0) continue;
+        const y = Math.round(i * stepMm * k) + off;
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    };
+    // Where 1 mm is only a few device pixels, the minor grid is faded so it does not turn into a wash.
+    lines(1, 5, thin, css('--ecg-minor') || '#f3d2cd', k < 3.2 ? 0.55 : 1);
+    lines(5, 0, thick, css('--ecg-major') || '#e4a39b', 1);
+  }
+
+  /** Minimum and maximum of a lead's signal (mV) between two times. */
+  private sigRange(lead: LeadId, t0: number, t1: number): [number, number] {
+    const sig = this.run!.sig;
+    const data = sig.leads[lead];
+    if (!data) return [0, 0];
+    const i0 = Math.max(0, Math.floor(((t0 - sig.from) * sig.fs) / 1000));
+    const i1 = Math.min(sig.n - 1, Math.ceil(((t1 - sig.from) * sig.fs) / 1000));
+    let lo = 0;
+    let hi = 0;
+    for (let i = i0; i <= i1; i++) {
+      if (data[i] < lo) lo = data[i];
+      if (data[i] > hi) hi = data[i];
+    }
+    return [lo, hi];
+  }
+
+  /** Text with a halo of paper colour, so grid lines and nearby trace never cut through it. */
+  private haloText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string, fs: number): void {
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = fs * 0.32;
+    ctx.strokeStyle = css('--ecg-paper') || '#fffaf8';
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  /** Lead name at the start of a strip, placed in whichever corner of the row the trace leaves free. */
+  private drawLeadLabel(ctx: CanvasRenderingContext2D, st: Strip, ink: string): void {
+    const fs = this.fontMm(3.2, 12);
+    ctx.font = `600 ${fs}px ${FONT}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const w = ctx.measureText(st.lead).width;
+    const x = st.x0 + 1;
+    const mmPerMs = this.o.speed / 1000;
+    const [lo, hi] = this.sigRange(st.lead, st.t0 + (x - 0.5 - st.x0) / mmPerMs, st.t0 + (x + w + 0.5 - st.x0) / mmPerMs);
+    const traceTop = st.y0 - hi * this.o.gain;
+    const traceBot = st.y0 - lo * this.o.gain;
+    const clear = (base: number): boolean => traceTop > base + 0.8 || traceBot < base - fs * 0.8 - 0.8;
+    const top = st.top + fs * 0.85 + 0.8;
+    const bottom = st.bottom - 1;
+    const y = clear(top) ? top : clear(bottom) ? bottom : top;
+    this.haloText(ctx, st.lead, x, y, ink, fs);
+  }
+
   private drawBase(): void {
     const run = this.run!;
     const ctx = this.base.getContext('2d')!;
     const dpr = this.base.width / parseFloat(this.base.style.width);
+    this.drawGrid(ctx, dpr);
     ctx.setTransform(dpr * this.pxmm, 0, 0, dpr * this.pxmm, 0, 0);
-    const paper = css('--ecg-paper') || '#fff7f5';
-    const minor = css('--ecg-minor') || '#f6c9c4';
-    const major = css('--ecg-major') || '#e8958d';
     const ink = css('--ecg-ink') || '#1a1a1a';
-    ctx.fillStyle = paper;
-    ctx.fillRect(0, 0, this.wMm, this.hMm);
-    // grid
-    ctx.lineWidth = 0.06;
-    ctx.strokeStyle = minor;
-    ctx.beginPath();
-    for (let x = 0; x <= this.wMm; x += 1) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, this.hMm);
-    }
-    for (let y = 0; y <= this.hMm; y += 1) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(this.wMm, y);
-    }
-    ctx.stroke();
-    ctx.lineWidth = 0.14;
-    ctx.strokeStyle = major;
-    ctx.beginPath();
-    for (let x = 0; x <= this.wMm; x += 5) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, this.hMm);
-    }
-    for (let y = 0; y <= this.hMm; y += 5) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(this.wMm, y);
-    }
-    ctx.stroke();
-
     const o = this.o;
     const mmPerMs = o.speed / 1000;
     const sig = run.sig;
     const hl = new Set(o.highlight ?? []);
+    const traceW = Math.max(0.24, 1.3 / this.pxmm);
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    // calibration pulses (1 mV, 200 ms) at the start of each row
-    const rows = new Set(this.strips.map((s) => s.y0));
+    // Calibration pulse (1 mV, 200 ms) at the start of every printed row.
+    const rows = new Set(this.strips.filter((s) => s.x0 <= this.calMm + 0.01).map((s) => s.y0));
+    const pw = 200 * mmPerMs;
     ctx.strokeStyle = ink;
-    ctx.lineWidth = 0.28;
+    ctx.lineWidth = traceW;
     for (const y0 of rows) {
       ctx.beginPath();
-      ctx.moveTo(0.5, y0);
+      ctx.moveTo(0.6, y0);
       ctx.lineTo(1.5, y0);
       ctx.lineTo(1.5, y0 - o.gain);
-      ctx.lineTo(1.5 + 200 * mmPerMs, y0 - o.gain);
-      ctx.lineTo(1.5 + 200 * mmPerMs, y0);
-      ctx.lineTo(5.5, y0);
+      ctx.lineTo(1.5 + pw, y0 - o.gain);
+      ctx.lineTo(1.5 + pw, y0);
+      ctx.lineTo(this.calMm - 0.8, y0);
       ctx.stroke();
     }
     for (const st of this.strips) {
@@ -235,10 +372,10 @@ export class EcgView {
       const isHl = hl.has(st.lead);
       if (isHl) {
         ctx.fillStyle = css('--ecg-hl') || 'rgba(255,200,0,0.18)';
-        ctx.fillRect(st.x0, st.y0 - o.rowMm * 0.55, (st.t1 - st.t0) * mmPerMs, o.rowMm);
+        ctx.fillRect(st.x0, st.top, (st.t1 - st.t0) * mmPerMs, st.bottom - st.top);
       }
       ctx.strokeStyle = ink;
-      ctx.lineWidth = isHl ? 0.36 : 0.26;
+      ctx.lineWidth = isHl ? traceW * 1.35 : traceW;
       ctx.beginPath();
       // On a dense canvas, pairs of samples are drawn as their min and max (in time order) rather
       // than dropping every other sample, so 1–2 ms events (pacing spikes) are never lost.
@@ -255,21 +392,24 @@ export class EcgView {
         } else ctx.lineTo(xAt(i), st.y0 - data[i] * o.gain);
       }
       ctx.stroke();
-      if (st.label) {
-        ctx.fillStyle = ink;
-        ctx.font = `600 ${3.2}px system-ui, sans-serif`;
-        ctx.fillText(st.lead, st.x0 + 1, st.y0 - o.rowMm * 0.55 + 4.2);
-      }
-      if (o.layout === '12' && st !== this.rhythmStrip && st.t0 > 0) {
-        ctx.strokeStyle = ink;
-        ctx.lineWidth = 0.3;
+      // Column boundary marker (as on a printed 12-lead).
+      if (st.x0 > this.calMm + 0.01) {
+        ctx.lineWidth = traceW;
         ctx.beginPath();
         ctx.moveTo(st.x0, st.y0 - 2.5);
         ctx.lineTo(st.x0, st.y0 + 2.5);
         ctx.stroke();
       }
     }
-    if (o.showLabels && this.rhythmStrip) this.drawLabels(ctx, this.rhythmStrip);
+    // Lead names last, so their halo sits above every trace.
+    const named = new Set<string>();
+    for (const st of this.strips) {
+      const key = `${st.lead}@${st.y0}`;
+      if (named.has(key)) continue;
+      named.add(key);
+      this.drawLeadLabel(ctx, st, ink);
+    }
+    if (o.showLabels && this.laneY !== null) this.drawLabels(ctx);
     if (o.showLadder && this.rhythmStrip) this.drawLadder(ctx, this.rhythmStrip);
     this.scaleTag.textContent = `${o.speed} mm/s · ${o.gain} mm/mV · simulated`;
   }
@@ -278,38 +418,63 @@ export class EcgView {
     return st.x0 + (t - st.t0) * (this.o.speed / 1000);
   }
 
-  private drawLabels(ctx: CanvasRenderingContext2D, st: Strip): void {
+  /** Beat and P-wave annotations in their own lane above the strips, never on the trace. */
+  private drawLabels(ctx: CanvasRenderingContext2D): void {
     const run = this.run!;
-    ctx.font = `600 2.4px system-ui, sans-serif`;
-    const top = st.y0 - this.o.rowMm * 0.55 + 8;
+    const st = this.strips[0];
+    if (!st || this.laneY === null) return;
+    const fs = this.fontMm(2.5, 11);
+    const lane = this.laneY;
+    const row1 = lane + fs + 0.6;
+    const row2 = lane + 2 * fs + 1.4;
+    ctx.font = `600 ${fs}px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    // Separate the lane from the first strip with a faint rule.
+    ctx.strokeStyle = css('--line') || '#d9dee5';
+    ctx.lineWidth = Math.max(0.1, 1 / this.pxmm);
+    ctx.beginPath();
+    ctx.moveTo(this.calMm, lane + this.laneMm - 0.3);
+    ctx.lineTo(this.wMm, lane + this.laneMm - 0.3);
+    ctx.stroke();
+    const used: [number, number][][] = [[], []];
+    const place = (row: 0 | 1, x: number, text: string, color: string): boolean => {
+      const w = ctx.measureText(text).width;
+      const a = x - w / 2 - 0.6;
+      const b = x + w / 2 + 0.6;
+      if (a < this.calMm - 1 || b > this.wMm) return false;
+      if (used[row].some(([p, q]) => a < q && b > p)) return false;
+      used[row].push([a, b]);
+      this.haloText(ctx, text, x, row ? row2 : row1, color, fs);
+      return true;
+    };
+    const inRange = (t: number): boolean => t >= st.t0 && t <= st.t1;
+    const danger = css('--danger') || '#c62828';
+    const accent = css('--accent') || '#0b63c5';
+    // Line 1, in order of priority: interventions, pacing spikes, then named beats.
+    for (const iv of run.sim.interventions) if (inRange(iv.t)) place(0, this.tx(st, iv.t), `▼ ${INTERVENTION_LABEL[iv.kind] ?? iv.kind}`, danger);
+    // Captured pacing spikes are already named by their beat (Ap / Vp); only shocks and failures are flagged.
+    for (const sp of run.sim.spikes) if (inRange(sp.t) && (sp.chamber === 'shock' || !sp.captured)) place(0, this.tx(st, sp.t), sp.chamber === 'shock' ? '⚡ shock' : 'no capture', danger);
     for (const v of run.sim.ventricular) {
-      if (v.t < st.t0 || v.t > st.t1) continue;
+      if (!inRange(v.t)) continue;
       const short = abbreviate(v.label);
-      if (!short) continue;
-      ctx.fillStyle = css('--accent') || '#0b63c5';
-      ctx.fillText(short, this.tx(st, v.t) - 1, top);
+      if (short) place(0, this.tx(st, v.t), short, accent);
     }
+    // Line 2: atrial activations, each with a small pointer down towards its P wave.
+    const pColor = css('--accent-2') || '#a15c00';
+    ctx.fillStyle = pColor;
     for (const a of run.sim.atrial) {
-      if (a.t < st.t0 || a.t > st.t1 || a.kind === 'flutter') continue;
-      ctx.fillStyle = css('--accent-2') || '#a15c00';
+      if (!inRange(a.t) || a.kind === 'flutter') continue;
       const x = this.tx(st, a.t);
+      if (!place(1, x, a.kind === 'retro' || a.kind === 'ectopic' ? 'P′' : a.kind === 'paced' ? 'Ap' : 'P', pColor)) continue;
+      ctx.fillStyle = pColor;
       ctx.beginPath();
-      ctx.moveTo(x, top + 2.2);
-      ctx.lineTo(x + 1.2, top + 4);
-      ctx.lineTo(x - 1.2 + 2.4, top + 4);
+      ctx.moveTo(x - 0.7, row2 + 0.7);
+      ctx.lineTo(x + 0.7, row2 + 0.7);
+      ctx.lineTo(x, row2 + 1.7);
       ctx.fill();
-      ctx.fillText(a.kind === 'retro' ? "P'" : a.kind === 'ectopic' ? "P'" : a.kind === 'paced' ? 'Ap' : 'P', x - 0.6, top + 7);
     }
-    for (const sp of run.sim.spikes) {
-      if (sp.t < st.t0 || sp.t > st.t1) continue;
-      ctx.fillStyle = css('--danger') || '#c62828';
-      ctx.fillText(sp.chamber === 'shock' ? '⚡' : sp.captured ? sp.chamber : `${sp.chamber}✕`, this.tx(st, sp.t) - 0.8, top - 3);
-    }
-    for (const iv of run.sim.interventions) {
-      if (iv.t < st.t0 || iv.t > st.t1) continue;
-      ctx.fillStyle = css('--danger') || '#c62828';
-      ctx.fillText(`▼ ${iv.kind}`, this.tx(st, iv.t), top - 5);
-    }
+    ctx.textAlign = 'left';
   }
 
   private drawLadder(ctx: CanvasRenderingContext2D, st: Strip): void {
@@ -317,28 +482,31 @@ export class EcgView {
     const y0 = this.ladderY + 2;
     const hasAP = run.physio.rhythm.ap.present;
     const rowH = 6;
-    const rows = hasAP ? ['A', 'AV', 'V', 'AP'] : ['A', 'AV', 'V'];
+    const rows = this.ladderRows();
     const ink = css('--ecg-ink') || '#1a1a1a';
     const bg = css('--panel') || '#ffffff';
+    const fs = this.fontMm(2.6, 11.5);
+    const legendFs = this.fontMm(2.4, 11);
     ctx.fillStyle = bg;
-    ctx.globalAlpha = 0.92;
-    ctx.fillRect(0, y0 - 1, this.wMm, rows.length * rowH + 2);
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = 0.12;
-    ctx.font = `600 2.6px system-ui, sans-serif`;
-    ctx.fillStyle = ink;
-    rows.forEach((r, i) => {
+    ctx.fillRect(0, y0 - 1, this.wMm, this.hMm - y0 + 1);
+    ctx.strokeStyle = css('--line') || '#d9dee5';
+    ctx.lineWidth = Math.max(0.1, 1 / this.pxmm);
+    rows.forEach((_, i) => {
       ctx.beginPath();
       ctx.moveTo(0, y0 + i * rowH);
       ctx.lineTo(this.wMm, y0 + i * rowH);
       ctx.stroke();
-      ctx.fillText(r, 0.8, y0 + i * rowH + 4);
     });
     ctx.beginPath();
-    ctx.moveTo(0, y0 + 3 * rowH);
-    ctx.lineTo(this.wMm, y0 + 3 * rowH);
+    ctx.moveTo(0, y0 + rows.length * rowH);
+    ctx.lineTo(this.wMm, y0 + rows.length * rowH);
     ctx.stroke();
+    // Row names sit in the calibration margin, clear of every ladder line.
+    ctx.font = `600 ${fs}px ${FONT}`;
+    ctx.fillStyle = css('--muted') || ink;
+    ctx.textBaseline = 'middle';
+    rows.forEach((r, i) => ctx.fillText(r, 0.8, y0 + i * rowH + rowH / 2));
+    ctx.textBaseline = 'alphabetic';
     const color: Record<string, string> = {
       avn: css('--lad-avn') || '#555',
       fast: css('--lad-fast') || '#1565c0',
@@ -346,8 +514,13 @@ export class EcgView {
       ap: css('--lad-ap') || '#8e24aa',
     };
     const colorOf = (s: LadderSeg): string => (s.path.includes('ap') ? color.ap : s.path.includes('fast') ? color.fast : s.path.includes('slow') ? color.slow : color.avn);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(this.calMm - 0.5, y0, this.wMm, rows.length * rowH);
+    ctx.clip();
+    const lw = Math.max(0.3, 1.6 / this.pxmm);
+    ctx.lineWidth = lw;
     // A row: atrial activations
-    ctx.lineWidth = 0.35;
     for (const a of run.sim.atrial) {
       if (a.t < 0 || a.t > st.t1) continue;
       const x = this.tx(st, a.t);
@@ -438,17 +611,24 @@ export class EcgView {
         ctx.setLineDash([]);
       }
     }
-    // Legend
-    ctx.font = `500 2.2px system-ui, sans-serif`;
+    ctx.restore();
+    // Legend in its own band under the ladder.
+    ctx.font = `500 ${legendFs}px ${FONT}`;
     const legend: [string, string][] = run.physio.rhythm.dualPathway ? [['fast pathway', color.fast], ['slow pathway', color.slow]] : [['AV node', color.avn]];
-    if (hasAP) legend.push(['accessory pathway', color.ap]);
-    let lx = this.wMm - 60;
+    if (hasAP) legend.push(['accessory pathway (dashed)', color.ap]);
+    legend.push(['⊥ = blocked', ink]);
+    const ly = y0 + rows.length * rowH + legendFs + 1.2;
+    let lx = this.calMm;
     for (const [t, c] of legend) {
-      ctx.fillStyle = c;
-      ctx.fillRect(lx, y0 + 3 * rowH + (hasAP ? rowH : 0) + 2, 3, 0.8);
-      ctx.fillStyle = ink;
-      ctx.fillText(t, lx + 4, y0 + 3 * rowH + (hasAP ? rowH : 0) + 3);
-      lx += 20;
+      const isKey = !t.startsWith('⊥');
+      if (isKey) {
+        ctx.fillStyle = c;
+        ctx.fillRect(lx, ly - legendFs * 0.35 - 0.4, 3.5, 0.8);
+      }
+      ctx.fillStyle = css('--ink') || ink;
+      const tx = isKey ? lx + 4.5 : lx;
+      ctx.fillText(t, tx, ly);
+      lx = tx + ctx.measureText(t).width + 4;
     }
   }
 
@@ -462,13 +642,13 @@ export class EcgView {
     if (this.seg && this.cursor !== null) this.drawSegment(ctx, this.seg, this.cursor);
     if (this.cursor !== null) {
       ctx.strokeStyle = css('--accent') || '#0b63c5';
-      ctx.lineWidth = 0.3;
+      ctx.lineWidth = Math.max(0.25, 1.5 / this.pxmm);
       ctx.beginPath();
       for (const st of this.strips) {
         if (this.cursor < st.t0 || this.cursor > st.t1) continue;
         const x = this.tx(st, this.cursor);
-        ctx.moveTo(x, st.y0 - this.o.rowMm * 0.5);
-        ctx.lineTo(x, st.y0 + this.o.rowMm * 0.45);
+        ctx.moveTo(x, st.top + 0.5);
+        ctx.lineTo(x, st.bottom - 0.5);
         if (st === this.rhythmStrip && this.o.showLadder) {
           ctx.moveTo(x, this.ladderY);
           ctx.lineTo(x, this.hMm);
@@ -480,8 +660,7 @@ export class EcgView {
       const { x0, x1, y } = this.cal;
       const c = css('--danger') || '#c62828';
       ctx.strokeStyle = c;
-      ctx.fillStyle = c;
-      ctx.lineWidth = 0.25;
+      ctx.lineWidth = Math.max(0.22, 1.4 / this.pxmm);
       ctx.beginPath();
       ctx.moveTo(x0, y - 4);
       ctx.lineTo(x0, y + 4);
@@ -492,10 +671,30 @@ export class EcgView {
       ctx.stroke();
       const ms = Math.abs(x1 - x0) / (this.o.speed / 1000);
       const txt = `${Math.round(ms)} ms${ms > 150 ? ` · ${Math.round(60000 / ms)}/min` : ''}`;
-      ctx.font = `600 2.8px system-ui, sans-serif`;
-      ctx.fillText(txt, Math.min(x0, x1), y - 4.8);
+      this.tag(ctx, txt, Math.min(x0, x1), y - 4.6, c);
       this.readout.textContent = `Caliper: ${txt}`;
     }
+  }
+
+  /** Small label on a solid background (used for the live segment name and the caliper reading). */
+  private tag(ctx: CanvasRenderingContext2D, text: string, x: number, yBottom: number, color: string): void {
+    const fs = this.fontMm(2.6, 12);
+    ctx.font = `600 ${fs}px ${FONT}`;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    const w = ctx.measureText(text).width;
+    const padX = 0.8;
+    const bx = Math.max(0.2, Math.min(x, this.wMm - w - 2 * padX - 0.2));
+    const by = Math.max(0.2, yBottom - fs - 0.6);
+    ctx.fillStyle = css('--panel') || '#fff';
+    ctx.globalAlpha = 0.94;
+    ctx.fillRect(bx, by, w + 2 * padX, fs + 0.9);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.1, 1 / this.pxmm);
+    ctx.strokeRect(bx, by, w + 2 * padX, fs + 0.9);
+    ctx.fillStyle = color;
+    ctx.fillText(text, bx + padX, by + fs * 0.88);
   }
 
   private drawSegment(ctx: CanvasRenderingContext2D, seg: { t0: number; t1: number; label: string }, cursor: number): void {
@@ -509,12 +708,12 @@ export class EcgView {
       const b = Math.min(seg.t1, st.t1);
       if (b <= a) continue;
       ctx.fillStyle = css('--seg-band') || 'rgba(11,99,197,0.10)';
-      ctx.fillRect(this.tx(st, a), st.y0 - o.rowMm * 0.5, (b - a) * mmPerMs, o.rowMm * 0.95);
+      ctx.fillRect(this.tx(st, a), st.top + 0.5, (b - a) * mmPerMs, st.bottom - st.top - 1);
       const data = sig.leads[st.lead];
       const e = Math.min(b, cursor);
       if (!data || e <= a) continue;
       ctx.strokeStyle = accent;
-      ctx.lineWidth = 0.55;
+      ctx.lineWidth = Math.max(0.45, 2.2 / this.pxmm);
       ctx.lineJoin = 'round';
       ctx.beginPath();
       const i0 = Math.max(0, Math.round(((a - sig.from) * sig.fs) / 1000));
@@ -527,11 +726,13 @@ export class EcgView {
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
-      if (st === this.rhythmStrip) {
-        ctx.font = `600 2.6px system-ui, sans-serif`;
-        ctx.fillStyle = accent;
-        ctx.fillText(seg.label, Math.min(this.tx(st, a), this.wMm - 40), st.y0 - o.rowMm * 0.5 + 3);
-      }
+    }
+    // Name of the segment being written: one tag, at the top of the rhythm strip (right of the lead name).
+    const st = this.rhythmStrip ?? this.strips[this.strips.length - 1];
+    if (st && seg.t1 > st.t0 && seg.t0 < st.t1) {
+      const fsLead = this.fontMm(3.2, 12);
+      const x = Math.max(this.tx(st, Math.max(seg.t0, st.t0)), st.x0 + fsLead * 2.6);
+      this.tag(ctx, seg.label, x, st.top + this.fontMm(2.6, 12) + 1.6, accent);
     }
   }
 
@@ -539,7 +740,7 @@ export class EcgView {
     for (const st of this.strips) {
       const x1 = this.tx(st, st.t1);
       if (x < st.x0 || x > x1) continue;
-      if (y < st.y0 - this.o.rowMm * 0.55 || y > st.y0 + this.o.rowMm * 0.45) continue;
+      if (y < st.top || y > st.bottom) continue;
       return st.t0 + (x - st.x0) / (this.o.speed / 1000);
     }
     return null;
@@ -547,6 +748,7 @@ export class EcgView {
 
   private bindCalipers(): void {
     let dragging = false;
+    const hint = 'Drag across the tracing to measure an interval; tap to jump the playback cursor there.';
     const pos = (e: PointerEvent): { x: number; y: number } => {
       const r = this.over.getBoundingClientRect();
       return { x: (e.clientX - r.left) / this.pxmm, y: (e.clientY - r.top) / this.pxmm };
@@ -569,17 +771,13 @@ export class EcgView {
         const t = this.onSeek ? this.timeAt(this.cal.x0, this.cal.y) : null;
         if (t !== null) this.onSeek!(t);
         this.cal = null;
-        this.readout.textContent = 'Drag across the tracing to measure an interval.';
+        this.readout.textContent = this.onSeek ? hint : 'Drag across the tracing to measure an interval.';
         this.drawOverlay();
       }
     };
     this.over.addEventListener('pointerup', end);
     this.over.addEventListener('pointercancel', end);
     this.readout.textContent = 'Drag across the tracing to measure an interval.';
-  }
-
-  setReadoutHint(text: string): void {
-    this.readout.textContent = text;
   }
 }
 
