@@ -34,6 +34,6 @@ reached, everything must already be on GitHub so work can resume easily.
 | Live | The user asked to make it active (2026-10-23). Verified (1675 tests, ECG smoke 243 routes, renal smoke 310 visits, endo crawl 48 pages) and fast-forwarded: endo `main` → content audit (live); github.io deploy branch `claude/flight-simulator-architecture-ck2cgq` → 17b8f45 (Actions deploy). Keep working on `claude/publication-overhaul` and fast-forward the live branches after each verified piece. |
 
 ## Open items (small, documented in the reports)
-- Endocrine: 23 small (~8 px) labels in the metabolic-flux diagram on desktop; three textbook-only claims unverified (Wolff–Chaikoff iodide range, reverse T3 in acute thyroiditis, acetyl-CoA as obligate pyruvate-carboxylase activator).
-- Renal: one dashed drug-map line passes behind the ROMK/BK glyph; a few 9 px labels in dense diagrams; an unreachable "in preparation" screen in `renal/src/App.tsx`.
-- ECG: search ranking matches short queries inside words (e.g. "AF" → bifascicular); the #/ischemia ST highlight uses simplified V2–V3 thresholds (it has no age/sex input).
+- Endocrine: three textbook-only claims unverified (Wolff–Chaikoff iodide range, reverse T3 in acute thyroiditis, acetyl-CoA as obligate pyruvate-carboxylase activator). Diagram crawl after the last fixes (48 pages, desktop and phone): 0 errors, 0 overlaps, 0 labels under 8 px desktop / 10 px phone; the flux map now spans the full width below 1600 px.
+- Renal: a few 9.0–9.4 px labels in dense cell diagrams (readable; left to avoid new collisions); `InPreparation` in `renal/src/App.tsx` is a fallback for unwritten modules and is currently never shown. The drug-map NSAID → MR line now drops through the gap between ENaC and ROMK/BK.
+- ECG: the #/ischemia ST highlight uses the UDMI thresholds for a man ≥ 40 y (stated on the page; there is no age/sex input). Search: short abbreviations now match whole words (MI, PE, AF).

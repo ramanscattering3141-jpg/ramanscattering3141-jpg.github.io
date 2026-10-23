@@ -65,6 +65,44 @@ function layoutPills(): Pill[] {
 
 const PILLS = layoutPills();
 
+/**
+ * The points of the line from a drug badge to one of its targets. A straight line is used unless it
+ * would cut through another transporter on the membrane it crosses; then, if the detour is short, it
+ * drops through the nearest gap between that membrane's glyphs.
+ */
+function drugRoute(p: Pill, tt: Transporter, cx: number, cy: number, tx: number, ty: number): [number, number][] {
+  const ym = p.band === 'top' ? APICAL : BASO;
+  const side = p.band === 'top' ? 'apical' : 'baso';
+  const glyphs = TRANSPORTERS.filter((g) => g.side === side && g.id !== tt.id).map((g) => {
+    const a = anchorOf(g);
+    const w = glyphW(g);
+    return { cell: g.cell, x0: a.x - w / 2 - 3, x1: a.x + w / 2 + 3 };
+  });
+  const hits = (x0: number, y0: number, x1: number, y1: number) => {
+    for (let k = 0; k <= 80; k++) {
+      const x = x0 + ((x1 - x0) * k) / 80;
+      const y = y0 + ((y1 - y0) * k) / 80;
+      if (Math.abs(y - ym) < 16 && glyphs.some((g) => x > g.x0 && x < g.x1)) return true;
+    }
+    return false;
+  };
+  if (!hits(cx, cy, tx, ty)) return [[cx, cy], [tx, ty]];
+  const c0 = colX(cellIndex(tt.cell));
+  const row = glyphs.filter((g) => g.cell === tt.cell).sort((u, v) => u.x0 - v.x0);
+  const edges = [c0 + 8, ...row.flatMap((g) => [g.x0, g.x1]), c0 + COL_W - 8];
+  let gx = tx;
+  let best = Infinity;
+  for (let k = 0; k < edges.length; k += 2) {
+    const mid = (edges[k] + edges[k + 1]) / 2;
+    if (edges[k + 1] - edges[k] >= 10 && Math.abs(mid - tx) < best) ((best = Math.abs(mid - tx)), (gx = mid));
+  }
+  const dir = ty > cy ? 1 : -1;
+  const pts: [number, number][] = [[cx, cy], [gx, ym - 16 * dir], [gx, ym + 16 * dir], [tx, ty]];
+  // A long detour across the cell reads worse than a line passing behind two touching glyphs.
+  const length = pts.slice(1).reduce((sum, q, k) => sum + Math.hypot(q[0] - pts[k][0], q[1] - pts[k][1]), 0);
+  return length > 1.3 * Math.hypot(tx - cx, ty - cy) ? [[cx, cy], [tx, ty]] : pts;
+}
+
 const ACTION_COLOR: Record<Action, string> = { block: 'var(--c-red)', activate: 'var(--c-green)', reduce: 'var(--c-amber)' };
 const ACTION_WORD: Record<Action, string> = { block: 'blocks', activate: 'activates', reduce: 'reduces' };
 const GROUPS: { id: 'all' | Drug['group']; label: string }[] = [
@@ -157,18 +195,21 @@ export default function DrugMap({ query }: { query: URLSearchParams }) {
               return p.drug.targets.map((t) => {
                 const tt = TRANSPORTERS.find((x) => x.id === t.t)!;
                 const a = anchorOf(tt);
-                const ty = tt.side === 'intra' ? a.y + 22 : tt.side === 'para' ? APICAL - 4 : tt.side === 'apical' ? a.y - 13 : a.y + 13;
+                const ty = tt.side === 'intra' ? a.y + (cy < a.y ? -22 : 22) : tt.side === 'para' ? APICAL - 4 : tt.side === 'apical' ? a.y - 13 : a.y + 13;
                 const tx = a.x;
-                const dx = tx - cx;
-                const dy = ty - cy;
+                const pts = drugRoute(p, tt, cx, cy, tx, ty);
+                const [px, py] = pts[pts.length - 2];
+                const dx = tx - px;
+                const dy = ty - py;
                 const len = Math.hypot(dx, dy) || 1;
                 const nx = -dy / len;
                 const ny = dx / len;
                 const col = ACTION_COLOR[t.action];
                 const hot = selDrug?.id === p.drug.id || (selTr?.id === tt.id && on);
+                const d = pts.map(([x, y], k) => `${k ? 'L' : 'M'}${(k === pts.length - 1 ? x - (dx / len) * 3 : x).toFixed(1)},${(k === pts.length - 1 ? y - (dy / len) * 3 : y).toFixed(1)}`).join(' ');
                 return (
                   <g key={`${p.drug.id}-${t.t}`} opacity={on ? 1 : 0.12}>
-                    <line x1={cx} y1={cy} x2={tx - (dx / len) * 3} y2={ty - (dy / len) * 3} stroke={col} stroke-width={hot ? 3 : 1.6} stroke-dasharray={t.action === 'reduce' ? '5 4' : undefined} marker-end={t.action === 'activate' ? 'url(#dm-act)' : undefined} />
+                    <path d={d} fill="none" stroke={col} stroke-width={hot ? 3 : 1.6} stroke-linejoin="round" stroke-dasharray={t.action === 'reduce' ? '5 4' : undefined} marker-end={t.action === 'activate' ? 'url(#dm-act)' : undefined} />
                     {t.action !== 'activate' && <line x1={tx - (dx / len) * 3 + nx * 8} y1={ty - (dy / len) * 3 + ny * 8} x2={tx - (dx / len) * 3 - nx * 8} y2={ty - (dy / len) * 3 - ny * 8} stroke={col} stroke-width={hot ? 4 : 3} />}
                   </g>
                 );
