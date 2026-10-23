@@ -104,4 +104,13 @@ describe('search', () => {
     const r = ids('adenosine');
     for (const id of ['avnrt', 'orthoAvrt', 'adenosine', 'acls']) expect(r, id).toContain(id);
   });
+  it('short abbreviations match whole words, not fragments of longer words', () => {
+    expect(ids('AF')[0]).toBe('af');
+    expect(ids('AF')).not.toContain('bifascicular');
+    expect(ids('MI')).toContain('stemi');
+    expect(ids('MI')).not.toContain('hyperK');
+    expect(ids('PE')[0]).toBe('pe');
+    expect(ids('PE')).not.toContain('pericarditis');
+    expect(ids('avn')[0]).toBe('avnrt');
+  });
 });

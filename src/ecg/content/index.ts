@@ -156,6 +156,17 @@ function norm(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+/**
+ * Does `text` contain `w`? Short abbreviations must not match inside longer words ("MI" is not in
+ * "hyperkalaemia", "PE" not in "escape"): two-letter terms match whole words only, three-letter
+ * terms the start of a word ("avn" → "AVNRT"), longer terms anywhere.
+ */
+function has(text: string, w: string): boolean {
+  if (w.length > 3 || !/^[a-z0-9]+$/.test(w)) return text.includes(w);
+  const re = w.length === 2 ? new RegExp(`(?<![a-z0-9])${w}(?![a-z0-9])`) : new RegExp(`(?<![a-z0-9])${w}`);
+  return re.test(text);
+}
+
 export function search(query: string): SearchHit[] {
   const q = norm(query.trim());
   if (!q) return [];
@@ -167,38 +178,38 @@ export function search(query: string): SearchHit[] {
     let score = 0;
     const name = norm(d.name);
     const aliases = (d.aliases ?? []).map(norm);
-    if (name.includes(q)) score += 40;
+    if (has(name, q)) score += 40;
     if (aliases.some((a) => a === q)) score += 45;
-    else if (aliases.some((a) => a.includes(q))) score += 25;
+    else if (aliases.some((a) => has(a, q))) score += 25;
     for (const t of d.tags) if (tags.has(t)) score += 12;
     const body = norm([d.definition, d.mechanism, d.ecg.join(' '), (d.causes ?? []).join(' '), (d.acute ?? []).join(' '), d.management ? [...d.management.immediate, ...d.management.definitive].join(' ') : ''].join(' '));
     for (const w of words) {
-      if (name.includes(w)) score += 6;
-      if (aliases.some((a) => a.includes(w))) score += 4;
-      if (body.includes(w)) score += 1.5;
+      if (has(name, w)) score += 6;
+      if (aliases.some((a) => has(a, w))) score += 4;
+      if (has(body, w)) score += 1.5;
     }
     if (score > 3) hits.push({ kind: 'diagnosis', id: d.id, title: d.name, subtitle: d.definition.slice(0, 140), href: `#/dx/${d.id}`, score: score - d.tier * 0.5 });
   }
   for (const f of FINDINGS) {
     let score = 0;
     const n = norm(f.name);
-    if (n.includes(q) || f.aliases.some((a) => norm(a).includes(q))) score += 30;
+    if (has(n, q) || f.aliases.some((a) => has(norm(a), q))) score += 30;
     if (tags.has(f.id)) score += 25;
-    for (const w of words) if (n.includes(w)) score += 5;
+    for (const w of words) if (has(n, w)) score += 5;
     if (score > 4) hits.push({ kind: 'finding', id: f.id, title: `Why: ${f.name}`, subtitle: `Mechanism of the finding — ${f.causes.length} causes`, href: `#/why/${f.id}`, score });
   }
   for (const pg of PAGES) {
     let score = 0;
     const k = norm(pg.title + ' ' + pg.keys);
-    if (k.includes(q)) score += 20;
-    for (const w of words) if (k.includes(w)) score += 3;
+    if (has(k, q)) score += 20;
+    for (const w of words) if (has(k, w)) score += 3;
     if (score > 5) hits.push({ kind: 'page', id: pg.id, title: pg.title, subtitle: 'Interactive page', href: pg.href, score });
   }
   for (const g of GLOSSARY) {
     let score = 0;
     const t = norm(g.term);
     if (t === q) score += 35;
-    else if (t.includes(q) || (q.length > 3 && q.includes(t))) score += 18;
+    else if (has(t, q) || (q.length > 3 && q.includes(t))) score += 18;
     if ((g.aka ?? []).some((a) => norm(a) === q)) score += 30;
     if (score > 0) hits.push({ kind: 'term', id: `term-${g.id}`, title: `Glossary: ${g.term}`, subtitle: g.def.slice(0, 140), href: `#/glossary/${g.id}`, score });
   }
@@ -206,9 +217,9 @@ export function search(query: string): SearchHit[] {
     let score = 0;
     const t = norm(e.name);
     if (t === q) score += 40;
-    else if (t.includes(q) || (q.length > 3 && q.includes(t))) score += 22;
-    if ((e.aka ?? []).some((a) => norm(a).includes(q))) score += 20;
-    for (const w of words) if (t.includes(w)) score += 4;
+    else if (has(t, q) || (q.length > 3 && q.includes(t))) score += 22;
+    if ((e.aka ?? []).some((a) => has(norm(a), q))) score += 20;
+    for (const w of words) if (has(t, w)) score += 4;
     if (score > 4) hits.push({ kind: 'term', id: `epo-${e.id}`, title: `Sign: ${e.name}`, subtitle: e.def.slice(0, 140), href: `#/eponyms/${e.id}`, score });
   }
   return hits.sort((a, b) => b.score - a.score).slice(0, 30);
