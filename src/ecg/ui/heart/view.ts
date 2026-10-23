@@ -218,7 +218,7 @@ export class Heart3D {
     this.gizmo.setAttribute('viewBox', '-40 -40 80 80');
     this.gizmo.setAttribute('aria-hidden', 'true');
     this.hud = h('div', { class: 'hv-hud' });
-    this.loading = h('div', { class: 'hv-loading' }, h('span', { class: 'hv-spin' }), 'Building the 3-D heart…');
+    this.loading = h('div', { class: 'hv-loading' }, h('span', { class: 'hv-spin', 'aria-hidden': 'true' }), h('span', null, 'Building the 3-D heart…'));
     this.legend = h('div', { class: 'hv-legend' });
     this.host.append(this.renderer.domElement, this.labelRenderer.domElement, this.gizmo, this.hud, this.legend, this.loading);
 
