@@ -143,3 +143,45 @@ export function shrink(img: Gray, f: number): Gray {
   }
   return { w, h, data: out };
 }
+
+/**
+ * Flat-field correction for scans: estimates the paper brightness locally (maximum over a window
+ * wider than any piece) and rescales so paper becomes white. Leaves clean renders untouched.
+ */
+export function flatten(img: Gray): Gray {
+  const B = Math.max(16, Math.round(Math.min(img.w, img.h) / 30));
+  const bw = Math.ceil(img.w / B), bh = Math.ceil(img.h / B);
+  const mx = new Float32Array(bw * bh);
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
+    // 98th percentile rather than the maximum, so a speck of white noise does not count as paper.
+    const hist = new Uint32Array(256);
+    let n = 0;
+    for (let y = by * B; y < Math.min(img.h, (by + 1) * B); y++) for (let x = bx * B; x < Math.min(img.w, (bx + 1) * B); x++) { hist[img.data[y * img.w + x]]++; n++; }
+    let acc = 0, v = 255;
+    for (let k = 255; k >= 0; k--) { acc += hist[k]; if (acc >= n * 0.02) { v = k; break; } }
+    mx[by * bw + bx] = v;
+  }
+  // Widen to a 5×5 block neighbourhood so large dark areas (black pieces, thick frames) keep the paper level.
+  const bg = new Float32Array(bw * bh);
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
+    let m = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const x = bx + dx, y = by + dy;
+      if (x >= 0 && y >= 0 && x < bw && y < bh) m = Math.max(m, mx[y * bw + x]);
+    }
+    bg[by * bw + bx] = Math.max(64, m);
+  }
+  let min = 255;
+  for (const v of bg) min = Math.min(min, v);
+  if (min >= 248) return img;
+  const out = new Uint8Array(img.w * img.h);
+  for (let y = 0; y < img.h; y++) {
+    const fy = Math.min(bh - 1, Math.max(0, (y + 0.5) / B - 0.5)), y0 = Math.floor(fy), y1 = Math.min(bh - 1, y0 + 1), ty = fy - y0;
+    for (let x = 0; x < img.w; x++) {
+      const fx = Math.min(bw - 1, Math.max(0, (x + 0.5) / B - 0.5)), x0 = Math.floor(fx), x1 = Math.min(bw - 1, x0 + 1), tx = fx - x0;
+      const b = (bg[y0 * bw + x0] * (1 - tx) + bg[y0 * bw + x1] * tx) * (1 - ty) + (bg[y1 * bw + x0] * (1 - tx) + bg[y1 * bw + x1] * tx) * ty;
+      out[y * img.w + x] = Math.min(255, Math.round((img.data[y * img.w + x] * 255) / b));
+    }
+  }
+  return { w: img.w, h: img.h, data: out };
+}

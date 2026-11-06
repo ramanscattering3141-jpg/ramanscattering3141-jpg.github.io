@@ -24,6 +24,8 @@ export interface LayoutResult {
 
 interface Seg { items: TextItem[]; x0: number; x1: number; y: number; h: number; text: string; col: 'L' | 'R' | 'F' }
 
+const FIGURINE_FONT = /figurin|fig\b|figur|chess|diagram|fritz|\bcb\b|cbase|usual|alpha|merida|leipzig|linares/i;
+
 const median = (a: number[]) => { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[s.length >> 1]; };
 
 function inside(it: TextItem, d: PageDiagram, pad: number): boolean {
@@ -109,7 +111,9 @@ export function layoutPage(raw: TextItem[], W: number, H: number, page: number, 
     v: {
       text: s.text, page, rect: [s.x0 / W, s.y / H, (s.x1 - s.x0) / W, s.h / H] as [number, number, number, number],
       kind: kinds.get(s) ?? 'body', bold: s.items.every((i) => i.bold), boldWords: boldWords(s),
-      conf: s.items.some((i) => i.conf !== undefined) ? Math.min(...s.items.map((i) => i.conf ?? 1)) : 1, ocr: !!opts.ocr,
+      // Figurine fonts (ChessBase, Quality Chess, Gambit, NIC books) may map piece symbols to
+      // arbitrary characters; marking the line lets the reader infer them from legal moves.
+      conf: s.items.some((i) => i.conf !== undefined) ? Math.min(...s.items.map((i) => i.conf ?? 1)) : s.items.some((i) => i.font && FIGURINE_FONT.test(i.font)) ? 0.97 : 1, ocr: !!opts.ocr,
     } satisfies TextLine,
   }));
   for (const d of diagrams) {

@@ -43,28 +43,36 @@ export function checkerScore(img: Gray, x: number, y: number, size: number): { s
 export function refineBoard(img: Gray, bx: number, by: number, bw: number, bh: number): BoardRect | null {
   bx = Math.max(0, Math.round(bx)); by = Math.max(0, Math.round(by));
   bw = Math.min(img.w - bx, Math.round(bw)); bh = Math.min(img.h - by, Math.round(bh));
-  // [ink fraction, non-white fraction] of a one-pixel strip.
-  const ink = (x0: number, y0: number, w: number, h: number): [number, number] => {
-    let n = 0, m = 0;
-    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { const v = img.data[y * img.w + x]; if (v < 160) n++; if (v < 235) m++; }
-    return [n / (w * h), m / (w * h)];
+  // Strip statistics: ink fraction (dark pixels) and spread. Margins and the gap inside a frame
+  // are uniform paper (any grey level — scans keep theirs); the frame is mostly ink; the squares
+  // alternate, so a strip across them is far from uniform.
+  const stat = (x0: number, y0: number, w: number, h: number): { ink: number; sd: number } => {
+    let n = 0, s1 = 0, s2 = 0;
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { const v = img.data[y * img.w + x]; if (v < 140) n++; s1 += v; s2 += v * v; }
+    const c = w * h, mu = s1 / c;
+    return { ink: n / c, sd: Math.sqrt(Math.max(0, s2 / c - mu * mu)) };
   };
   const lim = Math.ceil(Math.min(bw, bh) * 0.1);
-  const scan = (at: (i: number) => [number, number]) => {
+  const scan = (at: (i: number) => { ink: number; sd: number }) => {
     let i = 0;
-    while (i < lim && at(i)[1] < 0.005) i++; // blank margin of the candidate box
-    const f0 = i;
-    while (i < lim && at(i)[0] > 0.55) i++; // frame
-    const framed = i > f0;
-    if (framed) while (i < lim && at(i)[1] < 0.01) i++; // gap between frame and squares
+    while (i < lim && at(i).ink < 0.03 && at(i).sd < 10) i++; // blank margin of the candidate box
+    // Frame: a line that is mostly ink within the next few pixels (its edge may be anti-aliased).
+    const look = Math.max(3, Math.round(lim * 0.25));
+    let k = i;
+    while (k < Math.min(lim, i + look) && at(k).ink <= 0.5) k++;
+    if (k < Math.min(lim, i + look)) {
+      i = k;
+      while (i < lim && at(i).ink > 0.25) i++;
+      while (i < lim && at(i).ink < 0.08 && at(i).sd < 18) i++; // gap between frame and squares
+    }
     return i;
   };
   const midY = by + Math.round(bh * 0.1), spanY = Math.round(bh * 0.8);
   const midX = bx + Math.round(bw * 0.1), spanX = Math.round(bw * 0.8);
-  const l = scan((i) => ink(bx + i, midY, 1, spanY));
-  const r = scan((i) => ink(bx + bw - 1 - i, midY, 1, spanY));
-  const t = scan((i) => ink(midX, by + i, spanX, 1));
-  const b = scan((i) => ink(midX, by + bh - 1 - i, spanX, 1));
+  const l = scan((i) => stat(bx + i, midY, 1, spanY));
+  const r = scan((i) => stat(bx + bw - 1 - i, midY, 1, spanY));
+  const t = scan((i) => stat(midX, by + i, spanX, 1));
+  const b = scan((i) => stat(midX, by + bh - 1 - i, spanX, 1));
   const w = bw - l - r, h = bh - t - b;
   if (w < 40 || h < 40 || Math.abs(w - h) > Math.max(4, 0.05 * w)) return null;
   const size = (w + h) / 2;

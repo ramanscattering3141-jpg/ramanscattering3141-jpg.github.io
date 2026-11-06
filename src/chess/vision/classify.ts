@@ -46,24 +46,33 @@ function median(vals: number[]): number { const s = vals.slice().sort((a, b) => 
  * other, so the largest group of mutually similar squares is taken as empty (this works even in
  * the opening position, where half the squares are occupied) and its pixelwise median is used.
  */
-function background(cells: Float32Array[]): Float32Array {
+function background(cells: Float32Array[], coarse: Float32Array[]): Float32Array {
   const n = cells.length;
   const close = (a: Float32Array, b: Float32Array) => {
     let d = 0;
     for (let p = 0; p < a.length; p++) d += Math.abs(a[p] - b[p]);
-    return d / a.length < 14;
+    return d / a.length < 12;
   };
+  // Similarity is judged on the coarse (8×8) squares, where print texture and hatching average out.
   const nb: number[][] = cells.map(() => []);
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (close(cells[i], cells[j])) { nb[i].push(j); nb[j].push(i); }
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (close(coarse[i], coarse[j])) { nb[i].push(j); nb[j].push(i); }
   let seed = 0;
   for (let i = 1; i < n; i++) if (nb[i].length > nb[seed].length) seed = i;
-  const group = nb[seed].length ? [seed, ...nb[seed]].map((k) => cells[k]) : cells;
+  const group = nb[seed].length ? [seed, ...nb[seed]] : cells.map((_, k) => k);
   const out = new Float32Array(CELL * CELL);
-  for (let p = 0; p < out.length; p++) out[p] = median(group.map((c) => c[p]));
+  for (let p = 0; p < out.length; p++) out[p] = median(group.map((k) => cells[k][p]));
   return out;
 }
 
-export function describe(cell: Float32Array, bg: Float32Array | number): Descriptor | null {
+/** Average-pool a CELL×CELL square to s×s. */
+function pool(c: Float32Array, s: number): Float32Array {
+  const f = CELL / s;
+  const out = new Float32Array(s * s);
+  for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) out[Math.floor(y / f) * s + Math.floor(x / f)] += c[y * CELL + x] / (f * f);
+  return out;
+}
+
+export function describe(cell: Float32Array, bg: Float32Array | number, inkCell: Float32Array = cell): Descriptor | null {
   const n = CELL * CELL;
   const mask = new Uint8Array(n);
   for (let p = 0; p < n; p++) {
@@ -77,7 +86,7 @@ export function describe(cell: Float32Array, bg: Float32Array | number): Descrip
     if (!m[y * CELL + x]) continue;
     area++; sy += y;
     if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-    if (cell[y * CELL + x] < 110) darkN++;
+    if (inkCell[y * CELL + x] < 110) darkN++;
   }
   if (area < n * 0.04) return null;
   const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
@@ -93,7 +102,7 @@ export function describe(cell: Float32Array, bg: Float32Array | number): Descrip
     if (!m[y * CELL + x]) continue;
     const k = Math.min(INK - 1, Math.floor(((y - y0) * INK) / bh)) * INK + Math.min(INK - 1, Math.floor(((x - x0) * INK) / bw));
     cnt[k]++;
-    if (cell[y * CELL + x] < 110) ink[k]++;
+    if (inkCell[y * CELL + x] < 110) ink[k]++;
   }
   for (let k = 0; k < ink.length; k++) ink[k] = cnt[k] ? ink[k] / cnt[k] : 0;
   return { shape, ink, h: bh / CELL, w: bw / CELL, cy: sy / area / CELL, dark: darkN / area, area: area / n };
@@ -143,17 +152,23 @@ export function builtinTemplates(file: TemplateFile, exclude: string[] = []): Te
 
 /** Recognise all 64 squares. `learned` templates (from this book) are preferred when close. */
 export function recognize(img: Gray, b: BoardRect, templates: Template[], learned: Template[] = []): Recognition {
-  const cells = cellImages(img, b);
+  const raw = cellImages(img, b);
   const lightCells: Float32Array[] = [], darkCells: Float32Array[] = [];
-  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) ((r + c) % 2 === 0 ? lightCells : darkCells).push(cells[r][c]);
-  const bgL = background(lightCells), bgD = background(darkCells);
+  const lightCoarse: Float32Array[] = [], darkCoarse: Float32Array[] = [];
+  const cells = raw;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const light = (r + c) % 2 === 0;
+    (light ? lightCells : darkCells).push(cells[r][c]);
+    (light ? lightCoarse : darkCoarse).push(pool(cells[r][c], 8));
+  }
+  const bgL = background(lightCells, lightCoarse), bgD = background(darkCells, darkCoarse);
   // Occupancy: how different each square is from an empty one of its colour.
   const occ: number[] = [];
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
     const cell = cells[r][c], bg = (r + c) % 2 === 0 ? bgL : bgD;
-    let s = 0, n = 0;
-    for (let y = 4; y < CELL - 4; y++) for (let x = 4; x < CELL - 4; x++) { s += Math.abs(cell[y * CELL + x] - bg[y * CELL + x]); n++; }
-    occ.push(s / n / 255);
+    let s2 = 0, n = 0;
+    for (let y = 4; y < CELL - 4; y++) for (let x = 4; x < CELL - 4; x++) { s2 += Math.abs(cell[y * CELL + x] - bg[y * CELL + x]); n++; }
+    occ.push(s2 / n / 255);
   }
   const thr = Math.min(0.07, Math.max(0.035, otsu(occ, 128, 0, 0.5) * 0.5));
   const all = [...learned, ...templates];
@@ -163,7 +178,7 @@ export function recognize(img: Gray, b: BoardRect, templates: Template[], learne
     const row: CellResult[] = [];
     for (let c = 0; c < 8; c++) {
       const o = occ[r * 8 + c];
-      const d = o > thr ? describe(cells[r][c], (r + c) % 2 === 0 ? bgL : bgD) : null;
+      const d = o > thr ? describe(cells[r][c], (r + c) % 2 === 0 ? bgL : bgD, raw[r][c]) : null;
       if (!d) { const conf = Math.min(1, Math.max(0.5, 1 - o / thr / 2)); row.push({ piece: '', conf, occupancy: o }); confSum += conf; continue; }
       const best = new Map<PieceChar, number>();
       for (const t of all) {
