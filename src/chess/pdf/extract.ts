@@ -26,7 +26,8 @@ export async function extractBook(bookId: string): Promise<ExtractSummary> {
     for (const it of p.items) {
       if ('kind' in it && it.kind === 'diagram') {
         const rec = diagrams.get(it.id);
-        list.push({ ...it, fen: rec && rec.errors.length === 0 ? rec.fen : null });
+        // Invalid positions are still passed: they can be matched to a position the moves reach.
+        list.push({ ...it, fen: rec?.fen ?? null });
       } else {
         const line = it as TextLine;
         list.push(line);
@@ -57,9 +58,14 @@ export async function extractBook(bookId: string): Promise<ExtractSummary> {
       if (g.tree.size() < 2 && g.type === 'game') continue;
       if (ch.title) g.tree.headers.Chapter = ch.title;
       await saveExtracted(g, bookId, ch.id || null, order++, source);
+      for (const iss of g.issues) {
+        if (iss.kind !== 'diagram' || !iss.diagramId) continue;
+        const dg = diagrams.get(iss.diagramId);
+        if (dg && dg.status === 'auto') await d.put('diagrams', { ...dg, status: 'needs-review' });
+      }
       if (g.type === 'game') sum.games++; else sum.fragments++;
       sum.moves += g.tree.size();
-      sum.issues += g.issues.filter((i) => i.kind !== 'repaired').length;
+      sum.issues += g.issues.filter((i) => i.kind !== 'repaired' && i.kind !== 'diagram').length;
     }
   }
   await d.put('books', { ...book, glyphs: Object.fromEntries(glyphs), lastExtract: Date.now() });

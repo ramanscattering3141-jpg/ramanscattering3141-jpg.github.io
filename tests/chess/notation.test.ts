@@ -226,3 +226,33 @@ No longer would 9...P × P; 10 B × P, P - Q Kt 3 be good, because
     expect(validatePgn(writePgn(g.tree)).ok).toBe(true);
   });
 });
+
+describe('layout details', () => {
+  it('joins a wrapped header and ignores captions', () => {
+    const items: TextLine[] = [
+      { text: 'Morphy – Duke of Brunswick and Count Isouard, Paris', page: 1, rect: [0, 0, 1, 0.04] },
+      { text: '1858', page: 1, rect: [0, 0.04, 1, 0.04] },
+      { text: '1.e4 e5 2.Nf3', page: 1, rect: [0, 0.08, 1, 0.04] },
+      { text: 'The position after 2.Nf3', page: 1, rect: [0, 0.12, 1, 0.04], kind: 'caption' },
+      { text: '2...d6', page: 1, rect: [0, 0.16, 1, 0.04] },
+    ];
+    const { games } = reconstruct(tokenize(items));
+    expect(games[0].tree.headers.Date).toBe('1858.??.??');
+    expect(games[0].tree.headers.Event).toBe('Paris');
+    expect(games[0].tree.root.comment).toBeUndefined();
+    expect(games[0].tree.findByPathKey('e4 e5 Nf3')!.comment).toBeUndefined();
+    expect(mainlineSans(games[0].tree)).toEqual(['e4', 'e5', 'Nf3', 'd6']);
+  });
+});
+
+describe('diagram cross-check', () => {
+  it('links a diagram that differs from the game position on one square and reports it', () => {
+    // After 1.e4 e5 the diagram shows the white queen on d1 as a black queen (a recognition slip).
+    const d: DiagramMarker = { kind: 'diagram', id: 'dz', fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBqKBNR w KQkq - 0 2', page: 1, rect: [0, 0, 1, 1] };
+    const { games } = reconstruct(tokenize([...lines('1.e4 e5'), d, ...lines('2.Nf3 Nc6')]));
+    expect(games[0].diagrams.dz).toBe('e4 e5');
+    const iss = games[0].issues.find((i) => i.kind === 'diagram')!;
+    expect(iss.message).toMatch(/d1/);
+    expect(iss.suggestedFen!.split(' ')[0]).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR');
+  });
+});

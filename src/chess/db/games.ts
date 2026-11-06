@@ -55,7 +55,7 @@ export async function saveExtracted(g: ExtractedGame, bookId: string, chapterId:
   t.headers.Source = source;
   t.headers.Page = String(g.firstRef.page);
   if (!t.headers.Event) t.headers.Event = g.type === 'fragment' ? `${source}, p. ${g.firstRef.page}` : '?';
-  const status: Status = g.issues.some((i) => i.kind !== 'repaired') || g.confidence < 0.85 ? 'needs-review' : 'auto';
+  const status: Status = g.issues.some((i) => i.kind !== 'repaired' && i.kind !== 'diagram') || g.confidence < 0.85 ? 'needs-review' : 'auto';
   return saveGame(blankGame({
     bookId, chapterId, page: g.firstRef.page, type: g.type, confidence: g.confidence, issues: g.issues, anchors: g.anchors,
     diagrams: g.diagrams, status, firstRef: g.firstRef, lastRef: g.lastRef, order,

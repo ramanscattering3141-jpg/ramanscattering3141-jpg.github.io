@@ -157,6 +157,9 @@ async function processPage(doc: PdfDoc, book: Book, n: number, learned: Array<{ 
   let items: TextItem[] = await textItems(page, CV_SCALE);
   const ctx = r.canvas.getContext('2d') as CanvasRenderingContext2D;
   const gray = fromRGBA(ctx.getImageData(0, 0, r.width, r.height).data, r.width, r.height);
+  // Test hook: the end-to-end script can collect the page images the recogniser saw.
+  const dbg = (globalThis as { __chessDebugPages?: unknown[] }).__chessDebugPages;
+  if (dbg) dbg.push({ page: n, w: gray.w, h: gray.h, data: Array.from(gray.data) });
 
   // Diagrams typeset in a chess font come straight from the text layer.
   const fontDiagrams = findFontDiagrams(items);

@@ -39,7 +39,7 @@ export type Token =
   | { t: 'heading'; raw: string; ref: SourceRef }
   | { t: 'diagram'; d: DiagramMarker; ref: SourceRef };
 
-const RESULT_RE = /^(1-0|0-1|½-½|1\/2-1\/2|\*|1:0|0:1)$/;
+const RESULT_RE = /^(1[-–—]0|0[-–—]1|½[-–—]½|1\/2[-–—]1\/2|\*|1:0|0:1)$/;
 
 function wordRef(line: TextLine, start: number, len: number): SourceRef {
   const n = Math.max(1, line.text.length);
@@ -85,12 +85,21 @@ export function parseHeaderLine(text: string): Record<string, string> | null {
 /** Tokenise lines (in reading order) and diagram markers (inserted at their reading position). */
 export function tokenize(items: Array<TextLine | DiagramMarker>): Token[] {
   const out: Token[] = [];
-  for (const it of items) {
+  for (let k = 0; k < items.length; k++) {
+    const it = items[k];
     if ('kind' in it && it.kind === 'diagram') { out.push({ t: 'diagram', d: it, ref: { page: it.page, rect: it.rect } }); continue; }
     const line = it as TextLine;
     const full = { page: line.page, rect: line.rect };
     if (line.kind === 'heading') { out.push({ t: 'heading', raw: line.text.trim(), ref: full }); continue; }
-    const hdr = line.kind !== 'caption' ? parseHeaderLine(line.text) : null;
+    // Captions belong to their diagram (stored with it); they are not game text.
+    if (line.kind === 'caption') continue;
+    let hdr = parseHeaderLine(line.text);
+    // A header that wraps: "Morphy – Duke of Brunswick and Count Isouard, Paris" / "1858".
+    const next = items[k + 1] as TextLine | undefined;
+    if ((!hdr || !hdr.Date) && next && !('kind' in next && (next as unknown as DiagramMarker).kind === 'diagram') && next.kind !== 'heading' && next.text.trim().length < 40 && !/\d+\s*\.\s*\S/.test(next.text)) {
+      const joined = parseHeaderLine(`${line.text.trim()} ${next.text.trim()}`);
+      if (joined && joined.Date && (!hdr || Object.keys(joined).length > Object.keys(hdr).length)) { hdr = joined; k++; }
+    }
     if (hdr) { out.push({ t: 'header', headers: hdr, ref: full, raw: line.text }); continue; }
     tokenizeLine(line, out);
   }
@@ -144,7 +153,7 @@ function tokenizeLine(orig: TextLine, out: Token[]): void {
 
 function emitWord(w: string, at: number, line: TextLine, out: Token[], bold: boolean, conf: number, ocr: boolean, tail: string): void {
   const ref = wordRef(line, at, w.length);
-  if (RESULT_RE.test(w)) { out.push({ t: 'result', v: w === '½-½' ? '1/2-1/2' : w.replace(':', '-'), ref, raw: w }); return; }
+  if (RESULT_RE.test(w)) { const v = w.replace(/[–—:]/g, '-'); out.push({ t: 'result', v: v === '½-½' ? '1/2-1/2' : v, ref, raw: w }); return; }
   if (/^(\.{2,}|…+)$/.test(w)) { out.push({ t: 'ellipsis', ref, raw: w }); return; }
   // Move number, optionally glued to a move: "12.", "12...", "12…", "12.Nf3", "12...Nf3", "12 ...".
   const num = /^(\d{1,3})(\.\s?\.\s?\.|\.\.\.|…|\.|\s)(.*)$/.exec(w);

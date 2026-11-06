@@ -64,6 +64,20 @@ function background(cells: Float32Array[], coarse: Float32Array[]): Float32Array
   return out;
 }
 
+/** 3×3 box blur. */
+function blur(c: Float32Array): Float32Array {
+  const out = new Float32Array(CELL * CELL);
+  for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
+    let s2 = 0, n = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const yy = y + dy, xx = x + dx;
+      if (yy >= 0 && xx >= 0 && yy < CELL && xx < CELL) { s2 += c[yy * CELL + xx]; n++; }
+    }
+    out[y * CELL + x] = s2 / n;
+  }
+  return out;
+}
+
 /** Average-pool a CELL×CELL square to s×s. */
 function pool(c: Float32Array, s: number): Float32Array {
   const f = CELL / s;
@@ -72,14 +86,30 @@ function pool(c: Float32Array, s: number): Float32Array {
   return out;
 }
 
-export function describe(cell: Float32Array, bg: Float32Array | number, inkCell: Float32Array = cell): Descriptor | null {
+export function describe(cell: Float32Array, bg: Float32Array | number, inkCell: Float32Array = cell, rawBg?: Float32Array): Descriptor | null {
   const n = CELL * CELL;
   const mask = new Uint8Array(n);
   for (let p = 0; p < n; p++) {
     const b = typeof bg === 'number' ? bg : bg[p];
-    mask[p] = Math.abs(cell[p] - b) > 55 ? 1 : 0;
+    mask[p] = Math.abs(cell[p] - b) > 40 ? 1 : 0;
   }
-  let m = largestComponent(fillHoles(mask, CELL, CELL), CELL, CELL);
+  // Close small gaps in thin outlines (dilate, fill, erode) so the inside of the piece is filled.
+  const morph = (src: Uint8Array, grow: boolean) => {
+    const o = new Uint8Array(n);
+    for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
+      let v = grow ? 0 : 1;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const yy = y + dy, xx = x + dx;
+        const q = yy >= 0 && xx >= 0 && yy < CELL && xx < CELL ? src[yy * CELL + xx] : 0;
+        v = grow ? v | q : v & q;
+      }
+      o[y * CELL + x] = v;
+    }
+    return o;
+  };
+  const closed = morph(fillHoles(morph(mask, true), CELL, CELL), false);
+  for (let p = 0; p < n; p++) closed[p] |= mask[p];
+  let m = largestComponent(fillHoles(closed, CELL, CELL), CELL, CELL, 0.08);
   m = fillHoles(m, CELL, CELL);
   let area = 0, x0 = CELL, y0 = CELL, x1 = -1, y1 = -1, sy = 0, darkN = 0;
   for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
@@ -89,6 +119,28 @@ export function describe(cell: Float32Array, bg: Float32Array | number, inkCell:
     if (inkCell[y * CELL + x] < 110) darkN++;
   }
   if (area < n * 0.04) return null;
+  // Colour from the interior only: erode the outline away (2 px), so outline thickness, which
+  // grows at small print sizes, does not make a white piece look dark.
+  // When the outline came from smoothed images it is a little too wide; colour is then measured
+  // inside the piece as drawn (unsmoothed outline, holes filled, kept within the smoothed one).
+  let inner = m;
+  if (rawBg) {
+    const raw = new Uint8Array(n);
+    for (let p = 0; p < n; p++) raw[p] = m[p] && Math.abs(inkCell[p] - rawBg[p]) > 40 ? 1 : 0;
+    const filled = fillHoles(raw, CELL, CELL);
+    for (let p = 0; p < n; p++) filled[p] &= m[p];
+    inner = filled;
+  }
+  for (let k = 0; k < 2; k++) {
+    const e = new Uint8Array(n);
+    for (let y = 1; y < CELL - 1; y++) for (let x = 1; x < CELL - 1; x++) {
+      const p = y * CELL + x;
+      e[p] = inner[p] & inner[p - 1] & inner[p + 1] & inner[p - CELL] & inner[p + CELL];
+    }
+    inner = e;
+  }
+  let innerN = 0, innerDark = 0;
+  for (let p = 0; p < n; p++) if (inner[p]) { innerN++; if (inkCell[p] < 110) innerDark++; }
   const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
   const shape = new Uint8Array(SHAPE * SHAPE);
   const ink = new Float32Array(INK * INK);
@@ -105,7 +157,7 @@ export function describe(cell: Float32Array, bg: Float32Array | number, inkCell:
     if (inkCell[y * CELL + x] < 110) ink[k]++;
   }
   for (let k = 0; k < ink.length; k++) ink[k] = cnt[k] ? ink[k] / cnt[k] : 0;
-  return { shape, ink, h: bh / CELL, w: bw / CELL, cy: sy / area / CELL, dark: darkN / area, area: area / n };
+  return { shape, ink, h: bh / CELL, w: bw / CELL, cy: sy / area / CELL, dark: innerN > 8 ? innerDark / innerN : darkN / area, area: area / n };
 }
 
 export function distance(a: Descriptor, b: Descriptor): number {
@@ -115,7 +167,7 @@ export function distance(a: Descriptor, b: Descriptor): number {
   let ink = 0;
   for (let i = 0; i < a.ink.length; i++) ink += Math.abs(a.ink[i] - b.ink[i]);
   ink /= a.ink.length;
-  return (1 - iou) + 0.8 * ink + 1.2 * Math.abs(a.h - b.h) + 0.6 * Math.abs(a.w - b.w) + 1.5 * Math.abs(a.dark - b.dark);
+  return (1 - iou) + 0.8 * ink + 1.2 * Math.abs(a.h - b.h) + 0.6 * Math.abs(a.w - b.w) + 0.3 * Math.abs(a.dark - b.dark);
 }
 
 const PIECES: Array<[string, PieceChar]> = [['wK', 'K'], ['wQ', 'Q'], ['wR', 'R'], ['wB', 'B'], ['wN', 'N'], ['wP', 'P'], ['bK', 'k'], ['bQ', 'q'], ['bR', 'r'], ['bB', 'b'], ['bN', 'n'], ['bP', 'p']];
@@ -162,14 +214,22 @@ export function recognize(img: Gray, b: BoardRect, templates: Template[], learne
     (light ? lightCoarse : darkCoarse).push(pool(cells[r][c], 8));
   }
   const bgL = background(lightCells, lightCoarse), bgD = background(darkCells, darkCoarse);
-  // Occupancy: how different each square is from an empty one of its colour.
+  // Occupancy at a coarse scale (8×8 per square): hatching drawn as one continuous pattern has a
+  // different phase on every square, which a pixel-by-pixel comparison would mistake for ink.
+  const bgLc = pool(bgL, 8), bgDc = pool(bgD, 8);
   const occ: number[] = [];
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-    const cell = cells[r][c], bg = (r + c) % 2 === 0 ? bgL : bgD;
+    const light = (r + c) % 2 === 0;
+    const cc = (light ? lightCoarse : darkCoarse)[r * 4 + Math.floor(c / 2)];
+    const bg = light ? bgLc : bgDc;
     let s2 = 0, n = 0;
-    for (let y = 4; y < CELL - 4; y++) for (let x = 4; x < CELL - 4; x++) { s2 += Math.abs(cell[y * CELL + x] - bg[y * CELL + x]); n++; }
+    for (let y = 1; y < 7; y++) for (let x = 1; x < 7; x++) { s2 += Math.abs(cc[y * 8 + x] - bg[y * 8 + x]); n++; }
     occ.push(s2 / n / 255);
   }
+  // Textured (hatched) squares are outlined on smoothed copies, for the same reason.
+  const textured = (bg: Float32Array) => { let t = 0; for (let y = 0; y < CELL; y++) for (let x = 1; x < CELL; x++) t += Math.abs(bg[y * CELL + x] - bg[y * CELL + x - 1]); return t / (CELL * (CELL - 1)) > 6; };
+  const smoothL = textured(bgL), smoothD = textured(bgD);
+  const bgLs = smoothL ? blur(blur(bgL)) : bgL, bgDs = smoothD ? blur(blur(bgD)) : bgD;
   const thr = Math.min(0.07, Math.max(0.035, otsu(occ, 128, 0, 0.5) * 0.5));
   const all = [...learned, ...templates];
   const result: CellResult[][] = [];
@@ -178,10 +238,17 @@ export function recognize(img: Gray, b: BoardRect, templates: Template[], learne
     const row: CellResult[] = [];
     for (let c = 0; c < 8; c++) {
       const o = occ[r * 8 + c];
-      const d = o > thr ? describe(cells[r][c], (r + c) % 2 === 0 ? bgL : bgD, raw[r][c]) : null;
+      const light = (r + c) % 2 === 0;
+      const sm = light ? smoothL : smoothD;
+      const d = o > thr ? describe(sm ? blur(blur(cells[r][c])) : cells[r][c], light ? bgLs : bgDs, raw[r][c], sm ? (light ? bgL : bgD) : undefined) : null;
       if (!d) { const conf = Math.min(1, Math.max(0.5, 1 - o / thr / 2)); row.push({ piece: '', conf, occupancy: o }); confSum += conf; continue; }
+      // Colour first: black pieces are mostly ink inside their outline, white ones mostly paper
+      // (outlines thicken at small print sizes, so white pieces can reach ~0.5).
+      const isWhite = (p: PieceChar) => p === p.toUpperCase();
+      const colourOk = (p: PieceChar) => (d.dark > 0.75 ? !isWhite(p) : d.dark < 0.4 ? isWhite(p) : true);
       const best = new Map<PieceChar, number>();
       for (const t of all) {
+        if (!colourOk(t.piece)) continue;
         const dist = distance(d, t.d) - (t.source === 'learned' ? 0.08 : 0);
         if (dist < (best.get(t.piece) ?? Infinity)) best.set(t.piece, dist);
       }

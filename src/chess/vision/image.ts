@@ -108,8 +108,9 @@ export function fillHoles(mask: Uint8Array, w: number, h: number): Uint8Array {
   return out;
 }
 
-/** Keep only the largest 4-connected component. */
-export function largestComponent(mask: Uint8Array, w: number, h: number): Uint8Array {
+/** Keep the largest 4-connected component and any other at least `frac` of its size (pieces such as
+ * the Merida bishop are drawn in separate parts). */
+export function largestComponent(mask: Uint8Array, w: number, h: number, frac = 1): Uint8Array {
   const label = new Int32Array(w * h).fill(-1);
   let best = -1, bestSize = 0, id = 0;
   const sizes: number[] = [];
@@ -127,7 +128,7 @@ export function largestComponent(mask: Uint8Array, w: number, h: number): Uint8A
     id++;
   }
   const out = new Uint8Array(w * h);
-  if (best >= 0) for (let p = 0; p < w * h; p++) if (label[p] === best) out[p] = 1;
+  if (best >= 0) for (let p = 0; p < w * h; p++) if (label[p] >= 0 && (label[p] === best || sizes[label[p]] >= bestSize * frac)) out[p] = 1;
   return out;
 }
 

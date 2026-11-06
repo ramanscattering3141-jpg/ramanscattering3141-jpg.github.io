@@ -21,9 +21,9 @@ Synthetic book diagrams, recognising a piece set that was **excluded** from the 
 
 | Set | Hatched dark squares | Grey dark squares |
 |---|---|---|
-| cburnett | 100 % | 96.9 % (pieces 93 %) |
+| cburnett | 100 % | 100 % |
 | merida | 100 % | 100 % |
-| chessnut (stylised) | 90 % (pieces 78 %) | 92 % (pieces 82 %) |
+| chessnut (stylised) | 91.7 % (pieces 82 %) | 91.1 % (pieces 81 %) |
 
 With the set's own references, and after learning from one corrected diagram, all squares are read
 correctly. On real 1921 letterpress scans (Gutenberg images of *Chess Fundamentals*), boards are

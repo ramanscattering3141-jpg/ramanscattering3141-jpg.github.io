@@ -7,7 +7,7 @@ import { resolveMove, type NotationLanguage, type Resolution } from './san';
 import { boardFromFen, placementKey } from './fen';
 import type { DiagramMarker, SourceRef, Token } from './notation';
 
-export type IssueKind = 'illegal' | 'ambiguous' | 'unplaced' | 'repaired' | 'number';
+export type IssueKind = 'illegal' | 'ambiguous' | 'unplaced' | 'repaired' | 'number' | 'diagram';
 
 export interface Issue {
   kind: IssueKind;
@@ -19,6 +19,9 @@ export interface Issue {
   /** Path key of the node the move was tried from. */
   at?: string;
   candidates?: string[];
+  /** For 'diagram' issues: the diagram and the game position it nearly matches. */
+  diagramId?: string;
+  suggestedFen?: string;
 }
 
 export interface Anchor { path: string; ref: SourceRef }
@@ -216,6 +219,16 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
           const hit = (ctx.cursor && placementKey(ctx.cursor.fen) === key ? ctx.cursor : null)
             ?? ctx.game.tree.all().find((n) => placementKey(n.fen) === key);
           if (hit) { ctx.game.diagrams[tok.d.id] = ctx.game.tree.pathKey(hit); ctx.diagram = null; }
+          else {
+            // Nearly the same as a position the moves reach (recognition slip, or a printing
+            // error): link it, and report the squares that differ so the user can decide.
+            const near = (ctx.cursor ? [ctx.cursor] : []).concat(ctx.game.tree.all()).map((n) => ({ n, diff: squareDiff(n.fen, tok.d.fen!) })).filter((x) => x.diff.length > 0 && x.diff.length <= 2).sort((a, b) => a.diff.length - b.diff.length)[0];
+            if (near) {
+              ctx.game.diagrams[tok.d.id] = ctx.game.tree.pathKey(near.n);
+              ctx.game.issues.push({ kind: 'diagram', message: `Diagram differs from the position after the moves on ${near.diff.join(', ')}`, raw: '', ref: tok.ref, fen: near.n.fen, at: ctx.game.tree.pathKey(near.n), diagramId: tok.d.id, suggestedFen: near.n.fen });
+              ctx.diagram = null;
+            }
+          }
         }
         break;
       }
@@ -314,8 +327,16 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
     }
   }
   finish();
-  for (const g of games) g.confidence = g.confN ? Math.round((g.confSum / g.confN) * 100) / 100 * (g.issues.some((x) => x.kind !== 'repaired') ? 0.8 : 1) : 0;
+  for (const g of games) g.confidence = g.confN ? Math.round((g.confSum / g.confN) * 100) / 100 * (g.issues.some((x) => x.kind !== 'repaired' && x.kind !== 'diagram') ? 0.8 : 1) : 0;
   return { games: games.filter((g) => g.tree.size() > 0).map(({ confSum: _a, confN: _b, ended: _c, ...rest }) => rest), orphans };
+}
+
+/** Squares whose contents differ between two positions. */
+export function squareDiff(a: string, b: string): string[] {
+  const A = boardFromFen(a), B = boardFromFen(b);
+  const out: string[] = [];
+  for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) if (A[r][f] !== B[r][f]) out.push('abcdefgh'[f] + (8 - r));
+  return out;
 }
 
 function numLabel(before: number | null): string {

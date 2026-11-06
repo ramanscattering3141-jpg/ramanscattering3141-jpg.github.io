@@ -29,10 +29,17 @@ function DiagramReview({ bookId, id }: { bookId: string; id: string }) {
   const [all, setAll] = useState<DiagramRec[]>([]);
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [nonce, setNonce] = useState(0);
+  const [suggest, setSuggest] = useState<{ fen: string; message: string } | null>(null);
+  const [override, setOverride] = useState<string | null>(null);
   useEffect(() => {
     void (async () => {
       const dbx = await db();
       const rec = (await dbx.get('diagrams', id)) ?? null;
+      setSuggest(null); setOverride(null);
+      for (const g of await dbx.getAllFromIndex('games', 'byBook', bookId)) {
+        const iss = g.issues.find((i) => i.kind === 'diagram' && i.diagramId === id && i.suggestedFen);
+        if (iss) setSuggest({ fen: iss.suggestedFen!, message: iss.message });
+      }
       setD(rec);
       if (rec) setOrientation(rec.orientation);
       setAll((await dbx.getAllFromIndex('diagrams', 'byBook', bookId)).sort((a, b) => a.page - b.page || a.rect[1] - b.rect[1]));
@@ -41,7 +48,7 @@ function DiagramReview({ bookId, id }: { bookId: string; id: string }) {
   if (!d) return <div class="page empty">Loading…</div>;
   const visual = visualToBoard(d.visual);
   const oriented = orientation === 'white' ? visual : flipBoard(visual);
-  const startFen = d.fen && orientation === d.orientation ? d.fen : buildFen(oriented, { turn: d.turn ?? 'w', castling: possibleCastling(oriented) });
+  const startFen = override ?? (d.fen && orientation === d.orientation ? d.fen : buildFen(oriented, { turn: d.turn ?? 'w', castling: possibleCastling(oriented) }));
   const conf = orientation === 'white' ? d.cellConf : [...d.cellConf].reverse();
   const idx = all.findIndex((x) => x.id === id);
   const nextReview = all.slice(idx + 1).find((x) => x.status === 'needs-review') ?? all.find((x) => x.status === 'needs-review' && x.id !== id);
@@ -90,6 +97,9 @@ function DiagramReview({ bookId, id }: { bookId: string; id: string }) {
           <div class="small muted">Read by {d.source === 'font' ? 'decoding the chess font' : `image recognition (confidence ${Math.round(d.conf * 100)}%)`}. {d.orientationCertain ? '' : 'Orientation was guessed.'}</div>
           <label class="row small"><input type="checkbox" checked={orientation === 'black'} onChange={(e) => { setOrientation((e.target as HTMLInputElement).checked ? 'black' : 'white'); setNonce(nonce + 1); }} /> Printed from Black's side (Black at the bottom)</label>
           {d.errors.map((e) => <div class="notice bad small" key={e}>{e}</div>)}
+          {suggest && d.status !== 'corrected' && (
+            <div class="notice warn small">{suggest.message}. <button class="btn small" onClick={() => { setOverride(suggest.fen); setNonce(nonce + 1); }}>Use the position from the moves</button></div>
+          )}
           {d.status === 'corrected' && <span class="tag good">corrected</span>}
         </div>
         <div class="grow">
