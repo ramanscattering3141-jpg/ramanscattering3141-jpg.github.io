@@ -22,14 +22,16 @@ export interface TextLine {
   ocr?: boolean;
   /** Per-word bold flags when the line mixes fonts (same length as whitespace-split words). */
   boldWords?: boolean[];
+  /** First line of a paragraph (indented, after a short line or a gap, or after a heading/diagram). */
+  para?: boolean;
 }
 
 export interface DiagramMarker { kind: 'diagram'; id: string; fen: string | null; page: number; rect: [number, number, number, number]; caption?: string }
 
 export type Token =
-  | { t: 'num'; n: number; black: boolean; ref: SourceRef; raw: string }
+  | { t: 'num'; n: number; black: boolean; ref: SourceRef; raw: string; para?: boolean }
   | { t: 'ellipsis'; ref: SourceRef; raw: string }
-  | { t: 'move'; raw: string; nags: number[]; ref: SourceRef; bold: boolean; conf: number; ocr: boolean; bol?: boolean }
+  | { t: 'move'; raw: string; nags: number[]; ref: SourceRef; bold: boolean; conf: number; ocr: boolean; bol?: boolean; para?: boolean }
   | { t: 'nag'; nags: number[]; ref: SourceRef; raw: string }
   | { t: 'result'; v: string; ref: SourceRef; raw: string }
   | { t: 'open'; ref: SourceRef; raw: string }
@@ -47,39 +49,68 @@ function wordRef(line: TextLine, start: number, len: number): SourceRef {
   return { page: line.page, rect: [x + (w * start) / n, y, (w * len) / n, h] };
 }
 
-/** Detect a game header line such as "Capablanca – Marshall, New York 1918" or "White: Lasker". */
+/**
+ * Detect a game header line: "Capablanca – Marshall, New York 1918", "Game 12: J. R. Capablanca -
+ * F. Marshall, New York 1909", "Carlsen,Magnus (2870) – Anand,Viswanathan (2775) [B30] Chennai 2013",
+ * "Kasparov, Garry – Karpov, Anatoly, Moscow 1985", "White: Lasker", "White: X. Black: Y."
+ */
 export function parseHeaderLine(text: string): Record<string, string> | null {
   const t = text.trim().replace(/\s+/g, ' ');
-  if (t.length < 5 || t.length > 110) return null;
-  if (/\b\d{1,3}\s*\.\s*[a-hKQRBNO0]/.test(t)) return null; // has moves
-  const name = String.raw`(?:[A-ZÀ-ɏ][\p{L}'’.]*(?:[ -](?:[A-ZÀ-ɏ][\p{L}'’.]*|de|van|von|der|den|da|di|du|le|la|of|and|&))*?)`;
-  const m = new RegExp(`^(?:(?:Game|Partie|Partida)\\s+(\\d+)[:.]?\\s+)?(${name})\\s*(?:[–—-]|vs\\.?|v\\.?)\\s*(${name})(?:\\s*[,;(]\\s*(.+?))?\\)?$`, 'u').exec(t);
-  if (m) {
-    const [, gameNo, white, black, rest] = m;
-    if (white.split(' ').length > 7 || black.split(' ').length > 7) return null;
-    if (/^(White|Black|The|This|After|In|If|But|And|Now|Here)$/i.test(white)) return null;
-    if (!rest && !gameNo && (white.split(' ').length < 1 || !/[A-Z]/.test(black))) return null;
-    // Without a place/year, demand that both look like surnames (one or two capitalised words).
-    if (!rest && !gameNo && (white.split(' ').length > 2 || black.split(' ').length > 2)) return null;
-    const h: Record<string, string> = { White: white.trim(), Black: black.trim() };
-    if (gameNo) h.BookGame = gameNo;
-    if (rest) {
-      const year = /\b(1[4-9]\d\d|20\d\d)\b/.exec(rest);
-      if (year) h.Date = `${year[1]}.??.??`;
-      const res = /(1-0|0-1|½-½|1\/2-1\/2)/.exec(rest);
-      if (res) h.Result = res[1] === '½-½' ? '1/2-1/2' : res[1];
-      const eco = /\b([A-E]\d\d)\b/.exec(rest);
-      if (eco) h.ECO = eco[1];
-      const ev = rest.replace(/\b(1[4-9]\d\d|20\d\d)\b/, '').replace(/(1-0|0-1|½-½|1\/2-1\/2)/, '').replace(/\b[A-E]\d\d\b/, '').replace(/[()\[\],;]+/g, ' ').trim();
-      if (ev) h.Event = ev;
-    }
-    return h;
-  }
+  if (t.length < 5 || t.length > 140) return null;
+  if (/\b\d{1,3}\s*\.\s*(?:\.\.\s*)?[a-hKQRBNO0♔-♟]/.test(t)) return null; // has moves
   const both = /^White\s*:\s*(.+?)\.?\s+Black\s*:\s*(.+?)\.?$/i.exec(t);
   if (both) return { White: both[1].trim(), Black: both[2].trim() };
   const wb = /^(White|Black)\s*:\s*(.+)$/i.exec(t);
   if (wb) return { [wb[1][0].toUpperCase() + wb[1].slice(1).toLowerCase()]: wb[2].trim() };
-  return null;
+
+  const m = /^(?:(?:Game|Partie|Partida|Partij)\s+(\d+)\s*[:.)]?\s+)?(.+?)\s*(?:\s[–—-]\s|[–—]|\svs\.?\s|\sv\.?\s)\s*(.+)$/u.exec(t);
+  if (!m) return null;
+  const gameNo = m[1];
+  const stripRating = (x: string) => x.replace(/\s*\(\d{3,4}\)/g, '').replace(/\s+[12]\d{3}$/, '').trim();
+  const white = stripRating(m[2].replace(/^(?:Game|Partie|Partida)\s+\d+\s*[:.)]?\s*/i, ''));
+  let right = m[3].trim();
+  let black: string;
+  let rest = '';
+  // Surname-first ("Kasparov, Garry") on the White side means Black is written the same way.
+  const surnameFirst = /^[^,]+,\s?[A-ZÀ-ɏ][^,]*$/u.test(white);
+  if (surnameFirst) {
+    const parts = right.split(',');
+    const second = parts[1] ?? '';
+    const cut = second.search(/[\[(]|\s[12]\d{3}\b/);
+    black = `${parts[0]},${cut < 0 ? second : second.slice(0, cut)}`;
+    rest = (cut < 0 ? '' : second.slice(cut)) + (parts.length > 2 ? `,${parts.slice(2).join(',')}` : '');
+  } else {
+    const idx = right.search(/[,;\[(]|\s[12]\d{3}\b/);
+    black = idx < 0 ? right : right.slice(0, idx);
+    rest = idx < 0 ? '' : right.slice(idx);
+  }
+  // A rating written after Black's name: "Anand,Viswanathan (2775) [B30] Chennai 2013".
+  const rr = /^\s*(?:\((\d{3,4})\)|[12]\d{3}(?=\s*[,\[(]))/.exec(rest);
+  if (rr) rest = rest.slice(rr[0].length);
+  black = stripRating(black);
+  right = '';
+  const nameOk = (n: string) => {
+    const words = n.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+    if (!words.length || words.length > 6 || n.length > 45 || /\d/.test(n)) return false;
+    return words.every((w) => /^[A-ZÀ-ɏ][\p{L}'’.\-]*$/u.test(w) || /^(de|van|von|der|den|da|di|du|le|la|of|and|&|dos|del|ter)$/i.test(w) || /^[A-Z]\.$/.test(w));
+  };
+  if (!nameOk(white) || !nameOk(black)) return null;
+  if (/^(White|Black|The|This|After|In|If|But|And|Now|Here|Then|So|Thus|Note)$/i.test(white.split(/[\s,]/)[0])) return null;
+  // With nothing after the names, demand short names (prose like "Black – the knight…" fails above).
+  if (!rest.trim() && !gameNo && (white.split(/\s+/).length > 3 || black.split(/\s+/).length > 3)) return null;
+  const h: Record<string, string> = { White: white, Black: black };
+  if (gameNo) h.BookGame = gameNo;
+  if (rest.trim()) {
+    const year = /\b(1[4-9]\d\d|20\d\d)\b/.exec(rest);
+    if (year) h.Date = `${year[1]}.??.??`;
+    const res = /(1-0|0-1|½-½|1\/2-1\/2|1–0|0–1)/.exec(rest);
+    if (res) h.Result = res[1].replace('–', '-').replace('½-½', '1/2-1/2');
+    const eco = /\b([A-E]\d\d)\b/.exec(rest);
+    if (eco) h.ECO = eco[1];
+    const ev = rest.replace(/\b(1[4-9]\d\d|20\d\d)\b/g, '').replace(/(1-0|0-1|½-½|1\/2-1\/2|1–0|0–1)/, '').replace(/\b[A-E]\d\d\b/, '').replace(/[()\[\],;]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (ev) h.Event = ev;
+  }
+  return h;
 }
 
 /** Tokenise lines (in reading order) and diagram markers (inserted at their reading position). */
@@ -90,7 +121,12 @@ export function tokenize(items: Array<TextLine | DiagramMarker>): Token[] {
     if ('kind' in it && it.kind === 'diagram') { out.push({ t: 'diagram', d: it, ref: { page: it.page, rect: it.rect } }); continue; }
     const line = it as TextLine;
     const full = { page: line.page, rect: line.rect };
-    if (line.kind === 'heading') { out.push({ t: 'heading', raw: line.text.trim(), ref: full }); continue; }
+    if (line.kind === 'heading') {
+      // Game headers are often set larger than the text; they start a game rather than a chapter.
+      const h = parseHeaderLine(line.text);
+      out.push(h ? { t: 'header', headers: h, ref: full, raw: line.text } : { t: 'heading', raw: line.text.trim(), ref: full });
+      continue;
+    }
     // Captions belong to their diagram (stored with it); they are not game text.
     if (line.kind === 'caption') continue;
     let hdr = parseHeaderLine(line.text);
@@ -133,6 +169,12 @@ function tokenizeLine(orig: TextLine, out: Token[]): void {
     let at = m.index;
     const bold = line.boldWords ? !!line.boldWords[wi] : !!line.bold;
     wi++;
+    // Labels of lettered/numbered lines ("A)", "b)", "a1)", "(2)", "B12)") are text, not brackets.
+    // "a1)"-style labels look like a pawn move, so they count as labels only at the start of a line.
+    if (/^\(?(?:[A-Za-z]|[A-Z]\d{1,2}|\d{1,2})\)$/.test(w) || (wi === 1 && /^\(?[a-h]\d{1,2}\)$/.test(w))) {
+      out.push({ t: 'text', raw: w, ref: wordRef(line, at, w.length) });
+      continue;
+    }
     // Leading brackets.
     while (/^[(\[]/.test(w)) { out.push({ t: 'open', ref: wordRef(line, at, 1), raw: w[0] }); w = w.slice(1); at++; }
     const closers: Token[] = [];
@@ -149,6 +191,11 @@ function tokenizeLine(orig: TextLine, out: Token[]): void {
   }
   const t0 = out[first];
   if (t0 && t0.t === 'move') t0.bol = true;
+  if (line.para) {
+    // The paragraph's first move number (or move), even after a label such as "B)".
+    const lead = out.slice(first).find((t) => t.t === 'num' || t.t === 'move');
+    if (lead && (lead.t === 'num' || lead.t === 'move')) lead.para = true;
+  }
 }
 
 function emitWord(w: string, at: number, line: TextLine, out: Token[], bold: boolean, conf: number, ocr: boolean, tail: string): void {

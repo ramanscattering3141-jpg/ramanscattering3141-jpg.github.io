@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { db, uid, type Book, type ChapterRec, type DiagramRec, type GameRec, type PageRec } from '../db/db';
+import type { Issue } from '../core/reconstruct';
 import { enqueue, pause, reprocessPages, isRunning } from '../pdf/pipeline';
 import { extractBook } from '../pdf/extract';
 import { writePgnDatabase, validatePgn } from '../core/pgn';
@@ -110,7 +111,7 @@ export function BookView({ bookId, tab = 'contents' }: { bookId: string; tab?: T
         </div>
       )}
       {tab === 'diagrams' && <DiagramList diagrams={diagrams} games={games} bookId={bookId} />}
-      {tab === 'problems' && <Problems games={games} bookId={bookId} />}
+      {tab === 'problems' && <Problems games={games} bookId={bookId} orphans={book.orphans ?? []} />}
       {tab === 'pages' && <PageList pages={pages} bookId={bookId} onChange={() => { void loadAll(); void reload(); }} />}
       {tab === 'settings' && <ReadingSettings book={book} onSaved={() => { void reload(); void loadAll(); }} />}
       {edit && <EditBook book={book} onClose={() => setEdit(false)} onSaved={() => { setEdit(false); void reload(); }} />}
@@ -204,11 +205,23 @@ function DiagramList({ diagrams, games, bookId }: { diagrams: DiagramRec[]; game
   );
 }
 
-function Problems({ games, bookId }: { games: GameRec[]; bookId: string }) {
-  const list = games.filter((g) => g.status === 'needs-review' || g.issues.some((i) => i.kind !== 'repaired'));
-  if (!list.length) return <div class="empty">Nothing to fix: every extracted move was read and is legal.</div>;
+function Problems({ games, bookId, orphans }: { games: GameRec[]; bookId: string; orphans: Issue[] }) {
+  const list = games.filter((g) => g.status === 'needs-review' || g.issues.some((i) => i.kind !== 'repaired' && i.kind !== 'diagram'));
+  if (!list.length && !orphans.length) return <div class="empty">Nothing to fix: every extracted move was read and is legal.</div>;
   return (
     <div class="col">
+      {orphans.length > 0 && (
+        <div class="panel">
+          <h3>Moves that could not be placed ({orphans.length})</h3>
+          <div class="small muted" style="margin-bottom:.4rem">Usually the diagram before them was misread, or the game's start was missed. Correct the diagram (or the game) and these moves are attached automatically.</div>
+          {orphans.slice(0, 40).map((o, k) => (
+            <div key={k} class="row" style="margin-bottom:.5rem;align-items:flex-start">
+              <PdfCrop bookId={bookId} page={o.ref.page} rect={[Math.max(0, o.ref.rect[0] - 0.25), o.ref.rect[1] - 0.005, Math.min(1, o.ref.rect[2] + 0.5), o.ref.rect[3] + 0.01]} width={360} pad={0} />
+              <div class="small grow">p. {o.ref.page}: {o.message}<br /><a href={`#/study/${bookId}?page=${o.ref.page}`}>Open the page</a> · <a href={`#/book/${bookId}/diagrams`}>Diagrams</a></div>
+            </div>
+          ))}
+        </div>
+      )}
       {list.map((g) => (
         <div class="panel" key={g.id}>
           <div class="row"><b class="grow">{gameTitle(g)}</b><a class="btn small primary" href={`#/review/${bookId}/game/${g.id}`}>Correct</a></div>

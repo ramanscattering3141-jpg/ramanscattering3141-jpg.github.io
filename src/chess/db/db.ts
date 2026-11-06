@@ -23,6 +23,10 @@ export interface Book {
   /** Glyph → piece letters learned from OCR'd figurines. */
   glyphs?: Record<string, string>;
   lastExtract?: number;
+  /** Move sequences from the last extraction that could not be attached to any position. */
+  orphans?: Issue[];
+  /** Reconstruction rules the stored games were built with (see EXTRACT_VERSION). */
+  extractVersion?: number;
 }
 
 export interface PageRec {

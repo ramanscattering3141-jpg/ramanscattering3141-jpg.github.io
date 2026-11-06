@@ -114,6 +114,7 @@ export function layoutPage(raw: TextItem[], W: number, H: number, page: number, 
   // 4. Reading order: full-width lines split the page into bands; in each band the left column
   // is read before the right. Diagrams take their place by position.
   type Entry = { y: number; col: 'L' | 'R' | 'F'; v: TextLine | DiagramMarker };
+  const segOf = new Map<TextLine, Seg>();
   const entries: Entry[] = segs.map((s) => ({
     y: s.y, col: s.col,
     v: {
@@ -124,6 +125,7 @@ export function layoutPage(raw: TextItem[], W: number, H: number, page: number, 
       conf: s.items.some((i) => i.conf !== undefined) ? Math.min(...s.items.map((i) => i.conf ?? 1)) : s.items.some((i) => i.font && FIGURINE_FONT.test(i.font)) ? 0.97 : 1, ocr: !!opts.ocr,
     } satisfies TextLine,
   }));
+  entries.forEach((e, i) => segOf.set(e.v as TextLine, segs[i]));
   for (const d of diagrams) {
     const cx = d.x + d.size / 2;
     entries.push({
@@ -142,7 +144,42 @@ export function layoutPage(raw: TextItem[], W: number, H: number, page: number, 
     if (e.col === 'F' && gx >= 0) { flushBand(); out.push(e.v); } else band.push(e);
   }
   flushBand();
+  markParagraphs(out, segs, segOf, bodyHeight);
   return { items: out, captions, labels, headings, bodyHeight };
+}
+
+/**
+ * First lines of paragraphs: indented, after a line that stopped short, after a larger gap, or
+ * after a heading or diagram. Main-game moves in books start paragraphs; that is how a line of
+ * play that resumes the game is told from one that continues a variation.
+ */
+function markParagraphs(out: Array<TextLine | DiagramMarker>, segs: Seg[], segOf: Map<TextLine, Seg>, bodyHeight: number): void {
+  const cols = new Map<string, { left: number; right: number }>();
+  for (const s of segs) {
+    const c = cols.get(s.col) ?? { left: Infinity, right: -Infinity };
+    c.left = Math.min(c.left, s.x0); c.right = Math.max(c.right, s.x1);
+    cols.set(s.col, c);
+  }
+  let prev: { seg: Seg; line: TextLine } | null = null;
+  let afterBreak = true;
+  for (const it of out) {
+    if ('kind' in it && it.kind === 'diagram') { afterBreak = true; continue; }
+    const line = it as TextLine;
+    if (line.kind === 'heading' || line.kind === 'caption') { afterBreak = true; prev = null; continue; }
+    const seg = segOf.get(line);
+    if (!seg) continue;
+    const col = cols.get(seg.col)!;
+    let para = afterBreak;
+    if (!para && prev && prev.seg.col === seg.col) {
+      const indent = seg.x0 - col.left > bodyHeight * 0.9;
+      const shortPrev = col.right - prev.seg.x1 > bodyHeight * 4;
+      const gap = seg.y - prev.seg.y > Math.max(prev.seg.h, seg.h) * 1.9;
+      para = indent || shortPrev || gap;
+    } else if (!prev) para = true;
+    if (para) line.para = true;
+    prev = { seg, line };
+    afterBreak = false;
+  }
 }
 
 function makeSeg(items: TextItem[]): Seg {
@@ -215,4 +252,65 @@ export function findFontDiagrams(items: TextItem[]): Array<{ x: number; y: numbe
     i += 7;
   }
   return out;
+}
+
+/**
+ * Running heads and footers: text in the top or bottom margin that repeats on several pages (book
+ * or chapter title, "Game 12" banners) or is just a page number.
+ */
+export function runningHeadFilter(pages: Array<{ items: Array<TextLine | DiagramMarker> }>): (l: TextLine) => boolean {
+  const key = (t: string) => t.toLowerCase().replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
+  const inMargin = (l: TextLine) => l.rect[1] < 0.08 || l.rect[1] + l.rect[3] > 0.92;
+  const count = new Map<string, number>();
+  for (const p of pages) {
+    const seen = new Set<string>();
+    for (const it of p.items) if (!('kind' in it && it.kind === 'diagram') && inMargin(it as TextLine)) seen.add(key((it as TextLine).text));
+    for (const k of seen) count.set(k, (count.get(k) ?? 0) + 1);
+  }
+  const need = Math.max(2, Math.min(3, Math.ceil(pages.length / 4)));
+  return (l) => inMargin(l) && (/^[\divxlc\s.\-–|]+$/i.test(l.text.trim()) || (count.get(key(l.text)) ?? 0) >= need);
+}
+
+/**
+ * Paragraph starts from stored line rectangles (page fractions), for pages read before paragraph
+ * detection existed, and as a second opinion: indented first line, previous line stopped short,
+ * larger vertical gap, or after a heading, caption or diagram.
+ */
+export function markParagraphsFromRects(items: Array<TextLine | DiagramMarker>): void {
+  const lines = items.filter((it) => !('kind' in it && it.kind === 'diagram')) as TextLine[];
+  if (!lines.length) return;
+  const rawCol = (l: TextLine) => (l.rect[0] + l.rect[2] <= 0.56 && l.rect[2] < 0.5 ? 'L' : l.rect[0] >= 0.44 && l.rect[2] < 0.5 ? 'R' : 'F');
+  // Only a page with real columns has them (short lines on a one-column page are just short).
+  const n = { L: 0, R: 0, F: 0 };
+  for (const l of lines) if (l.kind !== 'heading') n[rawCol(l)]++;
+  const twoCol = n.L >= 3 && n.R >= 3 && n.F <= (n.L + n.R) / 3;
+  const colOf = (l: TextLine) => (twoCol ? rawCol(l) : 'F');
+  const edges = new Map<string, { left: number; right: number }>();
+  for (const l of lines) {
+    if (l.kind === 'heading') continue;
+    const c = colOf(l);
+    const e = edges.get(c) ?? { left: 1, right: 0 };
+    e.left = Math.min(e.left, l.rect[0]); e.right = Math.max(e.right, l.rect[0] + l.rect[2]);
+    edges.set(c, e);
+  }
+  const hs = lines.map((l) => l.rect[3]).sort((a, b) => a - b);
+  const h = hs[hs.length >> 1] || 0.015;
+  let prev: TextLine | null = null;
+  let afterBreak = true;
+  for (const it of items) {
+    if ('kind' in it && it.kind === 'diagram') { afterBreak = true; continue; }
+    const l = it as TextLine;
+    if (l.kind === 'heading' || l.kind === 'caption') { afterBreak = true; prev = null; continue; }
+    const c = colOf(l), e = edges.get(c);
+    let para = afterBreak || !prev || colOf(prev) !== c;
+    if (!para && prev && e) {
+      const indent = l.rect[0] - e.left > h * 0.9;
+      const shortPrev = e.right - (prev.rect[0] + prev.rect[2]) > h * 4;
+      const gap = l.rect[1] - prev.rect[1] > Math.max(prev.rect[3], l.rect[3]) * 1.9;
+      para = indent || shortPrev || gap;
+    }
+    l.para = para || !!l.para;
+    prev = l;
+    afterBreak = false;
+  }
 }

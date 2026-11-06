@@ -52,3 +52,29 @@ handled (two exact, one linked with its slip reported); both diagram fragments w
 from the move numbers and caption; the scanned page OCR'd into a correct game; chapters; PDF
 highlight follows the board; live Stockfish (cross-origin isolated page); whole-game analysis
 graph; validated PGN export of all games; no horizontal scrolling on a phone; no console errors.
+
+## Session 2: lines and game boundaries (after user feedback on an R.B. Ramesh book)
+
+The user reported that variations ("offshoots") were not understood well and that games were not
+read from start to finish. Fixes, each with tests modelled on modern annotated books:
+
+- **The game is the line that reaches the result.** Books often discuss a move before giving the move
+  played ("9.Bg5 The alternative is 9...Qb4 … ¶ 9...b5 …"); the first-mentioned line used to become
+  the main line. Branches are now re-ordered so the line reaching the printed result (or a clearly
+  longer line) is the main line. Bold main-line detection still takes priority when the book uses it.
+- **Paragraphs return to the game.** A paragraph that starts with a move, after a variation printed
+  without brackets, goes back to the main line when the move fits there; moves within the same
+  paragraph keep extending the variation. Paragraph starts come from indentation, short previous
+  lines, vertical gaps, headings and diagrams, computed from stored line positions so books
+  already in the library benefit without being read again.
+- **Lettered lines** ("A)", "b)", "a1)", "(2)") are labels, not closing brackets.
+- **Unnumbered alternatives in brackets** ("3.Bb5 (Bc4!?)") are variations of the move just played.
+- **Game headers**: ratings ("(2870)", "2850"), surname-first names ("Carlsen,Magnus",
+  "Kasparov, Garry"), ECO codes in brackets, "Game 7" prefixes, and headers set in a heading font.
+- **New games without headers**: "1." opening a paragraph (or in bold) while the current game is
+  under way starts a new game instead of a variation of move 1.
+- **Running heads and page numbers** in the page margins are ignored; at page breaks they used to
+  be read as chapter headings, which ended the game mid-way.
+- **Unplaced moves** (usually after a misread diagram) are listed on the Problems tab with the
+  printed text; correcting the diagram attaches them.
+- Books already processed are rebuilt automatically once (EXTRACT_VERSION 2); edited games are kept.

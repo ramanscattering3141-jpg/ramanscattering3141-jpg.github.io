@@ -47,3 +47,29 @@ describe('page layout', () => {
     expect(looksGarbled([item('The knight on f3 defends the king and controls the centre squares d4 and e5 nicely.', 0, 0)])).toBe(false);
   });
 });
+
+import { runningHeadFilter } from '../../src/chess/pdf/layout';
+describe('running heads', () => {
+  it('drops repeated margin text and page numbers but keeps body text', () => {
+    const page = (n: number, extra: string) => ({ items: [
+      { text: 'Chapter 3 – Defence', page: n, rect: [0.3, 0.03, 0.4, 0.02] as [number, number, number, number] },
+      { text: extra, page: n, rect: [0.1, 0.4, 0.8, 0.03] as [number, number, number, number] },
+      { text: String(100 + n), page: n, rect: [0.48, 0.95, 0.04, 0.02] as [number, number, number, number] },
+    ] });
+    const pages = [page(1, '21.Rxe4 Qxe4'), page(2, '22.Qd3 Qxd3'), page(3, '23.cxd3 Kf8')];
+    const f = runningHeadFilter(pages);
+    expect(f(pages[1].items[0] as never)).toBe(true);
+    expect(f(pages[1].items[2] as never)).toBe(true);
+    expect(f(pages[1].items[1] as never)).toBe(false);
+  });
+});
+
+import { markParagraphsFromRects } from '../../src/chess/pdf/layout';
+describe('paragraphs from stored lines', () => {
+  it('finds indented, after-short-line and after-gap paragraph starts', () => {
+    const L = (text: string, x: number, y: number, w: number) => ({ text, page: 1, rect: [x, y, w, 0.015] as [number, number, number, number] });
+    const items = [L('1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6 5.O-O Be7 6.Re1 b5', 0.1, 0.1, 0.8), L('7.Bb3 d6', 0.1, 0.12, 0.2), L('Instead 7...O-O is common nowadays', 0.13, 0.14, 0.77), L('and keeps more options.', 0.1, 0.16, 0.3), L('8.c3 O-O', 0.1, 0.21, 0.2)];
+    markParagraphsFromRects(items);
+    expect(items.map((l) => !!(l as { para?: boolean }).para)).toEqual([true, false, true, false, true]);
+  });
+});

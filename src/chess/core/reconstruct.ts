@@ -58,7 +58,7 @@ interface Ctx {
   sinceGameText: number;
 }
 
-interface Draft extends ExtractedGame { confSum: number; confN: number; ended: boolean }
+interface Draft extends ExtractedGame { confSum: number; confN: number; ended: boolean; resultNode?: MoveNode }
 
 function newDraft(tree: GameTree, ref: SourceRef, type: 'game' | 'fragment'): Draft {
   return { tree, issues: [], anchors: [], diagrams: {}, firstRef: ref, lastRef: ref, confidence: 1, type, confSum: 0, confN: 0, ended: false };
@@ -82,6 +82,8 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
   let expectBefore: number | null = null;
   let mainRun = false;
   let provisional: { game: Draft; id: string; issue: Issue } | null = null;
+  /** The current run of moves starts a paragraph. */
+  let runPara = false;
 
   const resolveAt = (node: MoveNode, tok: Extract<Token, { t: 'move' }>, idx: number): Resolution => {
     const chess = new Chess(node.fen);
@@ -250,6 +252,8 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
       case 'open':
         ctx.parens.push(ctx.cursor);
         ctx.text.push('(');
+        // "(Nf3!?)" right after a move, with no move number: an alternative to that move.
+        if (tokens[i + 1]?.t === 'move' && ctx.cursor?.parent) { inRun = true; expectBefore = ctx.cursor.parent.ply; runPara = false; }
         break;
       case 'close':
         if (ctx.parens.length) { flushText(ctx, ')'); ctx.cursor = ctx.parens.pop() ?? ctx.cursor; } else ctx.text.push(')');
@@ -258,6 +262,7 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
       case 'result':
         if (ctx.game && ctx.parens.length === 0 && inRun) {
           ctx.game.tree.headers.Result = tok.v;
+          if (ctx.cursor) ctx.game.resultNode = ctx.cursor;
           finish(); inRun = false;
         } else ctx.text.push(tok.raw);
         break;
@@ -277,6 +282,7 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
         if (next.t === 'ellipsis') i++;
         inRun = true;
         mainRun = false;
+        runPara = !!tok.para;
         break;
       }
       case 'move': {
@@ -287,6 +293,18 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
         mainRun = tok.bold;
         const before = expectBefore;
         expectBefore = null;
+        if (tok.para) runPara = true;
+        const startsPara = runPara && before !== null;
+        runPara = false;
+        // 0) A paragraph that starts with a move, after a variation without brackets ("Instead
+        // 15...Nf6 is possible." ¶ "16.Qe2"), returns to the game when the move fits there.
+        if (startsPara && ctx.game && ctx.cursor && ctx.parens.length === 0 && !ctx.game.tree.isMainline(ctx.cursor)) {
+          const mainEnd = ctx.game.tree.lineEnd(ctx.game.tree.root);
+          if (mainEnd.ply === before) {
+            const r = resolveAt(mainEnd, tok, i);
+            if (r.kind === 'ok') { play(mainEnd, r, tok); break; }
+          }
+        }
         // 1) Continue the current line when the number (if any) agrees.
         if (ctx.game && ctx.cursor && (before === null || before === ctx.cursor.ply) && !(opts.boldMain && tok.bold && !ctx.game.tree.isMainline(ctx.cursor))) {
           const r = resolveAt(ctx.cursor, tok, i);
@@ -297,7 +315,10 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
           }
         }
         // 2) A move numbered 1 after a header, a finished game or a long stretch of prose starts a new game.
-        const freshStart = before === 0 && (!ctx.game || ctx.headers !== null || ctx.sinceGameText > 400);
+        // Also when "1." opens a paragraph (or is printed bold) and the current game is already
+        // well under way: books rarely analyse alternatives to move 1 that way.
+        const underway = !!ctx.game && ctx.game.tree.mainline().length >= 8;
+        const freshStart = before === 0 && ctx.parens.length === 0 && (!ctx.game || ctx.headers !== null || ctx.sinceGameText > 400 || (underway && (startsPara || tok.bold || ctx.sinceGameText > 120)));
         if (freshStart) {
           const tree = new GameTree(START_FEN);
           const r = resolveAt(tree.root, tok, i);
@@ -341,8 +362,31 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
     }
   }
   finish();
+  for (const g of games) if (!opts.boldMain) settleMainline(g);
   for (const g of games) g.confidence = g.confN ? Math.round((g.confSum / g.confN) * 100) / 100 * (g.issues.some((x) => x.kind !== 'repaired' && x.kind !== 'diagram') ? 0.8 : 1) : 0;
   return { games: games.filter((g) => g.tree.size() > 0).map(({ confSum: _a, confN: _b, ended: _c, ...rest }) => rest), orphans };
+}
+
+/**
+ * The game is the line that reaches the printed result. Books often discuss a move before giving
+ * the move actually played, which makes the first line read the main line; re-order each branch
+ * so the line to the result (or, with no result, a clearly longer line) is the main line.
+ */
+function settleMainline(g: Draft): void {
+  const tree = g.tree;
+  let target = g.resultNode && tree.node(g.resultNode.id) === g.resultNode ? g.resultNode : null;
+  if (!target) {
+    let deepest = tree.root;
+    for (const n of tree.all()) if (n.ply > deepest.ply) deepest = n;
+    const mainEnd = tree.lineEnd(tree.root);
+    if (deepest.ply - mainEnd.ply >= 6) target = deepest;
+  }
+  if (!target || tree.isMainline(target)) return;
+  for (let n: MoveNode | null = target; n && n.parent; n = n.parent) {
+    const p: MoveNode = n.parent;
+    if (p.children[0] !== n) { p.children.splice(p.children.indexOf(n), 1); p.children.unshift(n); }
+  }
+  // Page anchors are keyed by path, which does not change when branches are re-ordered.
 }
 
 /** Squares whose contents differ between two positions. */

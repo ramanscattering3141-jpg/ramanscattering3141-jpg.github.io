@@ -7,7 +7,7 @@ import { ocrImage } from './ocr';
 import { findDiagrams } from '../vision/client';
 import { fromRGBA } from '../vision/image';
 import { chaptersFrom } from './chapters';
-import { extractBook, type ExtractSummary } from './extract';
+import { extractBook, EXTRACT_VERSION, type ExtractSummary } from './extract';
 import { boardFromFen, type Board, type PieceChar } from '../core/fen';
 import { guessOrientation, sideFromCaption, diagramPosition, orient } from '../vision/position';
 
@@ -87,7 +87,16 @@ export async function reprocessPages(bookId: string, pages: number[]) {
 /** Resume books left unfinished by a previous visit. */
 export async function resumeAll() {
   const d = await db();
-  for (const b of await d.getAll('books')) if (b.status === 'processing' || b.status === 'queued') enqueue(b.id);
+  for (const b of await d.getAll('books')) {
+    if (b.status === 'processing' || b.status === 'queued') enqueue(b.id);
+    // Rebuild books read with older reconstruction rules (quick: no page is read again; games
+    // the user edited are kept).
+    else if (b.status === 'done' && (b.extractVersion ?? 1) < EXTRACT_VERSION) {
+      emit({ bookId: b.id, page: b.pageCount, pages: b.pageCount, stage: 'Rebuilding games with improved line reading', done: false });
+      const summary = await extractBook(b.id).catch(() => undefined);
+      emit({ bookId: b.id, page: b.pageCount, pages: b.pageCount, stage: 'done', done: true, summary });
+    }
+  }
 }
 
 async function pump() {

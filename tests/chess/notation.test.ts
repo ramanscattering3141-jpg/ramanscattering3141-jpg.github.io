@@ -267,3 +267,102 @@ describe('diagram cross-check limits', () => {
     expect(games[0].issues).toEqual([]);
   });
 });
+
+// Paragraph-structured input, as a typeset book's layout produces it: each string is a paragraph
+// (its first line flagged as a paragraph start).
+const paras = (...ps: string[]): TextLine[] => ps.map((t, i) => ({ text: t, page: 1, rect: [0.1, 0.05 * i, 0.8, 0.04] as [number, number, number, number], para: true }));
+
+describe('annotated games as modern books print them', () => {
+  const OPERA = ['e4', 'e5', 'Nf3', 'd6', 'd4', 'Bg4', 'dxe5', 'Bxf3', 'Qxf3', 'dxe5', 'Bc4', 'Nf6', 'Qb3', 'Qe7', 'Nc3', 'c6', 'Bg5', 'b5', 'Nxb5', 'cxb5', 'Bxb5+', 'Nbd7', 'O-O-O', 'Rd8', 'Rxd7', 'Rxd7', 'Rd1', 'Qe6', 'Bxd7+', 'Nxd7', 'Qb8+', 'Nxb8', 'Rd8#'];
+
+  it('keeps the game as the main line when analysis is printed before the move played', () => {
+    const { games } = reconstruct(tokenize(paras(
+      'Morphy – Duke of Brunswick, Paris 1858',
+      '1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5',
+      'The alternative is 9...Qb4 10.Bxf6 Qxb3 11.Bxb3 gxf6 with an equal ending, which Black avoids.',
+      '9...b5 10.Nxb5 cxb5 11.Bxb5+ Nbd7 12.O-O-O Rd8 13.Rxd7 Rxd7 14.Rd1 Qe6 15.Bxd7+ Nxd7 16.Qb8+ Nxb8 17.Rd8# 1-0',
+    )));
+    expect(games).toHaveLength(1);
+    expect(mainlineSans(games[0].tree)).toEqual(OPERA);
+    const bg5 = games[0].tree.findByPathKey(OPERA.slice(0, 17).join(' '))!;
+    expect(bg5.children.map((c) => c.san)).toEqual(['b5', 'Qb4']);
+    // Page anchors still point at the right moves after the re-ordering.
+    expect(games[0].anchors.some((a) => a.path === OPERA.join(' '))).toBe(true);
+  });
+
+  it('returns to the game at a new paragraph after a variation without brackets', () => {
+    const { games } = reconstruct(tokenize(paras(
+      '1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6',
+      'Instead 4...d6 is the Steinitz Deferred.',
+      '5.O-O Be7 6.Re1 b5 7.Bb3 d6',
+    )));
+    expect(mainlineSans(games[0].tree)).toEqual(['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', 'Ba4', 'Nf6', 'O-O', 'Be7', 'Re1', 'b5', 'Bb3', 'd6']);
+    expect(games[0].tree.findByPathKey('e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6')).toBeTruthy();
+  });
+
+  it('keeps going inside a variation when it continues in the same paragraph', () => {
+    const { games } = reconstruct(tokenize(paras(
+      '1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6',
+      'Instead 4...d6 5.O-O Bd7 6.c3 is the Steinitz Deferred.',
+      '5.O-O Be7',
+    )));
+    expect(games[0].tree.findByPathKey('e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6 O-O Bd7 c3')).toBeTruthy();
+    expect(mainlineSans(games[0].tree).slice(-2)).toEqual(['O-O', 'Be7']);
+  });
+
+  it('reads lettered lines (A), B), a1), (1)) as labels, not brackets', () => {
+    const { games } = reconstruct(tokenize(paras(
+      '1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6 5.O-O',
+      'Black has two main choices:',
+      'A) 5...Be7 6.Re1 b5 7.Bb3 d6',
+      'a1) 8.c3 O-O 9.h3',
+      'a2) 8.a4 Bd7',
+      'B) 5...Nxe4 6.d4 b5 7.Bb3 d5',
+    )));
+    const t = games[0].tree;
+    const castled = t.findByPathKey('e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O')!;
+    expect(castled.children.map((c) => c.san)).toEqual(['Be7', 'Nxe4']);
+    const d6 = t.findByPathKey('e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6')!;
+    expect(d6.children.map((c) => c.san)).toEqual(['c3', 'a4']);
+    expect(t.findByPathKey('e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Nxe4 d4 b5 Bb3 d5')).toBeTruthy();
+  });
+
+  it('reads an unnumbered alternative in brackets right after a move', () => {
+    const { games } = reconstruct(tokenize(lines('1.e4 e5 2.Nf3 Nc6 3.Bb5 (Bc4!? is the Italian) 3...a6 4.Ba4')));
+    const nc6 = games[0].tree.findByPathKey('e4 e5 Nf3 Nc6')!;
+    expect(nc6.children.map((c) => c.san)).toEqual(['Bb5', 'Bc4']);
+    expect(nc6.children[1].nags).toEqual([5]);
+    expect(mainlineSans(games[0].tree)).toEqual(['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', 'Ba4']);
+  });
+
+  it('starts a new game at a "1." paragraph even without a header', () => {
+    const { games } = reconstruct(tokenize(paras(
+      '1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6 5.O-O Be7 1/2-1/2',
+      'The next game is more combative.',
+      '1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Be7',
+      'Here White could also try 4.Nf3 first.',
+      '5.e3 O-O 6.Nf3 h6',
+      '1.e4 c5 2.Nf3 d6 3.d4 cxd4 4.Nxd4 Nf6 5.Nc3 a6',
+    )));
+    expect(games.map((g) => mainlineSans(g.tree)[0])).toEqual(['e4', 'd4', 'e4']);
+    expect(mainlineSans(games[1].tree)).toHaveLength(12);
+    expect(games[1].tree.findByPathKey('d4 d5 c4 e6 Nc3 Nf6 Nf3')).toBeTruthy();
+  });
+
+  it('reads headers with ratings, surname-first names, ECO codes and game numbers', () => {
+    expect(parseHeaderLine('Carlsen,Magnus (2870) – Anand,Viswanathan (2775) [B30] Chennai 2013')).toEqual({ White: 'Carlsen,Magnus', Black: 'Anand,Viswanathan', ECO: 'B30', Date: '2013.??.??', Event: 'Chennai' });
+    expect(parseHeaderLine('Kasparov, Garry – Karpov, Anatoly, Moscow 1985')).toMatchObject({ White: 'Kasparov, Garry', Black: 'Karpov, Anatoly', Event: 'Moscow' });
+    expect(parseHeaderLine('Game 7 M.Carlsen 2850 – V.Anand 2780, Sochi 2014')).toMatchObject({ BookGame: '7', White: 'M.Carlsen', Black: 'V.Anand', Event: 'Sochi', Date: '2014.??.??' });
+    expect(parseHeaderLine('Gukesh D – Ding Liren, Singapore (wch) 2024')).toMatchObject({ White: 'Gukesh D', Black: 'Ding Liren' });
+    expect(parseHeaderLine('Black – the knight on f6 is pinned')).toBeNull();
+  });
+
+  it('treats a header set in a heading font as a game header', () => {
+    const items: TextLine[] = [
+      { text: 'Aronian,Levon – Carlsen,Magnus, Wijk aan Zee 2012', page: 1, rect: [0, 0, 1, 0.05], kind: 'heading' },
+      { text: '1.d4 Nf6 2.c4 e6', page: 1, rect: [0, 0.06, 1, 0.04] },
+    ];
+    const { games } = reconstruct(tokenize(items));
+    expect(games[0].tree.headers.White).toBe('Aronian,Levon');
+  });
+});
