@@ -21,8 +21,15 @@
   },
   "homepage": "https://github.com/ramanscattering3141-jpg/ramanscattering3141-jpg.github.io#readme",
   "dependencies": {
+    "@lichess-org/chessground": "^10.5.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "cesium": "^1.145.0",
+    "chess.js": "^1.4.0",
+    "idb": "^8.0.4",
+    "pdfjs-dist": "^6.5.438",
     "preact": "^10.29.8",
+    "stockfish": "^19.0.1",
+    "tesseract.js": "^7.0.0",
     "three": "^0.186.1"
   },
   "devDependencies": {
