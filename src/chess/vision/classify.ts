@@ -113,7 +113,7 @@ const PIECES: Array<[string, PieceChar]> = [['wK', 'K'], ['wQ', 'Q'], ['wR', 'R'
 
 function decode(b64: string): Uint8Array {
   if (typeof atob === 'function') { const s = atob(b64); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
-  return new Uint8Array(Buffer.from(b64, 'base64'));
+  return new Uint8Array((globalThis as unknown as { Buffer: { from(s: string, e: string): Uint8Array } }).Buffer.from(b64, 'base64'));
 }
 
 export interface TemplateFile { size: number; sets: Record<string, Record<string, { gray: string; alpha: string }>> }
