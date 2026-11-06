@@ -27,3 +27,28 @@
   search, bookmarks, settings (backup/restore), About (licences).
 - **Testing.** Unit tests for core, notation, engine parsing, layout and vision; a generated
   modern-style test book; an end-to-end Playwright script.
+
+### End-to-end in Chromium (same session)
+
+First browser run exposed real integration bugs that unit tests could not:
+- The cross-origin-isolation service worker was scoped to `/chess/`, but Vite puts workers in
+  `/assets/`; Chrome blocked the pdf.js and vision workers and processing waited forever. The
+  worker now lives at the site root and isolates only `/chess/` pages (the other apps are untouched);
+  a worker that fails to start now fails the page instead of hanging.
+- pdf.js draws hatching as one continuous pattern, so each dark square has a different hatch
+  phase. Occupancy is now judged at a coarse scale, textured squares are outlined on smoothed
+  copies, outlines are closed morphologically, and piece colour comes from the interior of the
+  piece. All three diagrams of the test book are read correctly from pdf.js renders except one
+  queen's colour, which the new **diagram ⇄ text cross-check** catches: a diagram that differs
+  from a position the moves reach by a misreading (a different piece on an occupied square) is
+  linked and reported, with "use the position from the moves" on the correction screen. The link
+  is provisional and is withdrawn if the following moves only fit the diagram as printed.
+- Results printed with an en dash ("1–0"), headers that wrap onto a second line, captions leaking
+  into comments, and two-line chapter headings were fixed.
+
+Final run of `tools/chess-e2e.mjs`: **all checks passed** — Opera game read move for move from
+figurine notation with both variations, result, diagram link and page locations; three diagrams
+handled (two exact, one linked with its slip reported); both diagram fragments with the side to move
+from the move numbers and caption; the scanned page OCR'd into a correct game; chapters; PDF
+highlight follows the board; live Stockfish (cross-origin isolated page); whole-game analysis
+graph; validated PGN export of all games; no horizontal scrolling on a phone; no console errors.

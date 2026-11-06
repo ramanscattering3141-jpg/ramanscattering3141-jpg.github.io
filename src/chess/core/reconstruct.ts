@@ -81,6 +81,7 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
   /** Ply (of the position before the move) announced by the last move number in this run. */
   let expectBefore: number | null = null;
   let mainRun = false;
+  let provisional: { game: Draft; id: string; issue: Issue } | null = null;
 
   const resolveAt = (node: MoveNode, tok: Extract<Token, { t: 'move' }>, idx: number): Resolution => {
     const chess = new Chess(node.fen);
@@ -222,11 +223,19 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
           else {
             // Nearly the same as a position the moves reach (recognition slip, or a printing
             // error): link it, and report the squares that differ so the user can decide.
-            const near = (ctx.cursor ? [ctx.cursor] : []).concat(ctx.game.tree.all()).map((n) => ({ n, diff: squareDiff(n.fen, tok.d.fen!) })).filter((x) => x.diff.length > 0 && x.diff.length <= 2).sort((a, b) => a.diff.length - b.diff.length)[0];
+            // Only the last few positions reached, and only differences a misreading produces
+            // (another piece on an occupied square; at most one square empty in one and not the other).
+            const recent: MoveNode[] = [];
+            for (let n: MoveNode | null = ctx.cursor; n && recent.length < 5; n = n.parent) recent.push(n);
+            const near = recent.map((n) => ({ n, diff: squareDiff(n.fen, tok.d.fen!), occ: occupancyChanges(n.fen, tok.d.fen!) }))
+              .filter((x) => x.diff.length > 0 && x.diff.length <= 2 && x.occ <= 1).sort((a, b) => a.diff.length - b.diff.length)[0];
             if (near) {
+              // Provisional: if the next moves only make sense from the diagram as printed, it is
+              // a new position after all (see step 4 below) and this link is withdrawn.
               ctx.game.diagrams[tok.d.id] = ctx.game.tree.pathKey(near.n);
-              ctx.game.issues.push({ kind: 'diagram', message: `Diagram differs from the position after the moves on ${near.diff.join(', ')}`, raw: '', ref: tok.ref, fen: near.n.fen, at: ctx.game.tree.pathKey(near.n), diagramId: tok.d.id, suggestedFen: near.n.fen });
-              ctx.diagram = null;
+              const issue: Issue = { kind: 'diagram', message: `Diagram differs from the position after the moves on ${near.diff.join(', ')}`, raw: '', ref: tok.ref, fen: near.n.fen, at: ctx.game.tree.pathKey(near.n), diagramId: tok.d.id, suggestedFen: near.n.fen };
+              ctx.game.issues.push(issue);
+              provisional = { game: ctx.game, id: tok.d.id, issue };
             }
           }
         }
@@ -304,6 +313,11 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
             const tree = new GameTree(fen);
             const r = resolveAt(tree.root, tok, i);
             if (r.kind === 'ok') {
+              if (provisional && provisional.id === ctx.diagram.id) {
+                delete provisional.game.diagrams[provisional.id];
+                provisional.game.issues.splice(provisional.game.issues.indexOf(provisional.issue), 1);
+                provisional = null;
+              }
               const g = startGame(tree, { page: ctx.diagram.page, rect: ctx.diagram.rect }, 'fragment');
               g.diagrams[ctx.diagram.id] = '';
               ctx.diagram = null;
@@ -337,6 +351,14 @@ export function squareDiff(a: string, b: string): string[] {
   const out: string[] = [];
   for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) if (A[r][f] !== B[r][f]) out.push('abcdefgh'[f] + (8 - r));
   return out;
+}
+
+/** Squares empty in one position and occupied in the other. */
+function occupancyChanges(a: string, b: string): number {
+  const A = boardFromFen(a), B = boardFromFen(b);
+  let n = 0;
+  for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) if (!A[r][f] !== !B[r][f]) n++;
+  return n;
 }
 
 function numLabel(before: number | null): string {

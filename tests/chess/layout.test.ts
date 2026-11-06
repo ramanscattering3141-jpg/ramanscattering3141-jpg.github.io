@@ -15,6 +15,10 @@ describe('page layout', () => {
     expect(texts[11]).toBe('right 0 words here');
     expect(r.headings).toEqual(['Chapter 3 The Ruy Lopez']);
   });
+  it('joins a heading that wraps onto two lines', () => {
+    const items = [item('Chapter 2 Back-Rank', 50, 40, 20), item('Combinations', 50, 64, 20), ...[0, 1, 2, 3, 4].map((k) => item('Body text here', 50, 120 + k * 14))];
+    expect(layoutPage(items, 600, 800, 2, []).headings).toEqual(['Chapter 2 Back-Rank Combinations']);
+  });
   it('places diagrams in reading order, reads captions and coordinates', () => {
     const items = [item('1.e4 e5 2.Nf3', 50, 50), item('1', 40, 390), item('a', 52, 405), item('White to move', 60, 420), item('2...Nc6 3.Bb5', 50, 460)];
     const r = layoutPage(items, 600, 800, 1, [{ id: 'd1', x: 50, y: 100, size: 300, fen: null, source: 'vision' }]);

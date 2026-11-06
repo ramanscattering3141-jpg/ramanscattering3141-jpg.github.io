@@ -89,11 +89,19 @@ export function layoutPage(raw: TextItem[], W: number, H: number, page: number, 
   const headings: string[] = [];
   const captions: Record<string, string> = {};
   const kinds = new Map<Seg, TextLine['kind']>();
-  for (const s of segs) {
+  let lastHeading: Seg | null = null;
+  for (const s of [...segs].sort((a, b) => a.y - b.y)) {
     const t = s.text.trim();
     const isChapter = /^(chapter|part|lesson|section|kapitel|chapitre|cap[ií]tulo)\s+([0-9]+|[IVXLC]+|one|two|three|four|five|six|seven|eight|nine|ten)\b/i.test(t);
     const big = s.h > bodyHeight * 1.3 && t.length < 90 && !/^\d+\s*\.\s*[a-hKQRBNO]/.test(t) && /[A-Za-z]{3}/.test(t);
-    if (isChapter || big) { kinds.set(s, 'heading'); headings.push(t); continue; }
+    if (isChapter || big) {
+      // A heading that wraps onto a second line is one heading.
+      const prev = lastHeading;
+      if (prev && prev.col === s.col && s.y - prev.y < prev.h * 1.9 && Math.abs(s.h - prev.h) < prev.h * 0.25) headings[headings.length - 1] += ` ${t}`;
+      else headings.push(t);
+      kinds.set(s, 'heading'); lastHeading = s;
+      continue;
+    }
     for (const d of diagrams) {
       const below = s.y - (d.y + d.size);
       const overlaps = s.x1 > d.x && s.x0 < d.x + d.size;

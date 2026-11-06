@@ -256,3 +256,14 @@ describe('diagram cross-check', () => {
     expect(iss.suggestedFen!.split(' ')[0]).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR');
   });
 });
+
+describe('diagram cross-check limits', () => {
+  it('does not merge two different diagrams that differ by a moved piece', () => {
+    const d1: DiagramMarker = { kind: 'diagram', id: 'a', fen: '6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1', page: 1, rect: [0, 0, 0.3, 0.3] };
+    const d2: DiagramMarker = { kind: 'diagram', id: 'b', fen: '3r2k1/5ppp/8/8/8/8/5PPP/6K1 w - - 0 1', page: 1, rect: [0, 0.5, 0.3, 0.3] };
+    const { games } = reconstruct(tokenize([d1, ...lines('1.Rd8# ends the game at once.'), d2, ...lines('1...Rd1# is the mirror image.')]));
+    expect(games).toHaveLength(2);
+    expect(games[1].tree.startFen.split(' ')[1]).toBe('b');
+    expect(games[0].issues).toEqual([]);
+  });
+});

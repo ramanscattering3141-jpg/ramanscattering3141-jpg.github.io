@@ -6,7 +6,7 @@
 |---|---|
 | `pgn.test.ts` | PGN parse/export, nested variations, comments, NAGs, SetUp/FEN, promotion, castling with zeros, en passant, checkmate, stalemate, threefold repetition, tree editing (promote/delete), illegal moves reported, ECO by position |
 | `fen.test.ts` | FEN validity for diagrams (kings, pawns on back ranks, adjacent kings, side not to move in check, too many promoted pieces), orientation guess, captions, side to move from check |
-| `notation.test.ts` | Figurines, long algebraic, German letters, language detection, descriptive notation, ambiguity reporting, OCR repair and glyph learning, header lines, game reconstruction (comments, NAGs, results, numbered and parenthesised variations, diagrams as starting positions, diagram ↔ position links, several games, bold main line, "13 Nf3" numbering), and a real game from Capablanca's *Chess Fundamentals* (1921, public domain) in spaced descriptive notation with inline variations |
+| `notation.test.ts` | Diagram ⇄ text cross-check (and its limits), wrapped headers, captions, figurines, long algebraic, German letters, language detection, descriptive notation, ambiguity reporting, OCR repair and glyph learning, header lines, game reconstruction (comments, NAGs, results, numbered and parenthesised variations, diagrams as starting positions, diagram ↔ position links, several games, bold main line, "13 Nf3" numbering), and a real game from Capablanca's *Chess Fundamentals* (1921, public domain) in spaced descriptive notation with inline variations |
 | `uci.test.ts` | UCI info parsing, White-perspective scores, bounds, score formatting, move judgements, terminal positions never searched |
 | `layout.test.ts` | Two-column reading order, headings, diagrams in reading order, captions, coordinate labels, bold words, chess-font diagram decoding, garbled text layers |
 | `vision.test.ts` | Board detection (none on text-only pages), exact square reading with hatched and grey squares, an unseen piece set, small noisy prints, learning from one corrected diagram |
@@ -46,7 +46,8 @@ npx vite build --outDir /tmp/dist && npx vite preview --outDir /tmp/dist --port 
 node tools/chess-e2e.mjs http://localhost:4190/ test-results/chess-e2e
 ```
 
-Last run: see DEVELOPMENT_LOG.md.
+Last run: all checks passed (details in DEVELOPMENT_LOG.md). The script is not in CI because it
+needs a browser and about two minutes; run it after changes to the pipeline, vision or UI.
 
 ## Manual checks still worth doing with your own books
 
