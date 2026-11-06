@@ -111,6 +111,14 @@ tests/ecg/       engine behaviour (re-entry, block, filtering, injury currents, 
 tools/ecg-smoke.mjs  headless Chromium crawl of every ECG route (run after npm run build)
 ```
 
+# Chess Book Reader (`/chess/`)
+
+**Open:** https://ramanscattering3141-jpg.github.io/chess/ (after deployment) · locally `npm run dev` → http://localhost:5173/chess/
+
+Upload chess books in PDF and get playable, searchable games. It reads notation from the text layer or by OCR (algebraic, figurine, 11 piece-letter languages, English descriptive), recognises diagrams (image recognition, or exact decoding of chess-font diagrams) and turns everything into validated PGN with variations and the author's comments. The PDF and the board stay in step in study mode. Stockfish 19 (WASM) gives live MultiPV analysis, whole-game analysis with an evaluation graph, book-vs-engine comparison and batch analysis. There are correction screens for diagrams, games and chapters, plus training exercises, search (positions with transpositions, players, openings, motifs, evaluations), bookmarks and notes. Everything runs and is stored in the browser; nothing is uploaded.
+
+Docs: `chess/ARCHITECTURE.md` (design, and why there is no server), `chess/TESTING.md`, `chess/TODO.md`, `chess/DEVELOPMENT_LOG.md`. Tests: `npx vitest run tests/chess`; browser end-to-end check: build, `npx vite preview --port 4190`, then `node tools/chess-e2e.mjs http://localhost:4190/`. The chess app includes GPL-3.0 components (Stockfish, Chessground) and is distributed under GPL-3.0; see the in-app About page.
+
 ## Development
 
 ```bash

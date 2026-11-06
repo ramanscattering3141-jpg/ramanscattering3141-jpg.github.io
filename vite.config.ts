@@ -27,7 +27,7 @@ export default defineConfig({
         { src: 'node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz', dest: 'chess-vendor/tesseract/lang', rename: { stripBase: true } },
         { src: 'node_modules/pdfjs-dist/cmaps', dest: 'chess-vendor/pdfjs', rename: { stripBase: 2 } },
         { src: 'node_modules/pdfjs-dist/standard_fonts', dest: 'chess-vendor/pdfjs', rename: { stripBase: 2 } },
-        { src: 'src/chess/sw.js', dest: 'chess', rename: { stripBase: true } },
+        { src: 'src/chess/sw.js', dest: '.', rename: { name: 'chess-sw.js', stripBase: true } },
       ],
     }),
   ],

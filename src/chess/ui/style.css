@@ -72,7 +72,7 @@ table.list tr.click { cursor: pointer; } table.list tr.click:hover td { backgrou
 .empty { padding: 2rem; text-align: center; color: var(--muted); }
 
 /* Library */
-.drop { border: 2px dashed var(--line); border-radius: 14px; padding: 1.4rem; text-align: center; background: var(--panel); transition: border-color .15s, background .15s; }
+.drop { display: block; cursor: pointer; border: 2px dashed var(--line); border-radius: 14px; padding: 1.4rem; text-align: center; background: var(--panel); transition: border-color .15s, background .15s; }
 .drop.over { border-color: var(--accent); background: var(--good-bg); }
 .books { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; margin-top: 1rem; }
 .book { display: flex; flex-direction: column; overflow: hidden; cursor: pointer; }

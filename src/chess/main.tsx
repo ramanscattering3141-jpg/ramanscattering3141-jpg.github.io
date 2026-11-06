@@ -14,12 +14,12 @@ async function isolation() {
   if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
   if (!getSettings().isolation) {
     const regs = await navigator.serviceWorker.getRegistrations();
-    for (const r of regs) if (r.scope.endsWith('/chess/')) await r.unregister();
+    for (const r of regs) if (r.active?.scriptURL.endsWith('/chess-sw.js')) await r.unregister();
     return;
   }
   if (window.crossOriginIsolated) return;
   try {
-    const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    const reg = await navigator.serviceWorker.register('../chess-sw.js', { scope: '../' });
     if (reg.active && !navigator.serviceWorker.controller) { if (!sessionStorage.getItem('coi-reload')) { sessionStorage.setItem('coi-reload', '1'); location.reload(); } return; }
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (!sessionStorage.getItem('coi-reload')) { sessionStorage.setItem('coi-reload', '1'); location.reload(); } });
   } catch { /* stays single-threaded */ }

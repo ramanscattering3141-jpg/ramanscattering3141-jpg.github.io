@@ -14,6 +14,12 @@ function w(): Worker {
       pending.delete(e.data.id);
       if (e.data.error) p.reject(new Error(e.data.error)); else p.resolve(e.data.boards);
     };
+    // A worker that cannot start must fail the page, not leave it waiting forever.
+    worker.onerror = (e) => {
+      for (const p of pending.values()) p.reject(new Error(`Diagram recogniser failed to start: ${e.message || 'worker error'}`));
+      pending.clear();
+      worker?.terminate(); worker = null;
+    };
   }
   return worker;
 }
