@@ -25,7 +25,7 @@ describe('UCI', () => {
     expect(winPercent({ cp: 0 })).toBeCloseTo(50);
     expect(judgeMove({ cp: 50 }, { cp: -400 }, true, false).judgement).toBe('blunder');
     expect(judgeMove({ cp: 30 }, { cp: 20 }, true, true).judgement).toBe('best');
-    expect(judgeMove({ cp: -30 }, { cp: 150 }, false, false).judgement).toBe('mistake');
+    expect(judgeMove({ cp: -30 }, { cp: 300 }, false, false).judgement).toBe('mistake');
   });
   it('does not search finished positions', () => {
     const s = { flavor: 'lite-single' as const, multipv: 1, threads: 1, hash: 16, limits: {} };

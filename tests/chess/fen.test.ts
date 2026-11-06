@@ -21,3 +21,23 @@ describe('FEN', () => {
     expect(positionKey('8/8/8/8/8/8/8/K6k w - - 12 40')).toBe('8/8/8/8/8/8/8/K6k w - -');
   });
 });
+
+import { guessOrientation, sideFromCaption, diagramPosition } from '../../src/chess/vision/position';
+import { flipBoard } from '../../src/chess/core/fen';
+describe('diagram positions', () => {
+  it('guesses orientation and reads captions', () => {
+    const b = boardFromFen('r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3');
+    expect(guessOrientation(b).orientation).toBe('white');
+    expect(guessOrientation(flipBoard(b)).orientation).toBe('black');
+    expect(guessOrientation(flipBoard(b), { bottomRank: '1' }).orientation).toBe('white');
+    expect(sideFromCaption('Black to play and win')).toBe('b');
+    expect(sideFromCaption('Diagram 4: White to move')).toBe('w');
+    expect(sideFromCaption('Position after 12...Nf6')).toBeNull();
+  });
+  it('infers the side to move when one king is in check', () => {
+    const p = diagramPosition(boardFromFen('k6R/8/8/8/8/8/8/K7 w - - 0 1'), null);
+    expect(p.fen.split(' ')[1]).toBe('b');
+    expect(p.turnKnown).toBe(true);
+    expect(diagramPosition(boardFromFen('8/8/8/8/8/8/8/K7 w - - 0 1'), 'w').errors.length).toBeGreaterThan(0);
+  });
+});

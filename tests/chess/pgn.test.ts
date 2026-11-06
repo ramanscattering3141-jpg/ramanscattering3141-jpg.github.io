@@ -92,3 +92,14 @@ describe('PGN', () => {
     expect(() => t.addMove(c5, 'Ke3')).toThrow();
   });
 });
+
+import { classifyWith } from '../../src/chess/core/eco';
+import eco from '../../src/chess/data/eco.json';
+describe('ECO', () => {
+  it('names openings by position, including transpositions', () => {
+    const [g] = parsePgn('1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 *');
+    expect(classifyWith(eco as never, g.tree)).toEqual({ eco: 'C70', name: 'Ruy Lopez: Morphy Defense' });
+    const [t] = parsePgn('1. Nf3 d5 2. d4 *');
+    expect(classifyWith(eco as never, t.tree)?.eco).toMatch(/^[AD]/);
+  });
+});
