@@ -179,3 +179,50 @@ Instead 5...Nc6 is the Classical, while after 5...g6 6.Be3 Bg7 7.f3 we reach the
     expect(glyphs.get('&')).toBe('N');
   });
 });
+
+describe('a real descriptive-notation book (Capablanca, Chess Fundamentals, 1921)', () => {
+  // Text as printed in the Project Gutenberg edition (public domain), game 1 of Part II.
+  const TEXT = `GAME 1. QUEEN'S GAMBIT DECLINED
+(Match, 1909)
+White: F. J. Marshall. Black: J. R. Capablanca.
+1. P - Q 4 P - Q 4
+2. P - Q B 4 P - K 3
+3. Kt - Q B 3 Kt - K B 3
+4. B - Kt 5 B - K 2
+5. P - K 3 Kt - K 5
+I had played this defence twice before in the match with good results.
+6. B × B Q × B
+7. B - Q 3
+P × P is preferable for reasons that we shall soon see.
+7. ........ Kt × Kt
+8. P × Kt Kt - Q 2
+Now P × P would be a better way to develop the game. The idea is that
+after 8...P × P; 9 B × B P, P - Q Kt 3, followed by B - Kt 2, would give
+Black's Bishop a powerful range.
+9. Kt - B 3 O - O
+No longer would 9...P × P; 10 B × P, P - Q Kt 3 be good, because
+11 B - Kt 5 would prevent B - Kt 2 on account of Kt - K 5.
+10. P × P P × P
+11. Q - Kt 3 Kt - B 3
+12. P - Q R 4 P - B 4
+13. Q - R 3 P - Q Kt 3`;
+  it('reads the game, its headers, the dotted black move and the inline variations', () => {
+    const { games, orphans } = run(TEXT);
+    expect(orphans).toEqual([]);
+    expect(games).toHaveLength(1);
+    const g = games[0];
+    expect(g.issues.filter((i) => i.kind !== 'repaired')).toEqual([]);
+    expect(g.tree.headers.White).toBe('F. J. Marshall');
+    expect(g.tree.headers.Black).toBe('J. R. Capablanca');
+    expect(mainlineSans(g.tree)).toEqual(['d4', 'd5', 'c4', 'e6', 'Nc3', 'Nf6', 'Bg5', 'Be7', 'e3', 'Ne4', 'Bxe7', 'Qxe7', 'Bd3', 'Nxc3', 'bxc3', 'Nd7', 'Nf3', 'O-O', 'cxd5', 'exd5', 'Qb3', 'Nf6', 'a4', 'c5', 'Qa3', 'b6']);
+    // "after 8...P × P; 9 B × B P, P - Q Kt 3" → variation 8...dxc4 9.Bxc4 b6
+    expect(g.tree.findByPathKey('d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 Ne4 Bxe7 Qxe7 Bd3 Nxc3 bxc3 dxc4 Bxc4 b6')).toBeTruthy();
+    // "9...P × P; 10 B × P, P - Q Kt 3 ... 11 B - Kt 5"
+    // 9...P×P replaces 9...O-O; "10 B×P" is read as the recapture and flagged for checking.
+    expect(g.tree.findByPathKey('d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 Ne4 Bxe7 Qxe7 Bd3 Nxc3 bxc3 Nd7 Nf3 dxc4 Bxc4 b6 Bb5')).toBeTruthy();
+    expect(g.issues.some((i) => i.kind === 'repaired' && /recapture Bxc4/.test(i.message))).toBe(true);
+    // Prose that starts with a move stays prose.
+    expect(g.tree.findByPathKey('d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 Ne4 Bxe7 Qxe7 Bd3')!.comment).toContain('is preferable');
+    expect(validatePgn(writePgn(g.tree)).ok).toBe(true);
+  });
+});

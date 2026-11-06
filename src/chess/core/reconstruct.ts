@@ -95,7 +95,19 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
       else if (t.t === 'num' || t.t === 'nag' || t.t === 'ellipsis') continue;
       else break;
     }
-    if (!upcoming.length) return null;
+    // Descriptive books write "P×P; B×P" for a recapture: when several captures fit, the one on
+    // the square of the previous capture is meant. Flagged, so the user can check it.
+    const recapture = (list: Move[]) => {
+      if (!node.parent || !list.every((m) => m.captured)) return null;
+      const prevTo = node.uci.slice(2, 4);
+      const prevWasCapture = new Chess(node.parent.fen).get(prevTo as never) !== undefined;
+      const hits = list.filter((m) => m.to === prevTo);
+      return prevWasCapture && hits.length === 1 ? hits[0] : null;
+    };
+    if (!upcoming.length) {
+      const r = recapture(cands);
+      return r ? { kind: 'ok', move: r, conf: 0.7, flag: `read as the recapture ${r.san} (also possible: ${cands.filter((c) => c !== r).map((c) => c.san).join(', ')})` } : null;
+    }
     const score = (m: Move) => {
       const c = new Chess(node.fen);
       c.move(m.san);
@@ -109,6 +121,9 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
     };
     const scored = cands.map((m) => ({ m, s: score(m) })).sort((a, b) => b.s - a.s);
     if (scored[0].s > 0 && scored[0].s > scored[1].s) return { kind: 'ok', move: scored[0].m, conf: 0.7, flag: `chosen from ${cands.map((c) => c.san).join('/')} because only it fits the following moves` };
+    const top = scored.filter((x) => x.s === scored[0].s).map((x) => x.m);
+    const r = recapture(top);
+    if (r) return { kind: 'ok', move: r, conf: 0.7, flag: `read as the recapture ${r.san} (also possible: ${cands.filter((c) => c !== r).map((c) => c.san).join(', ')})` };
     return null;
   };
 
@@ -243,6 +258,9 @@ export function reconstruct(tokens: Token[], opts: ReconstructOptions = {}): { g
         break;
       }
       case 'move': {
+        // A line that opens with a move and goes straight on in words is prose ("P × P is
+        // preferable…"), not the continuation of the moves on the line before.
+        if (inRun && tok.bol && expectBefore === null && tokens[i + 1]?.t === 'text' && !/^[,.;:]+$/.test((tokens[i + 1] as { raw: string }).raw)) inRun = false;
         if (!inRun) { ctx.text.push(tok.raw); ctx.sinceGameText += tok.raw.length + 1; break; }
         mainRun = tok.bold;
         const before = expectBefore;

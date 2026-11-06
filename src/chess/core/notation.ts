@@ -29,7 +29,7 @@ export interface DiagramMarker { kind: 'diagram'; id: string; fen: string | null
 export type Token =
   | { t: 'num'; n: number; black: boolean; ref: SourceRef; raw: string }
   | { t: 'ellipsis'; ref: SourceRef; raw: string }
-  | { t: 'move'; raw: string; nags: number[]; ref: SourceRef; bold: boolean; conf: number; ocr: boolean }
+  | { t: 'move'; raw: string; nags: number[]; ref: SourceRef; bold: boolean; conf: number; ocr: boolean; bol?: boolean }
   | { t: 'nag'; nags: number[]; ref: SourceRef; raw: string }
   | { t: 'result'; v: string; ref: SourceRef; raw: string }
   | { t: 'open'; ref: SourceRef; raw: string }
@@ -75,6 +75,8 @@ export function parseHeaderLine(text: string): Record<string, string> | null {
     }
     return h;
   }
+  const both = /^White\s*:\s*(.+?)\.?\s+Black\s*:\s*(.+?)\.?$/i.exec(t);
+  if (both) return { White: both[1].trim(), Black: both[2].trim() };
   const wb = /^(White|Black)\s*:\s*(.+)$/i.exec(t);
   if (wb) return { [wb[1][0].toUpperCase() + wb[1].slice(1).toLowerCase()]: wb[2].trim() };
   return null;
@@ -95,13 +97,28 @@ export function tokenize(items: Array<TextLine | DiagramMarker>): Token[] {
   return out;
 }
 
-function tokenizeLine(line: TextLine, out: Token[]): void {
+// Descriptive notation is often printed with spaces inside the move ("Kt - Q B 3", "B × B P",
+// "O - O"). Closing them up lets the move be read as one word.
+const D_PIECE = String.raw`(?:(?:[KQ] ?)?(?:Kt|[RBN]) ?P|(?:[KQ] ?)?(?:Kt|[RBN])|P|K|Q)`;
+// A digit followed by ". <move>" is the next move number, not a rank ("Kt × Kt 8. P × Kt").
+const D_SQ = String.raw`(?:(?:[KQ] ?)?(?:Kt|[RBN])? ?[1-8](?!\.+\s*(?:P|Kt|[KQRBN]|O)\s*[-×x(]))`;
+const D_MOVE = new RegExp(String.raw`(?<![\w-])(${D_PIECE})(?:\s?\((?:[KQ]?\s?(?:Kt|[RBN])?\s?[1-8]|[1-8])\))?\s*([-×x])\s*(${D_SQ}|${D_PIECE})(?:\s?(?:\(?(?:dis\.?\s?)?ch\.?\)?|mate))?(?![\w])`, 'g');
+
+export function compactDescriptive(text: string): string {
+  let t = text.replace(/\b([O0])\s*[-–]\s*([O0])(?:\s*[-–]\s*([O0]))?\b/g, (_m, a, b, c) => (c ? `${a}-${b}-${c}` : `${a}-${b}`));
+  t = t.replace(D_MOVE, (m) => m.replace(/\s+/g, ''));
+  return t;
+}
+
+function tokenizeLine(orig: TextLine, out: Token[]): void {
+  const line = { ...orig, text: compactDescriptive(orig.text) };
   const text = line.text;
   const re = /\S+/g;
   let m: RegExpExecArray | null;
   let wi = 0;
   const conf = line.conf ?? 1;
   const ocr = !!line.ocr;
+  const first = out.length;
   while ((m = re.exec(text))) {
     let w = m[0];
     let at = m.index;
@@ -121,12 +138,14 @@ function tokenizeLine(line: TextLine, out: Token[]): void {
     if (w) emitWord(w, at, line, out, bold, conf, ocr, tail);
     out.push(...closers);
   }
+  const t0 = out[first];
+  if (t0 && t0.t === 'move') t0.bol = true;
 }
 
 function emitWord(w: string, at: number, line: TextLine, out: Token[], bold: boolean, conf: number, ocr: boolean, tail: string): void {
   const ref = wordRef(line, at, w.length);
   if (RESULT_RE.test(w)) { out.push({ t: 'result', v: w === '½-½' ? '1/2-1/2' : w.replace(':', '-'), ref, raw: w }); return; }
-  if (/^(\.\.\.|…)$/.test(w)) { out.push({ t: 'ellipsis', ref, raw: w }); return; }
+  if (/^(\.{2,}|…+)$/.test(w)) { out.push({ t: 'ellipsis', ref, raw: w }); return; }
   // Move number, optionally glued to a move: "12.", "12...", "12…", "12.Nf3", "12...Nf3", "12 ...".
   const num = /^(\d{1,3})(\.\s?\.\s?\.|\.\.\.|…|\.|\s)(.*)$/.exec(w);
   if (num && Number(num[1]) > 0 && Number(num[1]) < 400) {
@@ -148,7 +167,9 @@ function emitWord(w: string, at: number, line: TextLine, out: Token[], bold: boo
   if (g) { const p = parseAnnotationRun(g[2]); if (p) { body = g[1]; nags = p; } }
   if (couldBeMove(body) || couldBeMove(normalizeMoveText(body))) {
     out.push({ t: 'move', raw: body, nags, ref, bold, conf, ocr });
-    if (tail) out.push({ t: 'text', raw: tail, ref });
+    // A comma or semicolon after a move separates moves ("8...P×P; 9 B×BP, P-QKt3"); a full stop
+    // ends the sentence, and so the run of moves.
+    if (tail.includes('.')) out.push({ t: 'text', raw: tail, ref });
     return;
   }
   out.push({ t: 'text', raw: w + tail, ref });

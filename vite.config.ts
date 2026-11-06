@@ -17,6 +17,17 @@ export default defineConfig({
         { src: `${cesiumSource}/Workers`, dest: cesiumBaseUrl, rename: { stripBase: 4 } },
         { src: `${cesiumSource}/Assets`, dest: cesiumBaseUrl, rename: { stripBase: 4 } },
         { src: `${cesiumSource}/Widgets`, dest: cesiumBaseUrl, rename: { stripBase: 4 } },
+        // Chess book reader: engine, OCR and PDF data files, self-hosted (no CDN at run time).
+        ...['lite-single', 'lite', 'single'].flatMap((f) => [`stockfish-19-${f}.js`, `stockfish-19-${f}.wasm`]).map((f) => (
+          { src: `node_modules/stockfish/bin/${f}`, dest: 'chess-vendor/stockfish', rename: { stripBase: true } })),
+        { src: 'node_modules/stockfish/Copying.txt', dest: 'chess-vendor/stockfish', rename: { stripBase: true } },
+        { src: 'node_modules/tesseract.js/dist/worker.min.js', dest: 'chess-vendor/tesseract', rename: { stripBase: true } },
+        ...['', 'simd-', 'relaxedsimd-'].map((v) => (
+          { src: `node_modules/tesseract.js-core/tesseract-core-${v}lstm.wasm.js`, dest: 'chess-vendor/tesseract', rename: { stripBase: true } })),
+        { src: 'node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz', dest: 'chess-vendor/tesseract/lang', rename: { stripBase: true } },
+        { src: 'node_modules/pdfjs-dist/cmaps', dest: 'chess-vendor/pdfjs', rename: { stripBase: 2 } },
+        { src: 'node_modules/pdfjs-dist/standard_fonts', dest: 'chess-vendor/pdfjs', rename: { stripBase: 2 } },
+        { src: 'src/chess/sw.js', dest: 'chess', rename: { stripBase: true } },
       ],
     }),
   ],
@@ -24,12 +35,13 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 6000,
     target: 'es2022',
-    // Three independent apps: the flight simulator (/), the ECG lab (/ecg/) and the renal lab (/renal/).
+    // Independent apps: the flight simulator (/), the ECG lab (/ecg/), the renal lab (/renal/) and the chess book reader (/chess/).
     rolldownOptions: {
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         ecg: resolve(import.meta.dirname, 'ecg/index.html'),
         renal: resolve(import.meta.dirname, 'renal/index.html'),
+        chess: resolve(import.meta.dirname, 'chess/index.html'),
       },
     },
   },

@@ -28,6 +28,8 @@ export interface AnalysisResult {
   settings: { flavor: Flavor; multipv: number; threads: number; hash: number; limits: SearchLimits };
   /** Set for positions that are already decided (mate/stalemate); no search was run. */
   terminal?: 'checkmate' | 'stalemate' | 'insufficient';
+  /** A newer request replaced this one before it started. */
+  superseded?: boolean;
 }
 
 export function canUseThreads(): boolean {
@@ -53,7 +55,6 @@ export class Engine {
   private worker: Worker;
   private waiters: Waiter[] = [];
   private lineHandler: ((l: string) => void) | null = null;
-  private busy: Promise<void> = Promise.resolve();
   private searching = false;
   private stopRequested = false;
   threads = 1;
@@ -108,6 +109,7 @@ export class Engine {
   async configure(o: { threads?: number; hash?: number }) {
     await this.ready;
     await this.stop();
+    // Options can only be changed while the engine is idle.
     if (o.threads && this.maxThreads > 1) { this.threads = Math.max(1, Math.min(this.maxThreads, o.threads)); this.send(`setoption name Threads value ${this.threads}`); }
     if (o.hash) { this.hash = o.hash; this.send(`setoption name Hash value ${o.hash}`); }
     await this.isReady();
@@ -115,40 +117,51 @@ export class Engine {
 
   async newGame() { await this.ready; await this.stop(); this.send('ucinewgame'); await this.isReady(); }
 
+  private queue: Promise<unknown> = Promise.resolve();
+  private gen = 0;
+
   /** Stop the running search (if any) and wait until the engine has reported its best move. */
   async stop(): Promise<void> {
-    if (!this.searching) return;
-    this.stopRequested = true;
-    this.send('stop');
-    await this.busy;
+    this.gen++;
+    if (this.searching) { this.stopRequested = true; this.send('stop'); }
+    await this.queue;
   }
 
   /**
    * Analyse a position. `onUpdate` receives the lines as they deepen (throttled); the promise
-   * resolves with the final result once the search ends (limit reached or stopped).
+   * resolves with the final result once the search ends (limit reached or stopped). Requests are
+   * queued: a newer request stops the running search, and requests overtaken while waiting are
+   * skipped (resolved with `superseded`).
    */
-  async analyze(fen: string, limits: SearchLimits, multipv: number, onUpdate?: (r: AnalysisResult) => void): Promise<AnalysisResult> {
+  analyze(fen: string, limits: SearchLimits, multipv: number, onUpdate?: (r: AnalysisResult) => void): Promise<AnalysisResult> {
+    const my = ++this.gen;
+    if (this.searching) { this.stopRequested = true; this.send('stop'); }
+    const p = this.queue.then(() => this.run(my, fen, limits, multipv, onUpdate));
+    this.queue = p.catch(() => undefined);
+    return p;
+  }
+
+  private async run(my: number, fen: string, limits: SearchLimits, multipv: number, onUpdate?: (r: AnalysisResult) => void): Promise<AnalysisResult> {
     await this.ready;
-    await this.stop();
     const settings = { flavor: this.flavor, multipv, threads: this.threads, hash: this.hash, limits };
+    const empty: AnalysisResult = { fen, lines: [], depth: 0, nodes: 0, nps: 0, time: 0, bestmove: null, done: true, settings, superseded: true };
+    if (my !== this.gen) return empty;
     const term = terminalResult(fen, settings);
     if (term) { onUpdate?.(term); return term; }
     const whiteToMove = fen.split(' ')[1] === 'w';
     const lines = new Map<number, PvLine>();
     const res: AnalysisResult = { fen, lines: [], depth: 0, nodes: 0, nps: 0, time: 0, bestmove: null, done: false, settings };
     let last = 0;
-    let finish!: () => void;
-    this.busy = new Promise<void>((r) => { finish = r; });
-    this.searching = true;
-    this.stopRequested = false;
     if (multipv !== this.multipv) { this.send(`setoption name MultiPV value ${multipv}`); this.multipv = multipv; }
     await this.isReady();
+    if (my !== this.gen) return empty;
+    this.stopRequested = false;
+    this.searching = true;
     return new Promise<AnalysisResult>((resolve) => {
       this.lineHandler = (l) => {
         if (l.startsWith('info ')) {
           const pv = parseInfo(l, whiteToMove);
           if (!pv || pv.bound) return; // bound scores are provisional; wait for the exact one
-          // A new depth for PV 1 starts a fresh set of lines.
           if (pv.multipv === 1 && pv.depth > res.depth) {
             for (const [k, v] of lines) if (v.depth < pv.depth - 1) lines.delete(k);
           }
@@ -166,7 +179,6 @@ export class Engine {
           this.lineHandler = null;
           this.searching = false;
           onUpdate?.({ ...res });
-          finish();
           resolve(res);
         }
       };
